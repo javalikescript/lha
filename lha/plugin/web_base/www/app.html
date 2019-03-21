@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>App</title>
+  <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="static/fa/css/fontawesome-all.min.css">
+  <script src="static/v/vue.min.js" type="text/javascript" charset="utf-8"></script>
+  <script src="static/moment.js" type="text/javascript"></script>
+</head>
+<body class="theme_boot">
+<!-- Custom pages used by components -->
+<div id="custom-pages" class="pages">
+  <app-page id="historicalData" title="Historical Data">
+    <page-article>
+      <div style="text-align: center;">
+        <span>To:</span>
+        <select v-model="toDays">
+          <option value="0">Now</option>
+          <option value="0.125">3 hours ago</option>
+          <option value="0.25">6 hours ago</option>
+          <option value="0.5">12 hours ago</option>
+          <option value="1">1 day ago</option>
+          <option value="2">2 days ago</option>
+          <option value="7">1 week ago</option>
+          <option value="14">2 weeks ago</option>
+          <option value="21">3 weeks ago</option>
+          <option value="28">4 weeks ago</option>
+          <option value="60">2 months ago</option>
+          <option value="180">6 months ago</option>
+          <option value="365">1 year ago</option>
+        </select>
+        <button v-on:click="loadHistoricalData"><i class="fas fa-sync"></i>&nbsp;Refresh</button>
+      </div>
+      <tree :model="root" :show-value="true" v-on:tree-path-selected="onTreePathSelected"></tree>
+    </page-article>
+  </app-page>
+  <app-page id="data-chart" title="Data Chart">
+    <page-article>
+      <div style="text-align: center;">
+        <span>Duration:</span>
+        <select v-model="duration">
+          <option value="7200">2 hours</option>
+          <option value="21600">6 hours</option>
+          <option value="43200">12 hours</option>
+          <option value="64800">18 hours</option>
+          <option value="86400">One day</option>
+          <option value="172800">2 days</option>
+          <option value="259200">3 days</option>
+          <option value="604800">7 days</option>
+          <option value="1209600">2 weeks</option>
+          <option value="2419200">4 weeks</option>
+          <option value="5443200">2 months</option>
+          <option value="15768000">6 months</option>
+          <option value="31536000">1 year</option>
+        </select>
+        <span>Period:</span>
+        <select v-model="period">
+          <option value="0">Auto</option>
+          <option value="60">1 min</option>
+          <option value="180">3 min</option>
+          <option value="600">10 min</option>
+          <option value="1800">30 min</option>
+          <option value="3600">1 hour</option>
+          <option value="7200">2 hours</option>
+          <option value="21600">6 hours</option>
+          <option value="86400">24 hours</option>
+        </select>
+        <span>To:</span>
+        <select v-model="toDays">
+          <option value="0">Now</option>
+          <option value="1">1 day ago</option>
+          <option value="2">2 days ago</option>
+          <option value="7">1 week ago</option>
+          <option value="14">2 weeks ago</option>
+          <option value="21">3 weeks ago</option>
+          <option value="28">4 weeks ago</option>
+          <option value="60">2 months ago</option>
+          <option value="180">6 months ago</option>
+          <option value="365">1 year ago</option>
+        </select>
+        <!--
+          <select v-model="chartType">
+            <option value="line">Lines</option>
+            <option value="bar">Bars</option>
+          </select>
+        -->
+        <select v-model="chartBeginAtZero">
+          <option value="false">Centered</option>
+          <option value="true">Zero based</option>
+        </select>
+        <!--
+          <span>Tension:</span>
+          <select v-model="chartTension">
+            <option value="0">None</option>
+            <option value="0.1">Low</option>
+            <option value="0.4">High</option>
+          </select>
+        -->
+        <button v-on:click="reloadHistoricalData"><i class="fas fa-sync"></i>&nbsp;Refresh</button>
+        <button v-on:click="pushMultiHistoricalData"><i class="fas fa-plus"></i>&nbsp;{{paths.length}}</button>
+        <button v-on:click="cleanMultiHistoricalData"><i class="fas fa-eraser"></i></button>
+      </div>
+      <div style="position: relative; height:40vh; width:80vw">
+        <!-- style="height: 320px; " style="position: relative; "  height="400" -->
+        <canvas id="chart-data-view-canvas"></canvas>
+      </div>
+    </page-article>
+  </app-page>
+  <app-page id="config" title="Configuration">
+    <page-article>
+      <tree :model="root" :show-value="true" :editable="true" v-on:tree-path-selected="onTreePathSelected"></tree>
+      <button v-on:click="onShow"><i class="fas fa-sync"></i>&nbsp;Refresh</button>
+      <button v-on:click="onSave"><i class="far fa-save"></i>&nbsp;Save</button>
+    </page-article>
+  </app-page>
+  <app-page id="itemConfig" title="Configuration">
+    <page-article>
+      <tree :model="root" :show-value="true" :editable="true"></tree>
+      <button v-on:click="onShow"><i class="fas fa-sync"></i>&nbsp;Refresh</button>
+      <button v-on:click="onSave"><i class="far fa-save"></i>&nbsp;Save</button>
+    </page-article>
+  </app-page>
+  <app-page id="liveData" title="Data">
+    <page-article>
+      <tree :model="root" :show-value="true" :editable="true"></tree>
+      <button v-on:click="onShow"><i class="fas fa-sync"></i>&nbsp;Refresh</button>
+    </page-article>
+  </app-page>
+  <app-page id="itemData" title="Data">
+    <page-article>
+      <tree :model="root" :show-value="true" :editable="true"></tree>
+      <button v-on:click="onShow"><i class="fas fa-sync"></i>&nbsp;Refresh</button>
+      <button v-on:click="onSave"><i class="far fa-save"></i>&nbsp;Save</button>
+    </page-article>
+  </app-page>
+  <app-settings id="settings" title="Settings">
+    <article class="content">
+      <p>Information:</p>
+      <dl>
+        <dt><label>CPU Time</label></dt><dd><span v-html="clock">na</span></dd>
+        <dt><label>Memory size</label></dt><dd><span v-html="memory">na</span></dd>
+        <dt><label>Server Time</label></dt><dd><span v-html="time">na</span></dd>
+      </dl>
+      <!--
+      <button v-on:click="toaster.toast('Message')"><i class="far fa-bell"></i>&nbsp;Toast</button>
+      -->
+      <button v-on:click="onShow"><i class="fas fa-sync"></i>&nbsp;Refresh</button>
+      <button v-on:click="gc"><i class="fa fa-trash"></i>&nbsp;Collect Garbage</button>
+      <select v-model="theme" v-on:click="changeTheme">
+        <option value="ms">Windows</option>
+        <option value="light">Light</option>
+      </select>
+      <button v-on:click="pollDevices"><i class="far fa-bell"></i>&nbsp;Poll Devices</button>
+      <button v-on:click="app.toPage('moreSettings')"><i class="fas fa-tools"></i>&nbsp;More...</button>
+    </article>
+  </app-settings>
+  <app-page id="moreSettings" title="More Settings">
+    <article class="content">
+      <p>Settings</p>
+      <button v-on:click="saveConfig"><i class="far fa-save"></i>&nbsp;Save Configuration</button>
+      <button v-on:click="stopServer"><i class="fas fa-power-off"></i>&nbsp;Stop the Server</button>
+      <p>Advanced</p>
+      <button v-on:click="reloadPlugins"><i class="fas fa-redo"></i>&nbsp;Reload the Plugins</button>
+      <button v-on:click="reloadScripts"><i class="fas fa-redo"></i>&nbsp;Reload the Scripts</button>
+      <p>Beyond</p>
+      <button v-on:click="restartServer"><i class="fas fa-redo"></i>&nbsp;Restart the Server</button>
+      <button v-on:click="selectFile"><i class="fas fa-upload"></i>&nbsp;Upgrade the Server</button>
+      <input v-on:change="uploadFile" type="file" accept=".zip" ref="uploadInput" style="display: none;" />
+    </article>
+  </app-page>
+  <app-page id="devices" title="Devices">
+    <page-article>
+      <table>
+        <tr><th>Name</th><th>Data</th><th>Archive</th><th>Active</th><th>Poll</th><th>Reload</th></tr>
+        <tr v-for="device in devices">
+          <td v-on:click="openDevice(device)">{{device.id}}</td>
+          <td style="text-align: center; " v-on:click="openDeviceData(device)"><i class="fas fa-database"></i></td>
+          <td style="text-align: center; "><input type="checkbox" v-model="device.archiveData" /></td>
+          <td style="text-align: center; "><input type="checkbox" v-model="device.active" /></td>
+          <td style="text-align: center; " v-on:click="pollDevice(device)"><i class="far fa-bell"></i></td>
+          <td style="text-align: center; " v-on:click="reloadDevice(device)"><i class="fas fa-redo"></i></td>
+        </tr>
+      </table>
+      <button v-on:click="onShow"><i class="fas fa-sync"></i>&nbsp;Refresh</button>
+      <button v-on:click="onSave"><i class="far fa-save"></i>&nbsp;Save</button>
+    </page-article>
+  </app-page>
+  <app-page id="plugins" title="Plugins">
+    <page-article>
+      <table>
+        <tr><th>Name</th><th>Active</th><th>Reload</th></tr>
+        <tr v-for="plugin in plugins">
+          <td v-on:click="openPlugin(plugin)">{{plugin.id}}</td>
+          <td style="text-align: center; "><input type="checkbox" v-model="plugin.active" /></td>
+          <td style="text-align: center; " v-on:click="reloadPlugin(plugin)"><i class="fas fa-redo"></i></td>
+        </tr>
+      </table>
+      <button v-on:click="onShow"><i class="fas fa-sync"></i>&nbsp;Refresh</button>
+      <button v-on:click="onSave"><i class="far fa-save"></i>&nbsp;Save</button>
+    </page-article>
+  </app-page>
+  <app-menu id="menu" title="Menu">
+    <article class="content">
+      <ul>
+        <li v-for="page in pages" v-on:click="app.toPage(page.id)">{{ page.name }}</li>
+      </ul>
+    </article>
+  </app-menu>
+  <app-root-page id="main" title="Welcome">
+    <page-article>
+      <div class="tile-container">
+        <div class="tile" v-for="page in pages" v-on:click="app.toPage(page.id)"><span>{{ page.name }}</span></div>
+      </div>
+    </page-article>
+  </app-root-page>
+</div>
+<!-- Simple pages loaded automatically -->
+<div id="pages" class="pages">
+  <app-page id="first" title="First">
+    <page-article>
+      <p>First content</p>
+    </page-article>
+  </app-page>
+</div>
+<div id="app"></div>
+<!-- v-bind:class="{toaster: true, hide: !}" -->
+<div id="toaster" v-if="show" class="toaster" style="display: none;">{{message}}</div>
+<div class="splash">
+  Loading...
+  <!--
+    <i class="fas fa-spinner fa-spin"></i>
+  -->
+</div>
+</body>
+<script src="static/chart/Chart.min.js"></script>
+<script src="static/blockly/blockly_compressed.js"></script>
+<script src="static/blockly/blocks_compressed.js"></script>
+<script src="static/blockly/javascript_compressed.js"></script>
+<script src="static/blockly/lua_compressed.js"></script>
+<script src="static/blockly/msg/js/en.js"></script>
+<script src="static/amdimpl.js" type="text/javascript" charset="utf-8"></script>
+<script src="static/ace/ace.js" type="text/javascript"></script>
+<script type="text/javascript">
+//<!--
+  if (navigator.userAgent.indexOf('Edge') >= 0) {
+    console.log('Edge detected');
+    var rawFetch = fetch;
+    fetch = function(input, init) {
+      if (init === undefined) {
+        init = {};
+      }
+      if (typeof init === 'object') {
+        if (!init.credentials) {
+          init.credentials = 'include';
+        }
+      }
+      return rawFetch(input, init);
+    };
+  }
+//-->
+</script>
+<script src="app.js" type="text/javascript" charset="utf-8"></script>
+</html>

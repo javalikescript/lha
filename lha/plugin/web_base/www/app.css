@@ -1,0 +1,298 @@
+html {
+  width: 100%;
+  height: 100%;
+  font-size: 62.5%;
+}
+body {
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  display: block;
+  overflow: hidden;
+  font-family: sans-serif;
+}
+section.page {
+  position: absolute;
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  transition: all 0.25s ease;
+}
+section.page.hideLeft {
+  transform: translateX(-100%);
+}
+section.page.hideRight {
+  transform: translateX(100%);
+}
+section.page.hideTop {
+  transform: translateY(-100%);
+}
+section.page.hideBottom {
+  transform: translateY(100%);
+}
+section.menu {
+  position: absolute;
+  margin: 0;
+  height: 100%;
+  width: 30rem;
+  transition: all 0.25s ease;
+  z-index: 100;
+}
+div.toaster {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  box-sizing: border-box;
+  max-width: 80%;
+  height: 40px;
+  line-height: 20px;
+  padding: 10px 20px;
+  text-align: center;
+  z-index: 1000;
+  font-size: 14px;
+  color: #fff;
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: all 1s ease;
+}
+div.toaster.hide {
+  opacity: 0;
+}
+.theme_boot > div.pages {
+  display: none;
+}
+div.splash {
+  position: absolute;
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  font-size: 1.8rem;
+  vertical-align: middle;
+  text-align: center;
+  z-index: 1000;
+}
+:not(.theme_boot) > div.splash {
+  display: none;
+}
+.theme_ms section.menu,
+.theme_ms section.menu > header,
+.theme_ms section.menu > header button {
+  color: #fff;
+  background-color: #004174;
+}
+.theme_light section.menu,
+.theme_light section.menu > header,
+.theme_light section.menu > header button {
+  color: black;
+  background-color: #d9e6f2;
+}
+section.menu.hideLeft {
+  transform: translateX(-30rem);
+}
+section.hidden {
+  display: none;
+}
+section > header {
+  height: 5rem;
+  width: 100%;
+}
+.theme_ms section > header,
+.theme_ms section > header button {
+  color: #fff;
+  background-color: #0078D7;
+}
+.theme_light section > header,
+.theme_light section > header button {
+  color: black;
+  background-color: #ecf2f9;
+}
+section > header button {
+  line-height: 5rem;
+  height: 5rem;
+  width: 4rem;
+  vertical-align: middle;
+}
+section > article {
+  transition: height 1s ease;
+  height: calc(100% - 5rem);
+  overflow: auto;
+  width: 100%;
+}
+section > article a,
+section > article p,
+section > article tr > th,
+section > article tr > td,
+section > article dl {
+  font-size: 1.5rem;
+  font-weight: normal;
+  line-height: 2.0rem;
+  padding: 0.3rem;
+}
+section > article > table {
+  padding: 0.1rem;
+  margin: 0 2rem;
+}
+section > article > select,
+section > article > input {
+  padding: 0.1rem;
+  margin: 0 2rem;
+  line-height: 5rem;
+  font-size: 1.8rem;
+  font-weight: normal;
+  height: 5rem;
+}
+section > article > a,
+section > article > p {
+  font-size: 1.9rem;
+  font-weight: normal;
+  line-height: 2.5rem;
+  padding: 0.5rem;
+}
+section > article > select,
+section > article > table,
+section > article > input[type="text"],
+section > article > input[type="password"] {
+  width: calc(100% - 4rem);
+}
+section > article > button {
+  width: calc(100% - 4rem);
+  padding: 0.1rem;
+  margin: 0.5rem 2rem;
+  line-height: 5rem;
+  font-size: 1.8rem;
+  font-weight: normal;
+  height: 5rem;
+  color: #000;
+  vertical-align: middle;
+}
+section.page > article > h1 {
+  color: #000;
+}
+section > article > h1 {
+  line-height: 5rem;
+  font-size: 2.2rem;
+  font-weight: normal;
+  line-height: 5rem;
+  height: 5rem;
+  vertical-align: left;
+}
+span.toolbar {
+  float: right;
+}
+table {
+  border-collapse: collapse;
+}
+tbody tr > td {
+  border: 1px solid #aaaaaa;
+}
+tbody tr:nth-child(even) {
+  background-color: #eeeeee;
+}
+tbody tr > td {
+  padding: 0.2em 0.4em;
+}
+header button, li button {
+  border: none;
+  background: none;
+  position: relative;
+  overflow: hidden;
+  display: block;
+  padding: 0 1rem;
+  margin: 0;
+  float: left;
+}
+li button {
+  color: #000;
+  height: 2.5rem;
+}
+header h1, footer h1 {
+  font-size: 2rem;
+  white-space: nowrap;
+  display: block;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  line-height: 5rem;
+  text-align: center;
+  font-weight: lighter;
+  font-style: italic;
+}
+ul {
+  margin: 0;
+  padding: 0;
+}
+li {
+  list-style: none;
+  margin: 0;
+  padding-left: 1rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  font-size: 1.9rem;
+  font-weight: normal;
+  line-height: 2.5rem;
+  height: 4rem;
+}
+.tree-icon {
+  padding-right: 1rem;
+}
+.tree-value {
+  padding-left: 1rem;
+}
+.tree-value[contenteditable="true"]:hover {
+  border-right: 4px solid blue;
+  background-color: lightgrey;
+}
+li.tree {
+  font-size: 1.5rem;
+  font-weight: normal;
+  line-height: 1.8rem;
+  height: auto;
+}
+.scrollable {
+  overflow-x: hidden;
+  overflow-y: auto;
+  position: relative;
+}
+.content-flex {
+  display: flex;
+  justify-content: space-around;
+  flex-flow: row wrap;
+  align-items: stretch;
+}
+.tile-container {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 1rem;
+}
+.tile {
+  height: 18rem;
+  width: 18rem;
+  background: transparent;
+  border: 1px solid transparent;
+  /*
+  border-radius: 0.5rem;
+  */
+  box-shadow: 0 0 1px 1px rgba(0,0,0,0.1);
+  box-sizing: border-box;
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+  overflow: hidden;
+  cursor: pointer;
+}
+.tile:hover {
+  background-color: rgba(0,0,0,0.01);
+}
+.tile-width {
+  width: 36.5rem;
+}
+.tile > span, .tile > p {
+  font-size: 1.9rem;
+  font-weight: normal;
+  line-height: 2.5rem;
+  padding: 0.5rem;
+}

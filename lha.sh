@@ -1,0 +1,1 @@
+nohup lua lha/engine/main.lua &

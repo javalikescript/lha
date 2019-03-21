@@ -1,0 +1,14 @@
+{
+  "address": "::",
+  "port": 8080,
+  "-hostname": "localhost",
+  "-secure": {
+    "port": 8443,
+    "certificate": "cer.pem",
+    "key": "key.pem",
+    "credentials": {
+      "lha": "lha"
+    }
+  },
+  "heartbeat": 15000
+}
