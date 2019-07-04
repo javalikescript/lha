@@ -104,6 +104,17 @@ local Bridge = class.create(function(bridge)
     return self:httpUserJson('POST', path, t)
   end
 
+  function bridge:updateConfiguration()
+    return self:get(CONST.CONFIG):next(function(config)
+      if config then
+        logger:info('update bridge configuration')
+        self:configure(config)
+      end
+    end):catch(function(err)
+      logger:warn('fail to get bridge configuration, due to "'..tostring(err)..'"')
+    end)
+  end
+
   function bridge:createUser(applicationName, deviceName)
     return self:httpJson('POST', '', {
       devicetype = applicationName..'#'..deviceName
@@ -141,18 +152,6 @@ local hueBridge = Bridge:new(configuration.url, configuration.user)
 logger:info('Hue bridge: "'..configuration.url..'"')
 
 local deviceIdMap = configuration.ids
-
-plugin:subscribeEvent('startup', function()
-  logger:info('startup hue plugin')
-  hueBridge:get(CONST.CONFIG):next(function(config)
-    logger:info('config hue plugin')
-    if config then
-      hueBridge:configure(config)
-    end
-  end):catch(function(err)
-    logger:warn('fail to get bridge configuration, due to "'..tostring(err)..'"')
-  end)
-end)
 
 local lastPollTime
 
@@ -256,11 +255,13 @@ end)
 
 plugin:subscribeEvent('refresh', function()
   logger:info('refresh hue plugin')
+  hueBridge:updateConfiguration()
   -- refresh deviceIdMap
 end)
 
 plugin:subscribeEvent('startup', function()
   logger:info('startup hue plugin')
+  hueBridge:updateConfiguration()
   -- refresh deviceIdMap
   plugin:onPlugin('web_base', function(webSamplePlugin)
     webSamplePlugin:registerAddonPlugin(plugin)
