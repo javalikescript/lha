@@ -7,6 +7,7 @@ local httpHandler = require('jls.net.http.handler')
 local Scheduler = require('jls.util.Scheduler')
 local runtime = require('jls.lang.runtime')
 local event = require('jls.lang.event')
+local strings = require('jls.util.strings')
 local tables = require('jls.util.tables')
 local Date = require('jls.util.Date')
 local HistoricalTable = require('lha.engine.HistoricalTable')
@@ -88,7 +89,7 @@ local function historicalDataHandler(exchange)
     if fromTime < toTime and ((toTime - fromTime) / period) < 10000 then
       local result
       if subPaths then
-        local paths = tables.split(subPaths, ',')
+        local paths = strings.split(subPaths, ',')
         for i = 1, #paths do
           paths[i] = path..paths[i]
         end

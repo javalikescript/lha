@@ -1,6 +1,7 @@
 local logger = require('jls.lang.logger')
 local class = require('jls.lang.class')
 local tables = require('jls.util.tables')
+local TableList = require('jls.util.TableList')
 local EventPublisher = require('jls.util.EventPublisher')
 local Scheduler = require('jls.util.Scheduler')
 local system = require('jls.lang.system')
@@ -111,7 +112,7 @@ return class.create(EventPublisher, function(engineItem, super)
   end
 
   function engineItem:fireItemEvent(...)
-    logger:info('engineItem:fireItemEvent('..tables.concat(table.pack(...), ', ')..')')
+    logger:info('engineItem:fireItemEvent('..TableList.concat(table.pack(...), ', ')..')')
     self.engine:publishItemsEvent(self, ...)
   end
 
@@ -152,7 +153,7 @@ return class.create(EventPublisher, function(engineItem, super)
   end
 
   function engineItem:forgetValue(watcher)
-    tables.removeTableValue(self.watchers, watcher, true)
+    TableList.removeFirst(self.watchers, watcher)
     if #self.watchers == 0 then
       self:unsubscribeEvent('change', self.changeFn)
     end
