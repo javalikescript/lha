@@ -1,0 +1,6 @@
+{
+  "name": "Ping",
+  "description": "Test the reachability of a host on the network",
+  "version": "1.0",
+  "script": "ping.lua"
+}

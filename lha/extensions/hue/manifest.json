@@ -1,0 +1,21 @@
+{
+  "name": "Philips Hue",
+  "description": "Philips Hue",
+  "version": "1.0",
+  "script": "hue.lua",
+  "-config": {
+    "url": "http://localhost/api/",
+    "user": "unknown"
+  },
+  "schema": {
+    "type": "object",
+    "properties": {
+      "url": {
+        "type": "string"
+      },
+      "user": {
+        "type": "string"
+      }
+    }
+  }
+}

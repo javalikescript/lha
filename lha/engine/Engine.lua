@@ -11,28 +11,26 @@ local strings = require('jls.util.strings')
 local tables = require('jls.util.tables')
 local Date = require('jls.util.Date')
 local HistoricalTable = require('lha.engine.HistoricalTable')
-local Device = require('lha.engine.Device')
-local Plugin = require('lha.engine.Plugin')
-local Script = require('lha.engine.Script')
-local ZipFile = require('jls.util.zip.ZipFile')
-
+local IdGenerator = require('lha.engine.IdGenerator')
+local Extension = require('lha.engine.Extension')
+local Thing = require('lha.engine.Thing')
 
 local function createDirectoryOrExit(dir)
   if not dir:isDirectory() then
     if dir:mkdir() then
-      logger:info('created directory '..dir:getPath())
+      logger:info('Created directory "'..dir:getPath()..'"')
     else
-      logger:warn('unable to create directory '..dir:getPath())
+      logger:warn('Unable to create the directory "'..dir:getPath()..'"')
       runtime.exit(1)
     end
   end
 end
 
-local function cleanDirectory(dir)
-  if dir:isDirectory() then
-    return dir:deleteAll()
+local function checkDirectoryOrExit(dir)
+  if not dir:isDirectory() then
+    logger:warn('The directory "'..dir:getPath()..'" does not exist')
+    runtime.exit(1)
   end
-  return dir:mkdir()
 end
 
 local function writeCertificateAndPrivateKey(certFile, pkeyFile, commonName)
@@ -41,11 +39,11 @@ local function writeCertificateAndPrivateKey(certFile, pkeyFile, commonName)
     commonName = commonName or 'localhost'
   })
   local cacertPem  = cacert:export('pem')
-  -- pkey:export('pem', true, 'secret') -- format='pem' raw=true,  passphrase='secret'
   local pkeyPem  = pkey:export('pem')
   certFile:write(cacertPem)
   pkeyFile:write(pkeyPem)
 end
+
 
 local function historicalDataHandler(exchange)
   if httpHandler.methodAllowed(exchange, 'GET') then
@@ -64,7 +62,7 @@ local function historicalDataHandler(exchange)
       if toTime then
         t = engine.dataHistory:getTableAt(toTime) or {}
       else
-        t = engine.root.historicalData
+        t = engine.dataHistory:getLiveTable()
       end
       httpHandler.replyJson(exchange:getResponse(), {
         value = tables.getPath(t, '/'..tp)
@@ -74,7 +72,7 @@ local function historicalDataHandler(exchange)
     local fromTime = tonumber(request:getHeader("X-FROM-TIME"))
     local subPaths = request:getHeader("X-PATHS")
     if logger:isLoggable(logger.FINE) then
-      logger:fine('process historicalData request '..tostring(fromTime)..' - '..tostring(toTime)..' / '..tostring(period)..' on "'..tostring(path)..'"')
+      logger:fine('process data request '..tostring(fromTime)..' - '..tostring(toTime)..' / '..tostring(period)..' on "'..tostring(path)..'"')
     end
     period = period * 1000
     if not toTime then
@@ -104,25 +102,29 @@ local function historicalDataHandler(exchange)
   end
 end
 
-local function tableHandler(httpExchange)
-  local request = httpExchange:getRequest()
-  local context = httpExchange:getContext()
+local function tableHandler(exchange)
+  local request = exchange:getRequest()
+  local context = exchange:getContext()
   local engine = context:getAttribute('engine')
   local publish = context:getAttribute('publish') == true
   local basePath = context:getAttribute('path') or ''
   local method = string.upper(request:getMethod())
-  local path = httpExchange:getRequestArguments()
+  local path = exchange:getRequestArguments()
   local tp = basePath..string.gsub(path, '/$', '')
   if logger:isLoggable(logger.FINE) then
     logger:fine('tableHandler(), method: "'..method..'", path: "'..tp..'"')
   end
   if method == http.CONST.METHOD_GET then
     local value = tables.getPath(engine.root, tp)
-    httpHandler.ok(httpExchange, json.encode({
-      value = value
-    }), 'application/json')
+    if value then
+      httpHandler.ok(exchange, json.encode({
+        value = value
+      }), 'application/json')
+    else
+      httpHandler.notFound(exchange)
+    end
   elseif not context:getAttribute('editable') then
-    httpHandler.methodNotAllowed(httpExchange)
+    httpHandler.methodNotAllowed(exchange)
   elseif method == http.CONST.METHOD_PUT or method == http.CONST.METHOD_POST then
     if logger:isLoggable(logger.FINEST) then
       logger:finest('tableHandler(), request body: "'..request:getBody()..'"')
@@ -131,201 +133,199 @@ local function tableHandler(httpExchange)
       local rt = json.decode(request:getBody())
       if type(rt) == 'table' and rt.value then
         if method == http.CONST.METHOD_PUT then
-          engine:setRootValue(engine, tp, rt.value, publish)
+          engine:setRootValue(tp, rt.value, publish)
         elseif method == http.CONST.METHOD_POST then
-          engine:setRootValues(engine, tp, rt.value, publish)
+          engine:setRootValues(tp, rt.value, publish)
         end
       end
     end
-    httpHandler.ok(httpExchange)
+    httpHandler.ok(exchange)
   else
-    httpHandler.methodNotAllowed(httpExchange)
+    httpHandler.methodNotAllowed(exchange)
   end
   if logger:isLoggable(logger.FINE) then
-    logger:fine('tableHandler(), status: '..tostring(httpExchange:getResponse():getStatusCode()))
+    logger:fine('tableHandler(), status: '..tostring(exchange:getResponse():getStatusCode()))
   end
 end
 
-local function getItemById(items, id)
-  for _, item in ipairs(items) do
-    if item.id == id then
-      return item
+
+local EngineThing = class.create(Thing, function(engineThing, super)
+
+  function engineThing:initialize(engine, thingId, td)
+    super.initialize(self, td.title, td.description, td['@type'], td['@context'])
+    self:addProperties(td.properties)
+    self:setHref('/things/'..thingId)
+    self.engine = engine
+    self.thingId = thingId
+  end
+
+  function engineThing:setArchiveData(archiveData)
+    self.engine:setRootValues('configuration/things/'..self.thingId..'/archiveData', self.archiveData, true)
+  end
+
+  function engineThing:getArchiveData()
+    return tables.getPath(self.engine.root, 'configuration/things/'..self.thingId..'/archiveData', false)
+  end
+
+  function engineThing:updatePropertyValue(name, value)
+    if self:getArchiveData() then
+      self.engine:setRootValues('data/'..self.thingId..'/'..name, value, true)
     end
-  end
-  return nil
-end
+    return super.updatePropertyValue(self, name, value)
+	end
 
-local function listItems(items, list)
-  if not list then
-    list = {}
-  end
-  for _, item in ipairs(items) do
-    table.insert(list, item:toJSON())
-  end
-  return list
-end
-
-local function listDevices(plugin, list)
-  return listItems(plugin:getDevices(), list)
-end
+end)
 
 
-local REST_ITEM_HANDLERS = {
-  poll = function(exchange)
-    exchange.attributes.item:publishItemEvent(exchange.attributes.engine, 'poll')
-    return 'Done'
+local REST_THING = {
+  [''] = function(exchange)
+      return exchange.attributes.thing:asThingDescription()
   end,
-  reload = function(exchange)
-    exchange.attributes.item:reloadItem()
-    return 'Done'
+  properties = {
+      [''] = function(exchange)
+          return exchange.attributes.thing:getProperties()
+      end,
+      ['/any'] = function(exchange)
+          local request = exchange:getRequest()
+          local method = string.upper(request:getMethod())
+          local propertyName = exchange.attributes.propertyName
+          local property = exchange.attributes.thing:findProperty(propertyName)
+          if property then
+              if method == http.CONST.METHOD_GET then
+                  return {[propertyName] = property:getValue()}
+              elseif method == http.CONST.METHOD_PUT then
+                  local rt = json.decode(request:getBody())
+                  local value = rt[propertyName]
+                  if value then
+                      --property:setValue(value)
+                      exchange.attributes.thing:setPropertyValue(propertyName, value)
+                  end
+              else
+                  httpHandler.methodNotAllowed(exchange)
+                  return false
+              end
+          else
+              httpHandler.notFound(exchange)
+              return false
+          end
+      end,
+      name = 'propertyName'
+  }
+}
+
+local REST_THINGS = {
+  [''] = function(exchange)
+    local engine = exchange:getAttribute('engine')
+    local descriptions = {}
+    for _, thing in pairs(engine.things) do
+      local description = thing:asThingDescription()
+      table.insert(descriptions, description)
+    end
+    return descriptions
+  end,
+  ['/any'] = REST_THING,
+  name = 'thing',
+  value = function(exchange, name)
+    local engine = exchange:getAttribute('engine')
+    return engine.things[name]
   end
 }
 
-local REST_PLUGIN_HANDLERS = tables.merge({
-  listDevices = function(exchange)
-    return listDevices(exchange.attributes.item)
-  end
-}, REST_ITEM_HANDLERS)
-
-local REST_DEVICE_HANDLERS = tables.merge({}, REST_ITEM_HANDLERS)
-
-local REST_SCRIPT_HANDLERS = tables.merge({}, REST_ITEM_HANDLERS)
-
-local function handleItem(exchange, getItemFn)
-  local path = exchange:getAttribute('path')
-  local name, remainingPath = httpHandler.shiftPath(path)
-  local engine = exchange:getAttribute('engine')
-  local item = getItemFn(engine, name)
-  if item then
-    exchange:setAttribute('item', item)
-    return httpHandler.restPart(REST_SCRIPT_HANDLERS, exchange, remainingPath)
-  end
-  httpHandler.notFound(exchange)
-  return false
-end
-
-local REST_ADMIN_HANDLERS = {
-  list = function(exchange)
-    local list = {}
-    local engine = exchange:getAttribute('engine')
-    listItems(engine.plugins, list)
-    for _, plugin in ipairs(engine.plugins) do
-      listDevices(plugin, list)
-    end
-    listItems(engine.scripts, list)
-    return list
-  end,
-  listDevices = function(exchange)
-    local list = {}
-    local engine = exchange:getAttribute('engine')
-    for _, plugin in ipairs(engine.plugins) do
-      listDevices(plugin, list)
-    end
-    return list
-  end,
-  pollDevices = function(exchange)
-    exchange.attributes.engine:publishEvent('poll')
-    return 'Done'
-  end,
-  listScripts = function(exchange)
-    return listItems(exchange.attributes.engine.scripts)
-  end,
-  reloadScripts = function(exchange)
-    exchange.attributes.engine:reloadScripts()
-    return 'Done'
-  end,
-  listPlugins = function(exchange)
-    return listItems(exchange.attributes.engine.plugins)
-  end,
-  plugin = function(exchange)
-    return handleItem(exchange, function(engine, name)
-      return engine:getPlugin(name)
-    end)
-  end,
-  device = function(exchange)
-    return handleItem(exchange, function(engine, name)
-      return engine:getDevice(name)
-    end)
-  end,
-  script = function(exchange)
-    return handleItem(exchange, function(engine, name)
-      return engine:getScript(name)
-    end)
-  end,
-  reloadPlugins = function(exchange)
-    exchange.attributes.engine:reloadPlugins()
-    return 'Done'
-  end,
-  deploy = function(exchange)
-    if not httpHandler.methodAllowed(exchange, 'POST') then
-      return false
-    end
+local REST_ENGINE_HANDLERS = {
+  addDiscoveredThing = function(exchange)
     local engine = exchange:getAttribute('engine')
     local path = exchange:getAttribute('path')
-    local deployFile = File:new(engine.tmpDir, path)
-    local deployDir = File:new(engine.tmpDir, 'deploy')
-    local backupDir = File:new(engine.tmpDir, 'backup')
-    local lhaDir = engine.dir:getParentFile()
-    local topDir = lhaDir:getParentFile()
-    if not cleanDirectory(deployDir) then
-      return 'Ooops'
-    end
-    if not deployFile:isFile() or not ZipFile.unzipTo(deployFile, deployDir) then
-      return 'Deploy file invalid or not found'
-    end
-    if not cleanDirectory(backupDir) then
-      return 'Ooops'
-    end
-    for _, file in ipairs(deployDir:listFiles()) do
-      local name = file:getName()
-      local bFile = File:new(backupDir, name)
-      local dFile = File:new(topDir, name)
-      if dFile:exists() then
-        if not dFile:renameTo(bFile) then
-          return 'Ooops'
-        end
-      end
-      if not file:renameTo(dFile) then
-        return 'Ooops'
-      end
-    end
-    return 'Done'
+    local extensionId, discoveryKey
+    extensionId, path = httpHandler.shiftPath(path)
+    discoveryKey, path = httpHandler.shiftPath(path)
+    engine:addDiscoveredThing(extensionId, discoveryKey)
   end,
-  restart = function(exchange)
-    local engine = exchange:getAttribute('engine')
-    event:setTimeout(function()
-      engine.restart = true
-      engine:stop()
-    end, 100)
-    return 'See you later'
-  end,
-  configuration = {
-    save = function(exchange)
-      local engine = exchange:getAttribute('engine')
-      engine.configHistory:saveJson()
-      return 'Done'
-    end
-  },
-  stop = function(exchange)
-    event:setTimeout(function()
-      exchange.attributes.engine:stop()
-    end, 100)
-    return 'Bye'
-  end,
-  gc = function(exchange)
+  addDiscoveredThings = function(exchange)
+    -- curl -X POST --data-binary "@work\tmp\discoveredThings2.json" http://localhost:8080/engine/addDiscoveredThings
     if not httpHandler.methodAllowed(exchange, 'POST') then
       return false
     end
-    runtime.gc()
-    return 'Done'
+    local engine = exchange:getAttribute('engine')
+    local request = exchange:getRequest()
+    if request:getBody() then
+      local discoveredThings = json.decode(request:getBody())
+      for _, discoveredThing in ipairs(discoveredThings) do
+        if discoveredThing.extensionId and discoveredThing.discoveryKey then
+          engine:addDiscoveredThing(discoveredThing.extensionId, discoveredThing.discoveryKey)
+        end
+      end
+    end
   end,
-  info = function()
-    return {
-      clock = os.clock(),
-      memory = math.floor(collectgarbage('count') * 1024),
-      time = Date.now() // 1000
-    }
-  end
+  listExtensions = function(exchange)
+    local engine = exchange:getAttribute('engine')
+    local list = {}
+    for _, extension in ipairs(engine.extensions) do
+      if extension:isLoaded() then
+        table.insert(list, extension:toJSON())
+      end
+    end
+    return list
+  end,
+  listThings = function(exchange)
+    local engine = exchange:getAttribute('engine')
+    local list = {}
+    for thingId, thing in pairs(engine.things) do
+      table.insert(list, {
+        archiveData = thing:getArchiveData(),
+        title = thing:getTitle(),
+        id = thingId
+      })
+    end
+    return list
+  end,
+  discoveredThings = function(exchange)
+    -- curl http://localhost:8080/engine/discoveredThings
+    local engine = exchange:getAttribute('engine')
+    local descriptions = {}
+    for _, extension in ipairs(engine.extensions) do
+      if extension:isLoaded() then
+        local discoveredThings = extension:getDiscoveredThings()
+        for discoveryKey, thing in pairs(discoveredThings) do
+          local description = thing:asThingDescription()
+          description.discoveryKey = discoveryKey
+          description.extensionId = extension:getId()
+          table.insert(descriptions, description)
+        end
+      end
+    end
+    return descriptions
+  end,
+  admin = {
+    configuration = {
+      save = function(exchange)
+        -- curl http://localhost:8080/engine/admin/configuration/save
+        local engine = exchange:getAttribute('engine')
+        engine.configHistory:saveJson()
+        return 'Done'
+      end
+    },
+    stop = function(exchange)
+      -- curl http://localhost:8080/engine/admin/configuration/stop
+      event:setTimeout(function()
+        exchange.attributes.engine:stop()
+      end, 100)
+      return 'Bye'
+    end,
+    gc = function(exchange)
+      if not httpHandler.methodAllowed(exchange, 'POST') then
+        return false
+      end
+      runtime.gc()
+      return 'Done'
+    end,
+    info = function()
+      return {
+        clock = os.clock(),
+        memory = math.floor(collectgarbage('count') * 1024),
+        time = Date.now() // 1000
+      }
+    end
+  }
 }
 
 --- An Engine class.
@@ -335,14 +335,22 @@ return class.create(function(engine)
   --- Creates an Engine.
   -- @function Engine:new
   -- @param dir the engine base directory
-  -- @param workDir the engine working directory
-  function engine:initialize(dir, workDir, options)
+  -- @param rootDir the root directory, used to resolve relative paths
+  function engine:initialize(dir, rootDir, options)
     self.dir = dir
-    self.workDir = workDir
-    self.options = options
-    self.plugins = {}
-    self.scripts = {}
+    self.rootDir = rootDir
+    self.options = options or {}
+    self.things = {}
+    self.extensions = {}
+    self.idGenerator = IdGenerator:new()
     -- setup
+    self.assetsDir = self:getAbsoluteFile(self.options.assets or 'assets')
+    logger:debug('assetsDir is '..self.assetsDir:getPath())
+
+    local workDir = self:getAbsoluteFile(self.options.work or 'work')
+    checkDirectoryOrExit(workDir)
+    logger:debug('workDir is '..workDir:getPath())
+
     local configurationDir = File:new(workDir, 'configuration')
     logger:debug('configurationDir is '..configurationDir:getPath())
     createDirectoryOrExit(configurationDir)
@@ -353,14 +361,15 @@ return class.create(function(engine)
     createDirectoryOrExit(dataDir)
     self.dataHistory = HistoricalTable:new(dataDir, 'data')
 
-    self.pluginsDir = File:new(workDir, 'plugin')
-    logger:debug('pluginsDir is '..self.pluginsDir:getPath())
-    createDirectoryOrExit(self.pluginsDir)
+    self.extensionsDir = File:new(workDir, 'extensions')
+    logger:debug('extensionsDir is '..self.extensionsDir:getPath())
+    createDirectoryOrExit(self.extensionsDir)
 
-    self.lhaPluginsDir = nil
+    self.lhaExtensionsDir = nil
     local lhaDir = dir:getParentFile()
     if lhaDir and lhaDir:getPath() ~= workDir:getPath() then
-      self.lhaPluginsDir = File:new(lhaDir, 'plugin')
+      self.lhaExtensionsDir = File:new(lhaDir, 'extensions')
+      logger:debug('lhaExtensionsDir is '..self.lhaExtensionsDir:getPath())
     end
 
     self.scriptsDir = File:new(workDir, 'scripts')
@@ -372,13 +381,28 @@ return class.create(function(engine)
     createDirectoryOrExit(self.tmpDir)
   end
 
+  function engine:getAssetsDir()
+    return self.assetsDir
+  end
+
+  function engine:generateId()
+    return self.idGenerator:generate()
+  end
+
+  function engine:getAbsoluteFile(path)
+    local file = File:new(path)
+    if file:isAbsolute() then
+      return file
+    end
+    return File:new(self.rootDir, path)
+  end
+  
   function engine:load()
     self.configHistory:loadLatest()
     self.dataHistory:loadLatest()
     self.root = {
       configuration = self.configHistory:getLiveTable(),
-      data = tables.deepCopy(self.dataHistory:getLiveTable()),
-      historicalData = self.dataHistory:getLiveTable()
+      data = self.dataHistory:getLiveTable()
     }
     --[[
       Default schedules are:
@@ -392,76 +416,23 @@ return class.create(function(engine)
         configuration = '0 0 * * *',
         data = '5-55/15 * * * *',
         poll = '*/15 * * * *'
-      }
+      },
+      extensions = {},
+      things = {}
     }, true)
-  end
-
-  function engine:publishRootChange(source, path, value, previousValue)
-    -- tables.mergeValuesByPath
-    if type(previousValue) == 'table' then
-      local previousValuesByPath = tables.mapValuesByPath(previousValue, path)
-      for p, v in pairs(previousValuesByPath) do
-        self:publishItemsEvent(source, 'change', p, nil, v)
-      end
-    end
-    if type(value) == 'table' then
-      local valuesByPath = tables.mapValuesByPath(value, path)
-      for p, v in pairs(valuesByPath) do
-        self:publishItemsEvent(source, 'change', p, v, nil)
-      end
-    else
-      self:publishItemsEvent(source, 'change', path, value, previousValue)
-    end
-  end
-
-  function engine:setRootValue(source, path, value, publish)
-    --logger:info('engine:setRootValue('..path..', '..tostring(value)..')')
-    local previousValue = tables.setPath(self.root, path, value)
-    if publish and previousValue ~= value then
-      logger:info('engine:setRootValue() change('..path..', '..tostring(value)..', '..tostring(previousValue)..')')
-      self:publishRootChange(source, path, value, previousValue)
-    end
-  end
-
-  function engine:setRootValues(source, path, value, publish)
-    if type(value) == 'table' then
-      local valuesByPath = tables.mapValuesByPath(value, path)
-      for p, v in pairs(valuesByPath) do
-        self:setRootValue(source, p, v, publish)
-      end
-    else
-      self:setRootValue(source, path, value, publish)
-    end
-  end
-
-  function engine:setConfigurationValue(source, path, value)
-    self:setRootValue(source, 'configuration/'..path, value, true)
-  end
-
-  function engine:setConfigurationValues(source, path, value)
-    self:setRootValues(source, 'configuration/'..path, value, true)
-  end
-
-  function engine:setDataValue(source, path, value, archive)
-    self:setRootValue(source, 'data/'..path, value, true)
-    if archive then
-      self:setRootValue(source, 'historicalData/'..path, value, false)
-    end
-  end
-
-  function engine:setDataValues(source, path, value, archive)
-    self:setRootValues(source, 'data/'..path, value, true)
-    if archive then
-      self:setRootValues(source, 'historicalData/'..path, value, false)
+    -- save configuration if missing
+    if not self.configHistory:hasJsonFile() then
+      logger:info('Saving configuration')
+      self.configHistory:saveJson()
     end
   end
 
   function engine:createScheduler()
     local engine = self
     local scheduler = Scheduler:new()
-    -- poll devices schedule
+    -- poll things schedule
     scheduler:schedule(engine.root.configuration.schedule.poll, function(t)
-      logger:info('Polling devices')
+      logger:info('Polling things')
       -- TODO Clean data
       engine:publishEvent('poll')
     end)
@@ -490,17 +461,17 @@ return class.create(function(engine)
   end
 
   function engine:startHTTPServer()
-    local engine = self
     local httpServer = http.Server:new()
     httpServer:bind(self.options.address or '::', self.options.port or 8080):next(function()
       logger:info('Server bound to "'..tostring(self.options.address)..'" on port '..tostring(self.options.port))
     end, function(err) -- could failed if address is in use or hostname cannot be resolved
       logger:warn('Cannot bind HTTP server to "'..tostring(self.options.address)..'" on port '..tostring(self.options.port)..' due to '..tostring(err))
+      runtime.exit(98)
     end)
     -- optional secure server
     if type(self.options.secure) == 'table' then
-      local certFile = File:new(self.workDir, certificate or 'cert.pem')
-      local pkeyFile = File:new(self.workDir, self.options.secure.key or 'pkey.pem')
+      local certFile = self:getAbsoluteFile(certificate or 'cert.pem')
+      local pkeyFile = self:getAbsoluteFile(self.options.secure.key or 'pkey.pem')
       if not certFile:exists() or not pkeyFile:exists() then
         writeCertificateAndPrivateKey(certFile, pkeyFile, self.options.secure.commonName or self.options.hostname)
         logger:info('Generate certificate '..certFile:getPath()..' and associated private key '..pkeyFile:getPath())
@@ -512,7 +483,7 @@ return class.create(function(engine)
       if httpSecureServer then
         httpSecureServer:bind(self.options.address or '::', self.options.secure.port or 8443):next(function()
           logger:info('Server secure bound to "'..tostring(self.options.address)..'" on port '..tostring(self.options.secure.port))
-        end, function(err) -- could failed if address is in use or hostname cannot be resolved
+        end, function(err) -- could fail if address is in use or hostname cannot be resolved
           logger:warn('Cannot bind HTTP secure server to "'..tostring(self.options.address)..'" on port '..tostring(self.options.secure.port)..' due to '..tostring(err))
         end)
         -- share contexts
@@ -531,11 +502,17 @@ return class.create(function(engine)
       end
     end
     -- register rest engine handler
-    httpServer:createContext('/engine/admin/(.*)', httpHandler.rest, {
+    httpServer:createContext('/engine/(.*)', httpHandler.rest, {
       attributes = {
         engine = self
       },
-      handlers = REST_ADMIN_HANDLERS
+      handlers = REST_ENGINE_HANDLERS
+    })
+    httpServer:createContext('/things/?(.*)', httpHandler.rest, {
+      attributes = {
+        engine = self
+      },
+      handlers = REST_THINGS
     })
     httpServer:createContext('/engine/configuration/(.*)', tableHandler, {
       path = 'configuration/',
@@ -545,14 +522,11 @@ return class.create(function(engine)
     })
     httpServer:createContext('/engine/data/(.*)', tableHandler, {
       path = 'data/',
-      editable = true,
+      editable = false,
       engine = self,
       publish = true
     })
     httpServer:createContext('/engine/historicalData/(.*)', historicalDataHandler, {engine = self})
-    -- register rest engine configuration handler
-    -- register files plugins handler
-    --httpServer:createContext('/engine/plugins/(.*)', httpHandler.files, {rootFile = self.pluginsDir})
     httpServer:createContext('/engine/scripts/(.*)', httpHandler.files, {rootFile = self.scriptsDir})
     httpServer:createContext('/engine/tmp/(.*)', httpHandler.files, {rootFile = self.tmpDir})
     self.server = httpServer
@@ -587,116 +561,179 @@ return class.create(function(engine)
     end
   end
 
-  function engine:publishPluginsEvent(...)
-    for _, plugin in ipairs(self.plugins) do
-      plugin:publishItemEvent(...)
-      --plugin:publishDevicesEvent(...)
+  function engine:publishRootChange(path, value, previousValue)
+    -- tables.mergeValuesByPath
+    if type(previousValue) == 'table' then
+      local previousValuesByPath = tables.mapValuesByPath(previousValue, path)
+      for p, v in pairs(previousValuesByPath) do
+        self:publishEvent('change', p, nil, v)
+      end
+    end
+    if type(value) == 'table' then
+      local valuesByPath = tables.mapValuesByPath(value, path)
+      for p, v in pairs(valuesByPath) do
+        self:publishEvent('change', p, v, nil)
+      end
+    else
+      self:publishEvent('change', path, value, previousValue)
     end
   end
 
-  function engine:publishScriptsEvent(...)
-    for _, script in ipairs(self.scripts) do
-      script:publishItemEvent(...)
+  function engine:setRootValue(path, value, publish)
+    --logger:info('engine:setRootValue('..path..', '..tostring(value)..')')
+    local previousValue = tables.setPath(self.root, path, value)
+    if publish and previousValue ~= value then
+      logger:info('engine:setRootValue() change('..path..', '..tostring(value)..', '..tostring(previousValue)..')')
+      self:publishRootChange(path, value, previousValue)
     end
   end
 
-  function engine:publishItemsEvent(...)
-    self:publishPluginsEvent(...)
-    self:publishScriptsEvent(...)
+  function engine:setRootValues(path, value, publish)
+    if type(value) == 'table' then
+      local valuesByPath = tables.mapValuesByPath(value, path)
+      for p, v in pairs(valuesByPath) do
+        self:setRootValue(p, v, publish)
+      end
+    else
+      self:setRootValue(path, value, publish)
+    end
   end
 
   function engine:publishEvent(...)
-    self:publishPluginsEvent(self, ...)
-    self:publishScriptsEvent(self, ...)
+    local name = ...
+    logger:fine('Publishing Event '..tostring(name))
+    for _, extension in ipairs(self.extensions) do
+      if extension:isActive() then
+        extension:publishEvent(...)
+      end
+    end
   end
 
-  function engine:getPlugin(id)
-    return getItemById(self.plugins, id)
+  function engine:addExtension(extension)
+    table.insert(self.extensions, extension)
+    return extension
   end
 
-  function engine:getScript(id)
-    return getItemById(self.scripts, id)
+  function engine:onExtension(id, fn)
+    local extension = self:getExtensionById(extensionId)
+    if extension then
+      fn(extension)
+      return true
+    end
+    return false
   end
 
-  function engine:getDevice(id)
-    for _, plugin in ipairs(self.plugins) do
-      for _, item in ipairs(plugin:getDevices()) do
-        if item.id == id then
-          return item
-        end
+  function engine:getExtensionById(id)
+    for _, extension in ipairs(self.extensions) do
+      if extension:getId() == id then
+        return extension
       end
     end
     return nil
   end
 
-  function engine:loadPlugin(pluginDir)
-    local plugin = Plugin.read(self, pluginDir)
-    if plugin then
-      if self:getPlugin(plugin:getId()) then
-        logger:info('The plugin '..plugin:getId()..' already exists')
+  function engine:getExtensions()
+    local list = {}
+    for _, extension in ipairs(self.extensions) do
+      if extension:isLoaded() then
+        table.insert(list, extension)
+      end
+    end
+    return list
+  end
+
+  function engine:loadExtensionFromDirectory(dir, type)
+    logger:info('Loading extension from directory "'..dir:getPath()..'"')
+    local extension = Extension.read(self, dir, type)
+    if extension then
+      if self:getExtensionById(extension:getId()) then
+        logger:info('The extension '..extension:getId()..' already exists')
         return nil
       end
-      plugin:loadItem()
-      table.insert(self.plugins, plugin)
-      logger:info('Plugin '..plugin:getId()..' loaded')
-      return plugin
-    end
-  end
-
-  function engine:loadPlugins(pluginsDir)
-    if pluginsDir then
-      for _, pluginDir in ipairs(pluginsDir:listFiles()) do
-        if pluginDir:isDirectory() then
-          self:loadPlugin(pluginDir)
-        end
+      if extension:loadExtension() then
+        self:addExtension(extension)
+        logger:info('Extension '..extension:getId()..' loaded')
+      else
+        logger:info('The extension '..dir:getPath()..' cannot be loaded')
       end
     else
-      self.plugins = {}
-      if self.lhaPluginsDir:isDirectory() then
-        self:loadPlugins(self.lhaPluginsDir)
+      logger:info('The extension '..dir:getPath()..' is ignored')
+    end
+  end
+
+  function engine:loadExtensionsFromDirectory(dir, type)
+    logger:info('Loading extensions from directory "'..dir:getPath()..'"')
+    for _, extensionDir in ipairs(dir:listFiles()) do
+      if extensionDir:isDirectory() then
+        self:loadExtensionFromDirectory(extensionDir, type)
       end
-      self:loadPlugins(self.pluginsDir)
     end
   end
 
-  function engine:reloadPlugins()
-    logger:info('engine:reloadPlugins()')
-    self:publishPluginsEvent(self, 'shutdown')
-    for _, plugin in ipairs(self.plugins) do
-      plugin:cleanItem()
+  function engine:loadExtensions()
+    self.extensions = {}
+    if self.lhaExtensionsDir:isDirectory() then
+      self:loadExtensionsFromDirectory(self.lhaExtensionsDir, 'core')
     end
-    self:loadPlugins()
-    self:publishPluginsEvent(self, 'startup')
+    if self.extensionsDir:isDirectory() then
+      self:loadExtensionsFromDirectory(self.extensionsDir, 'extension')
+    end
+    if self.scriptsDir:isDirectory() then
+      self:loadExtensionsFromDirectory(self.scriptsDir, 'script')
+    end
   end
 
-  function engine:loadScript(id)
-    local script = Script:new(self, self.scriptsDir, id)
-    script:loadItem()
-    table.insert(self.scripts, script)
-    logger:info('Script '..script:getId()..' loaded')
-    return script
+  -- Adds a thing to this engine.
+  function engine:addDiscoveredThing(extensionId, discoveryKey)
+    logger:info('addDiscoveredThing("'..tostring(extensionId)..'", "'..tostring(discoveryKey)..'")')
+    local extension = self:getExtensionById(extensionId)
+    local thing = extension and extension:getDiscoveredThingByKey(discoveryKey)
+    if thing then
+      local thingId = self:generateId()
+      local thingConfiguration = {
+        extensionId = extensionId,
+        discoveryKey = discoveryKey,
+        description = thing:asThingDescription(),
+        archiveData = false
+      }
+      self.root.configuration.things[thingId] = thingConfiguration
+      self:loadThing(thingId, thingConfiguration)
+      self:publishEvent('things')
+    end
   end
 
-  function engine:loadScripts()
-    self.scripts = {}
-    for _, file in ipairs(self.scriptsDir:listFiles()) do
-      if file:isFile() then
-        local id, ext = string.match(file:getName(), '^(.*)%.([^%.]+)$')
-        if id and ext == 'lua' then
-          self:loadScript(id)
+  function engine:loadThing(thingId, thingConfiguration)
+    local thing = EngineThing:new(self, thingId, thingConfiguration.description)
+    self.things[thingId] = thing
+  end
+
+  function engine:loadThings()
+    -- Load the things available in the configuration
+    self.things = {}
+    for thingId, thingConfiguration in pairs(self.root.configuration.things) do
+      self:loadThing(thingId, thingConfiguration)
+    end
+  end
+
+  function engine:getThingsByExtensionId(extensionId)
+    local things = {}
+    for thingId, thingConfiguration in pairs(self.root.configuration.things) do
+      if thingConfiguration.extensionId == extensionId then
+        local thing = self.things[thingId]
+        if thing then
+          things[thingConfiguration.discoveryKey] = thing
         end
       end
     end
+    return things
   end
 
-  function engine:reloadScripts()
-    logger:info('engine:reloadScripts()')
-    self:publishScriptsEvent(self, 'shutdown')
-    for _, script in ipairs(self.scripts) do
-      script:cleanItem()
+  function engine:getThingByDiscoveryKey(extensionId, discoveryKey)
+    for thingId, thingConfiguration in pairs(self.root.configuration.things) do
+      if thingConfiguration.extensionId == extensionId and thingConfiguration.discoveryKey == discoveryKey then
+        return self.things[thingId], thingId
+      end
     end
-    self:loadScripts()
-    self:publishScriptsEvent(self, 'startup')
   end
 
   function engine:start()
@@ -704,9 +741,10 @@ return class.create(function(engine)
     self:createScheduler()
     self:startHTTPServer()
     self:startHeartbeat()
-    self:loadPlugins()
-    self:loadScripts()
+    self:loadExtensions()
+    self:loadThings()
     self:publishEvent('startup')
+    self:publishEvent('things')
   end
 
   function engine:stop()
@@ -716,10 +754,6 @@ return class.create(function(engine)
     -- save configuration if necessary
     self.configHistory:save(false, true)
     event:stop()
-    -- event:setTimeout(function()
-    --   logger:info('exit')
-    --   runtime.exit(0)
-    -- end, 5000)
   end
 
 end)

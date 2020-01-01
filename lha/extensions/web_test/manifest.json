@@ -1,0 +1,6 @@
+{
+  "name": "Web example",
+  "description": "Expose web example add-on",
+  "version": "1.0",
+  "script": "web_example.lua"
+}

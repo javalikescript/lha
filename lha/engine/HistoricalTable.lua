@@ -196,7 +196,9 @@ local AnyValueAggregator = class.create(function(anyValueAggregator)
 end)
 
 
-return class.create(function(historicalTable)
+return class.create(function(historicalTable, _, HistoricalTable)
+
+  HistoricalTable.DEFAULT_FILE_MINUTES = 10080 -- one week
 
   function historicalTable:initialize(dir, name, fileMin, t)
     self.dir = dir
@@ -214,11 +216,16 @@ return class.create(function(historicalTable)
   end
 
   function historicalTable:setFileMinutes(fileMin)
-    self.fileMin = fileMin or 10080 -- one week
+    self.fileMin = fileMin or HistoricalTable.DEFAULT_FILE_MINUTES
   end
 
   function historicalTable:getLiveTable()
     return self.liveTable
+  end
+
+  function historicalTable:setLiveTable(t)
+    self.liveTable = t
+    return self
   end
 
   function historicalTable:getJsonFile()
@@ -300,7 +307,7 @@ return class.create(function(historicalTable)
         end
       end
       if fn and t and time >= fromTime then
-        fn(t, time)
+        fn(t, time, isFull)
       end
     end
     fd:closeSync()
@@ -453,6 +460,10 @@ return class.create(function(historicalTable)
       return self.file, true
     end
     return self.file, false
+  end
+
+  function historicalTable:hasJsonFile()
+    return self:getJsonFile():isFile()
   end
 
   function historicalTable:saveJson()

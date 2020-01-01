@@ -1,0 +1,6 @@
+{
+  "name": "SIGAR",
+  "description": "System Information Gatherer And Reporter",
+  "version": "1.0",
+  "script": "sigar.lua"
+}
