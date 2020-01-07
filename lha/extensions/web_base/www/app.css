@@ -96,8 +96,14 @@ section.hidden {
   display: none;
 }
 section > header {
+  display: flex;
+  justify-content: space-between;
   height: 5rem;
   width: 100%;
+  overflow: hidden;
+}
+section > header > div {
+  overflow: hidden;
 }
 .theme_ms section > header,
 .theme_ms section > header button {
@@ -112,7 +118,7 @@ section > header {
 section > header button {
   line-height: 5rem;
   height: 5rem;
-  width: 4rem;
+  min-width: 4rem;
   vertical-align: middle;
 }
 section > article {
@@ -131,10 +137,6 @@ section > article dl {
   line-height: 2.0rem;
   padding: 0.3rem;
 }
-section > article > table {
-  padding: 0.1rem;
-  margin: 0 2rem;
-}
 section > article > select,
 section > article > input {
   padding: 0.1rem;
@@ -152,7 +154,6 @@ section > article > p {
   padding: 0.5rem;
 }
 section > article > select,
-section > article > table,
 section > article > input[type="text"],
 section > article > input[type="password"] {
   width: calc(100% - 4rem);
@@ -179,30 +180,13 @@ section > article > h1 {
   height: 5rem;
   vertical-align: left;
 }
-span.toolbar {
-  float: right;
-}
-table {
-  border-collapse: collapse;
-}
-tbody tr > td {
-  border: 1px solid #aaaaaa;
-}
-tbody tr:nth-child(even) {
-  background-color: #eeeeee;
-}
-tbody tr > td {
-  padding: 0.2em 0.4em;
-}
 header button, li button {
   border: none;
   background: none;
   position: relative;
   overflow: hidden;
-  display: block;
   padding: 0 1rem;
   margin: 0;
-  float: left;
 }
 li button {
   color: #000;
@@ -235,22 +219,6 @@ li {
   font-weight: normal;
   line-height: 2.5rem;
   height: 4rem;
-}
-.tree-icon {
-  padding-right: 1rem;
-}
-.tree-value {
-  padding-left: 1rem;
-}
-.tree-value[contenteditable="true"]:hover {
-  border-right: 4px solid blue;
-  background-color: lightgrey;
-}
-li.tree {
-  font-size: 1.5rem;
-  font-weight: normal;
-  line-height: 1.8rem;
-  height: auto;
 }
 .scrollable {
   overflow-x: hidden;
@@ -290,9 +258,42 @@ li.tree {
 .tile-width {
   width: 36.5rem;
 }
+.bar {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
 .tile > span, .tile > p {
   font-size: 1.9rem;
   font-weight: normal;
   line-height: 2.5rem;
+  padding: 0.5rem;
+}
+.card-container {
+  padding: 1rem;
+  width: 100%;
+}
+.card {
+  height: 12rem;
+  width: calc(100% - 4rem);
+  max-width: 60rem;
+  background: transparent;
+  border: 1px solid transparent;
+  box-shadow: 0 0 1px 1px rgba(0,0,0,0.1);
+  box-sizing: border-box;
+  margin: 0 auto 0.5rem;
+  padding: 0.5rem;
+  overflow: hidden;
+  cursor: pointer;
+}
+.card > .bar {
+  height: 3rem;
+}
+.card > span, .card > p, .card > .bar > p {
+  font-size: 1.5rem;
+  font-weight: normal;
+  line-height: 2rem;
+}
+.card > span, .card > p {
   padding: 0.5rem;
 }

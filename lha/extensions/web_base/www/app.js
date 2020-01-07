@@ -45,22 +45,41 @@ var setTheme = function(name) {
   body.setAttribute('class', 'theme_' + name);
 };
 
+var formatNavigationPath = function(pageId, path) {
+  return '/' + pageId + '/' + (path ? path : '');
+};
+
 var app = new Vue({
   el: '#app',
   data: {
     menu: '',
     settings: '',
     page: '',
+    path: '',
     pages: {},
     pageHistory: []
   },
   methods: {
-    toPage: function(id) {
+    toPage: function(id, path) {
       if (this.page === id) {
           return;
       }
-      this.pageHistory.push(id);
-      this.selectPage(id);
+      this.navigateTo(formatNavigationPath(id, path));
+    },
+    navigateTo: function(path, noHistory) {
+      if (this.path === path) {
+        return;
+      }
+      var matches = path.match(/^\/([^\/]+)\/(.*)$/);
+      if (matches) {
+        if (!noHistory) {
+          this.pageHistory.push(this.path);
+        }
+        this.path = path;
+        this.selectPage(matches[1], matches[2]);
+        return true;
+      }
+      return false;
     },
     getPage: function(id) {
       return this.pages[id];
@@ -86,16 +105,16 @@ var app = new Vue({
       }
       return this;
     },
-    selectPage: function(id) {
+    selectPage: function(id, path) {
       this.menu = '';
       this.settings = '';
       this.page = id;
-      this.$emit('page-selected', id);
+      this.$emit('page-selected', id, path);
     },
     back: function() {
-      this.pageHistory.pop();
-      if (this.pageHistory.length > 0) {
-        this.selectPage(this.pageHistory[this.pageHistory.length - 1]);
+      var path = this.pageHistory.pop();
+      if (path) {
+        this.navigateTo(path, true);
       } else {
         this.toPage('main');
       }
@@ -111,20 +130,20 @@ Vue.component('app-root-page', {
       return {app: app};
   },
   props: ['id', 'title'],
-  template: '<section v-bind:id="id" class="page" v-bind:class="{ hideLeft: app.page !== id, hideBottom: app.settings !== \'\' }">' +
-    '<header><button v-on:click="app.menu = \'menu\'"><i class="fa fa-bars"></i></button>' +
-    '<span class="toolbar"><button v-on:click="app.settings = \'settings\'"><i class="fa fa-cog"></i></button></span>' +
-    '<h1>{{ title }}</h1></header>' +
-    '<slot>Article</slot></section>'
+  template: '<section v-bind:id="id" class="page" v-bind:class="{ hideLeft: app.page !== id, hideBottom: app.settings !== \'\' }"><header>' +
+    '<button v-on:click="app.menu = \'menu\'"><i class="fa fa-bars"></i></button>' +
+    '<h1>{{ title }}</h1>' +
+    '<button v-on:click="app.settings = \'settings\'"><i class="fa fa-cog"></i></button>' +
+    '</header><slot>Article</slot></section>'
 });
 Vue.component('app-menu', {
   data: function() {
       return {app: app};
   },
   props: ['id', 'title'],
-  template: '<section v-bind:id="id" class="menu" v-bind:class="{ hideLeft: app.menu !== id }">' +
-    '<header><button v-on:click="app.menu = \'\'"><i class="fa fa-window-close"></i></button><h1>{{ title }}</h1></header>' +
-    '<slot>Article</slot></section>'
+  template: '<section v-bind:id="id" class="menu" v-bind:class="{ hideLeft: app.menu !== id }"><header>' +
+    '<button v-on:click="app.menu = \'\'"><i class="fa fa-window-close"></i></button>' +
+    '<h1>{{ title }}</h1><div /></header><slot>Article</slot></section>'
 });
 Vue.component('app-settings', {
   data: function() {
@@ -132,9 +151,9 @@ Vue.component('app-settings', {
   },
   props: ['id', 'title'],
   template: '<section v-bind:id="id" class="page" v-bind:class="{ hideTop: app.settings !== id }">' +
-    '<header><span class="toolbar"><button v-on:click="app.settings = \'\'"><i class="fa fa-window-close"></i></button></span>' +
-    '<h1>{{ title }}</h1></header>' +
-    '<slot>Article</slot></section>'
+    '<header><div /><h1>{{ title }}</h1>' +
+    '<button v-on:click="app.settings = \'\'"><i class="fa fa-window-close"></i></button>' +
+    '</header><slot>Article</slot></section>'
 });
 Vue.component('app-page', {
   data: function() {
@@ -142,90 +161,22 @@ Vue.component('app-page', {
   },
   props: ['id', 'title'],
   template: '<section v-bind:id="id" class="page" v-bind:class="{ hideRight: app.page !== id }">' +
-    '<header>' +
-    '<button v-on:click="app.menu = \'menu\'"><i class="fa fa-bars"></i></button>' +
+    '<header><div><button v-on:click="app.menu = \'menu\'"><i class="fa fa-bars"></i></button>' +
     '<button v-on:click="app.back()"><i class="fa fa-chevron-left"></i></button>' +
-    '<button v-on:click="app.toPage(\'main\')"><i class="fas fa-home"></i></button>' +
-    '<h1>{{ title }}</h1></header>' +
-    '<slot>Article</slot></section>',
+    '<button v-on:click="app.toPage(\'main\')"><i class="fas fa-home"></i></button></div>' +
+    '<h1>{{ title }}</h1><div><slot name="bar-right"></slot></div>' +
+    '</header><slot>Article</slot></section>',
   created: function() {
     //console.log('created() app-page, this.app', this);
     this.app.pages[this.id] = this;
     var page = this;
-    app.$on('page-selected', function(id) {
+    app.$on('page-selected', function(id, path) {
       if ((page.id === id) && (page.$parent) && (typeof page.$parent.onShow === 'function')) {
         //console.log('page-article, on page-selected', article);
-        page.$parent.onShow();
+        page.$parent.onShow(path);
       }
     })
   }
-});
-Vue.component('tree-item', {
-  props: ['model', 'tree'],
-  data: function() {
-    return {
-      open: true
-    };
-  },
-  //{{ model.value }}
-  template: '<li class="tree"><div @click="toggle"><i :class="iconClass"></i>' +
-    '{{ model.name }}<span v-if="showValue" v-bind:contenteditable="tree.editable" class="tree-value" @blur="updateValue" v-text="model.value"></span></div>' +
-    '<ul v-show="open" v-if="isFolder"><tree-item v-for="(model, index) in model.children" :key="index" :model="model" :tree="tree"></tree-item></ul></li>',
-  computed: {
-    isFolder: function() {
-      return this.model.children && this.model.children.length;
-    },
-    iconClass: function() {
-      var c = 'tree-icon '
-      if (this.model.children && this.model.children.length) {
-        c += this.open ? 'fa fa-caret-down' : 'fa fa-caret-right';
-      } else {
-        // thermometer-half
-        c += (typeof this.model.value === 'number') ? 'fas fa-chart-line' : 'far fa-square'
-      }
-      return c;
-    },
-    showValue: function() {
-      return (this.model.value !== undefined) && this.tree.showValue;
-    }
-  },
-  methods: {
-    updateValue: function(evt) {
-      var newValue;
-      switch(typeof this.model.value) {
-      case 'boolean':
-        newValue = evt.target.innerText.trim().toLowerCase();
-        if ((newValue !== 'true') && (newValue !== 'false')) {
-          return;
-        }
-        newValue = newValue === 'true';
-        break;
-      case 'number':
-        newValue = parseFloat(evt.target.innerText);
-        if (isNaN(newValue)) {
-          return;
-        }
-        break;
-      case 'string':
-      default:
-        newValue = evt.target.innerText;
-        break;
-      }
-      this.model.value = newValue;
-    },
-    toggle: function() {
-      if (this.isFolder) {
-        this.open = !this.open
-      } else {
-        //console.log('path: ' + this.model.path);
-        this.tree.$emit('tree-path-selected', this.model.path, this.model.value);
-      }
-    }
-  }
-});
-Vue.component('tree', {
-  props: ['model', 'showValue', 'editable'],
-  template: '<tree-item :model="model" :tree="this"></tree-item>'
 });
 Vue.component('page-article', {
   template: '<article class="content"><slot>Content</slot></article>'
@@ -238,20 +189,11 @@ var menu = new Vue({
   el: '#menu',
   data: {
     pages: [{
-      id: 'historicalData',
-      name: 'Historical Data'
-    }, {
-      id: 'liveData',
-      name: 'Data'
-    }, {
-      id: 'extensions',
-      name: 'Extensions'
-    }, {
       id: 'things',
       name: 'Things'
     }, {
-      id: 'config',
-      name: 'Configuration'
+      id: 'extensions',
+      name: 'Extensions'
     }]
   }
 });
@@ -417,127 +359,6 @@ var treeToJson = function(treeItem) {
   }
   return treeItem.value;
 };
-
-new Vue({
-  el: '#config',
-  data: {
-    root: {}
-  },
-  methods: {
-    onShow: function() {
-      var self = this;
-      fetch('/engine/configuration/').then(function(response) {
-        return response.json();
-      }).then(function(response) {
-        self.root = jsonToTree('configuration', response.value, '');
-      });
-    },
-    onSave: function() {
-      var obj = treeToJson(this.root);
-      console.log('saving:', obj);
-      fetch('/engine/configuration/', {
-        method: 'POST',
-        body: JSON.stringify({
-          value: obj
-        })
-      });
-    },
-    onTreePathSelected: function(path) {
-      console.log('selected path: ' + path);
-    }
-  }
-});
-
-new Vue({
-  el: '#itemConfig',
-  data: {
-    path: '',
-    root: {}
-  },
-  methods: {
-    onShow: function() {
-      var self = this;
-      fetch('/engine/configuration/' + this.path).then(function(response) {
-        return response.json();
-      }).then(function(response) {
-        self.root = jsonToTree(self.path, response.value, '');
-      });
-    },
-    setPath: function(path) {
-      //console.log('itemConfig path: ' + path);
-      this.path = path || '';
-    },
-    onSave: function() {
-      var obj = treeToJson(this.root);
-      console.log('saving:', obj);
-      fetch('/engine/configuration/' + this.path, {
-        method: 'POST',
-        body: JSON.stringify({
-          value: obj
-        })
-      });
-    }
-  }
-});
-
-new Vue({
-  el: '#liveData',
-  data: {
-    root: {}
-  },
-  methods: {
-    onShow: function() {
-      var self = this;
-      fetch('/engine/data/').then(function(response) {
-        return response.json();
-      }).then(function(response) {
-        self.root = jsonToTree('data', response.value, '');
-      });
-    },
-    onSave: function() {
-      var obj = treeToJson(this.root);
-      console.log('saving:', obj);
-      fetch('/engine/data/', {
-        method: 'POST',
-        body: JSON.stringify({
-          value: obj
-        })
-      });
-    }
-  }
-});
-
-new Vue({
-  el: '#itemData',
-  data: {
-    path: '',
-    root: {}
-  },
-  methods: {
-    onShow: function() {
-      var self = this;
-      fetch('/engine/data/' + this.path).then(function(response) {
-        return response.json();
-      }).then(function(response) {
-        self.root = jsonToTree('data', response.value, '');
-      });
-    },
-    setPath: function(path) {
-      //console.log('itemConfig path: ' + path);
-      this.path = path || '';
-    },
-    onSave: function() {
-      var obj = treeToJson(this.root);
-      console.log('saving:', obj);
-      fetch('/engine/data/' + this.path, {
-        method: 'POST',
-        body: JSON.stringify({
-          value: obj
-        })
-      });
-    }
-  }
-});
 
 var hsvToRgb = function(h, s, v) {
   var r, g, b;
@@ -711,43 +532,6 @@ var createChartDataSets = function(dataPointSet, datasets, prefix) {
 };
 
 new Vue({
-  el: '#historicalData',
-  data: {
-    toDays: 0,
-    root: {}
-  },
-  methods: {
-    onShow: function() {
-      //this.toDays = 0;
-      this.loadHistoricalData();
-    },
-    loadHistoricalData: function() {
-      var toDays = parseFloat(this.toDays);
-      var headers = {};
-      if (toDays > 0) {
-        var toDate = new Date(Date.now() - (toDays * SEC_IN_DAY * 1000));
-        headers = {
-          "X-TO-TIME": dateToSec(toDate)
-        };
-      }
-      var self = this;
-      fetch('/engine/historicalData/', {
-        method: 'GET',
-        headers: headers
-      }).then(function(response) {
-        return response.json();
-      }).then(function(response) {
-        //console.log('fetch()', response);
-        self.root = jsonToTree('historicalData', response.value, '');
-      });
-    },
-    onTreePathSelected: function(path, value) {
-      app.callPage('data-chart', 'loadHistoricalData', path);
-      app.toPage('data-chart');
-    }
-  }
-});
-new Vue({
   el: '#data-chart',
   data: {
     chartType: 'line',
@@ -817,6 +601,11 @@ new Vue({
         //console.log('fetch()', response);
         self.createChart(listDates(dataPointSet), createChartDataSets(dataPointSet));
       });
+    },
+    onShow: function(path) {
+      if (path) {
+        this.loadHistoricalData('/' + path);
+      }
     },
     cleanMultiHistoricalData: function() {
       this.paths = [];
@@ -934,26 +723,12 @@ new Vue({
   },
   methods: {
     openThing: function(thing) {
-      app.callPage('itemConfig', 'setPath', 'thing/' + thing.id);
-      app.toPage('itemConfig');
-    },
-    openThingData: function(thing) {
-      app.callPage('itemData', 'setPath', 'thing/' + thing.id);
-      app.toPage('itemData');
-    },
-    pollThing: function(thing) {
-      fetch('/engine/thing/' + thing.id + '/poll', {method: 'POST'}).then(function() {
-        toaster.toast('Polling triggered');
-      });
-    },
-    reloadThing: function(thing) {
-      fetch('/engine/thing/' + thing.id + '/reload', {method: 'POST'}).then(function() {
-        toaster.toast('Thing reloaded');
-      });
+      //app.callPage('thing', 'setThingId', thing.thingId);
+      app.toPage('thing', thing.thingId);
     },
     onShow: function() {
       var self = this;
-      fetch('/engine/listThings').then(function(response) {
+      fetch('/engine/things').then(function(response) {
         return response.json();
       }).then(function(things) {
         self.things = things;
@@ -964,7 +739,7 @@ new Vue({
       var config = {things: {}};
       for (var i = 0; i < this.things.length; i++) {
         var thing = this.things[i];
-        config.things[thing.id] = {
+        config.things[thing.thingId] = {
           archiveData: thing.archiveData
         };
       }
@@ -980,14 +755,90 @@ new Vue({
 });
 
 new Vue({
+  el: '#thing',
+  data: {
+    thingId: '',
+    thing: {}
+  },
+  methods: {
+    setThingId: function(thingId) {
+      this.thingId = thingId;
+    },
+    openHistoricalData: function(propertyName) {
+      //app.callPage('data-chart', 'loadHistoricalData', '/' + this.thingId + '/' + propertyName);
+      app.toPage('data-chart', this.thingId + '/' + propertyName);
+    },
+    disableThing: function() {
+      fetch('/engine/things/' + this.thingId, {method: 'DELETE'}).then(function() {
+        toaster.toast('Thing disabled');
+      });
+    },
+    onShow: function(thingId) {
+      var self = this;
+      if (thingId) {
+        this.thingId = thingId;
+      }
+      self.thing = {};
+      fetch('/things/' + this.thingId).then(function(response) {
+        return response.json();
+      }).then(function(thing) {
+        self.thing = thing;
+        //console.log('thing', self.thing);
+      });
+    }
+  }
+});
+
+new Vue({
+  el: '#addThings',
+  data: {
+    things: []
+  },
+  methods: {
+    onShow: function() {
+      this.things = [];
+      var self = this;
+      fetch('/engine/discoveredThings').then(function(response) {
+        return response.json();
+      }).then(function(things) {
+        for (var i = 0; i < things.length; i++) {
+          var thing = things[i];
+          thing.toAdd = false;
+          self.things.push(thing);
+        }
+        //console.log('things', self.things);
+      });
+    },
+    onSave: function() {
+      var thingsToAdd = [];
+      for (var i = 0; i < this.things.length; i++) {
+        var thing = this.things[i];
+        if (thing.toAdd) {
+          thingsToAdd.push(thing);
+        }
+      }
+      if (thingsToAdd.length > 0) {
+        fetch('/engine/things/', {
+          method: 'PUT',
+          body: JSON.stringify(thingsToAdd)
+        }).then(function() {
+          toaster.toast('Things added');
+        });
+      }
+    }
+  }
+});
+
+new Vue({
   el: '#extensions',
   data: {
     extensions: []
   },
   methods: {
-    openExtension: function(extension) {
-      app.callPage('itemConfig', 'setPath', 'extension/' + extension.id);
-      app.toPage('itemConfig');
+    pollExtension: function(extension) {
+      fetch('/engine/extensions/' + extension.id + '/poll', {method: 'POST'}).then(function() {
+        toaster.toast('extension polled');
+      });
     },
     reloadExtension: function(extension) {
       fetch('/engine/extensions/' + extension.id + '/reload', {method: 'POST'}).then(function() {
@@ -996,7 +847,25 @@ new Vue({
     },
     onShow: function() {
       var self = this;
-      fetch('/engine/listExtensions').then(function(response) {
+      fetch('/engine/extensions').then(function(response) {
+        return response.json();
+      }).then(function(extensions) {
+        self.extensions = extensions;
+        //console.log('extensions', self.extensions);
+      });
+    }
+  }
+});
+
+new Vue({
+  el: '#addExtensions',
+  data: {
+    extensions: []
+  },
+  methods: {
+    onShow: function() {
+      var self = this;
+      fetch('/engine/extensions').then(function(response) {
         return response.json();
       }).then(function(extensions) {
         self.extensions = extensions;
@@ -1032,15 +901,15 @@ new Vue({
  * Route application using location hash
  ************************************************************/
 var onHashChange = function() {
-  var matches = window.location.hash.match(/^#\/([^\/]+)\/.*$/);
+  var matches = window.location.hash.match(/^#(\/[^\/]+\/.*)$/);
   if (matches) {
-    app.toPage(matches[1]);
+    app.navigateTo(matches[1]);
   } else {
     app.toPage('main');
   }
 };
-app.$on('page-selected', function(id) {
-  window.location.replace(window.location.pathname + '#/' + id + '/');
+app.$on('page-selected', function(id, path) {
+  window.location.replace(window.location.pathname + '#' + formatNavigationPath(id, path));
 });
 window.addEventListener('hashchange', onHashChange);
 

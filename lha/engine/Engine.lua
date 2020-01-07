@@ -151,11 +151,12 @@ end
 
 local EngineThing = class.create(Thing, function(engineThing, super)
 
-  function engineThing:initialize(engine, thingId, td)
+  function engineThing:initialize(engine, extensionId, thingId, td)
     super.initialize(self, td.title, td.description, td['@type'], td['@context'])
     self:addProperties(td.properties)
     self:setHref('/things/'..thingId)
     self.engine = engine
+    self.extensionId = extensionId
     self.thingId = thingId
   end
 
@@ -172,6 +173,22 @@ local EngineThing = class.create(Thing, function(engineThing, super)
       self.engine:setRootValues('data/'..self.thingId..'/'..name, value, true)
     end
     return super.updatePropertyValue(self, name, value)
+	end
+
+  --[[
+  function engineThing:asThingDescription()
+    local description = super.asThingDescription(self)
+    description.archiveData = self:getArchiveData()
+    description.thingId = self.thingId
+    return description
+	end
+  ]]
+  function engineThing:asEngineThingDescription()
+    local description = self:asThingDescription()
+    description.archiveData = self:getArchiveData()
+    description.extensionId = self.extensionId
+    description.thingId = self.thingId
+    return description
 	end
 
 end)
@@ -231,32 +248,8 @@ local REST_THINGS = {
   end
 }
 
-local REST_ENGINE_HANDLERS = {
-  addDiscoveredThing = function(exchange)
-    local engine = exchange:getAttribute('engine')
-    local path = exchange:getAttribute('path')
-    local extensionId, discoveryKey
-    extensionId, path = httpHandler.shiftPath(path)
-    discoveryKey, path = httpHandler.shiftPath(path)
-    engine:addDiscoveredThing(extensionId, discoveryKey)
-  end,
-  addDiscoveredThings = function(exchange)
-    -- curl -X POST --data-binary "@work\tmp\discoveredThings2.json" http://localhost:8080/engine/addDiscoveredThings
-    if not httpHandler.methodAllowed(exchange, 'POST') then
-      return false
-    end
-    local engine = exchange:getAttribute('engine')
-    local request = exchange:getRequest()
-    if request:getBody() then
-      local discoveredThings = json.decode(request:getBody())
-      for _, discoveredThing in ipairs(discoveredThings) do
-        if discoveredThing.extensionId and discoveredThing.discoveryKey then
-          engine:addDiscoveredThing(discoveredThing.extensionId, discoveredThing.discoveryKey)
-        end
-      end
-    end
-  end,
-  listExtensions = function(exchange)
+local REST_EXTENSIONS = {
+  [''] = function(exchange)
     local engine = exchange:getAttribute('engine')
     local list = {}
     for _, extension in ipairs(engine.extensions) do
@@ -266,18 +259,56 @@ local REST_ENGINE_HANDLERS = {
     end
     return list
   end,
-  listThings = function(exchange)
-    local engine = exchange:getAttribute('engine')
-    local list = {}
-    for thingId, thing in pairs(engine.things) do
-      table.insert(list, {
-        archiveData = thing:getArchiveData(),
-        title = thing:getTitle(),
-        id = thingId
-      })
+  ['/any'] = {
+    poll = function(exchange)
+      if exchange.attributes.extension:isActive() then
+        exchange.attributes.extension:publishEvent('poll')
+      end
+    end,
+    reload = function(exchange)
+      exchange.attributes.extension:reloadExtension()
     end
-    return list
+  },
+  name = 'extension',
+  value = function(exchange, name)
+    local engine = exchange:getAttribute('engine')
+    return engine:getExtensionById(name)
+  end
+}
+
+local REST_ADMIN = {
+  configuration = {
+    save = function(exchange)
+      -- curl http://localhost:8080/engine/admin/configuration/save
+      local engine = exchange:getAttribute('engine')
+      engine.configHistory:saveJson()
+      return 'Done'
+    end
+  },
+  stop = function(exchange)
+    -- curl http://localhost:8080/engine/admin/configuration/stop
+    event:setTimeout(function()
+      exchange.attributes.engine:stop()
+    end, 100)
+    return 'Bye'
   end,
+  gc = function(exchange)
+    if not httpHandler.methodAllowed(exchange, 'POST') then
+      return false
+    end
+    runtime.gc()
+    return 'Done'
+  end,
+  info = function()
+    return {
+      clock = os.clock(),
+      memory = math.floor(collectgarbage('count') * 1024),
+      time = Date.now() // 1000
+    }
+  end
+}
+
+local REST_ENGINE_HANDLERS = {
   discoveredThings = function(exchange)
     -- curl http://localhost:8080/engine/discoveredThings
     local engine = exchange:getAttribute('engine')
@@ -295,37 +326,52 @@ local REST_ENGINE_HANDLERS = {
     end
     return descriptions
   end,
-  admin = {
-    configuration = {
-      save = function(exchange)
-        -- curl http://localhost:8080/engine/admin/configuration/save
+  extensions = REST_EXTENSIONS,
+  things = {
+    [''] = function(exchange)
+      local engine = exchange:getAttribute('engine')
+      local request = exchange:getRequest()
+      local method = string.upper(request:getMethod())
+      if method == http.CONST.METHOD_GET then
+        local list = {}
+        for thingId, thing in pairs(engine.things) do
+          table.insert(list, thing:asEngineThingDescription())
+        end
+        return list
+      elseif method == http.CONST.METHOD_PUT then
+        -- curl -X PUT --data-binary "@work\tmp\discoveredThings2.json" http://localhost:8080/engine/things
+        if request:getBody() then
+          local discoveredThings = json.decode(request:getBody())
+          for _, discoveredThing in ipairs(discoveredThings) do
+            if discoveredThing.extensionId and discoveredThing.discoveryKey then
+              engine:addDiscoveredThing(discoveredThing.extensionId, discoveredThing.discoveryKey)
+            end
+          end
+          engine:publishEvent('things')
+        end
+      end
+    end,
+    ['/any'] = {
+      [''] = function(exchange)
+        local thingId = exchange:getAttribute('thingId')
         local engine = exchange:getAttribute('engine')
-        engine.configHistory:saveJson()
-        return 'Done'
+        local thing = engine.things[thingId]
+        if not thing then
+          httpHandler.notFound(exchange)
+          return false
+        end
+        local request = exchange:getRequest()
+        local method = string.upper(request:getMethod())
+        if method == http.CONST.METHOD_GET then
+          return thing:asEngineThingDescription()
+        elseif method == http.CONST.METHOD_DELETE then
+          engine:disableThing(thingId)
+        end
       end
     },
-    stop = function(exchange)
-      -- curl http://localhost:8080/engine/admin/configuration/stop
-      event:setTimeout(function()
-        exchange.attributes.engine:stop()
-      end, 100)
-      return 'Bye'
-    end,
-    gc = function(exchange)
-      if not httpHandler.methodAllowed(exchange, 'POST') then
-        return false
-      end
-      runtime.gc()
-      return 'Done'
-    end,
-    info = function()
-      return {
-        clock = os.clock(),
-        memory = math.floor(collectgarbage('count') * 1024),
-        time = Date.now() // 1000
-      }
-    end
-  }
+    name = 'thingId'
+  },
+  admin = REST_ADMIN
 }
 
 --- An Engine class.
@@ -689,21 +735,40 @@ return class.create(function(engine)
     local extension = self:getExtensionById(extensionId)
     local thing = extension and extension:getDiscoveredThingByKey(discoveryKey)
     if thing then
-      local thingId = self:generateId()
-      local thingConfiguration = {
-        extensionId = extensionId,
-        discoveryKey = discoveryKey,
-        description = thing:asThingDescription(),
-        archiveData = false
-      }
+      local thingConfiguration, thingId = self:getThingByDiscoveryKey(extensionId, discoveryKey)
+      if thingConfiguration and thingId then
+        thingConfiguration.description = thing:asThingDescription()
+        if not thingConfiguration.active then
+          thingConfiguration.active = true
+          thingConfiguration.archiveData = false
+        end
+      else
+        thingId = self:generateId()
+        thingConfiguration = {
+          extensionId = extensionId,
+          discoveryKey = discoveryKey,
+          description = thing:asThingDescription(),
+          active = true,
+          archiveData = false
+        }
+      end
       self.root.configuration.things[thingId] = thingConfiguration
       self:loadThing(thingId, thingConfiguration)
-      self:publishEvent('things')
+      --self:publishEvent('things')
+    end
+  end
+
+  function engine:disableThing(thingId)
+    local thingConfiguration = self.root.configuration.things[thingId]
+    if thingConfiguration then
+      thingConfiguration.active = false
+      self.things[thingId] = nil
+      --self:publishEvent('things')
     end
   end
 
   function engine:loadThing(thingId, thingConfiguration)
-    local thing = EngineThing:new(self, thingId, thingConfiguration.description)
+    local thing = EngineThing:new(self, thingConfiguration.extensionId, thingId, thingConfiguration.description)
     self.things[thingId] = thing
   end
 
@@ -711,14 +776,16 @@ return class.create(function(engine)
     -- Load the things available in the configuration
     self.things = {}
     for thingId, thingConfiguration in pairs(self.root.configuration.things) do
-      self:loadThing(thingId, thingConfiguration)
+      if thingConfiguration.active then
+        self:loadThing(thingId, thingConfiguration)
+      end
     end
   end
 
   function engine:getThingsByExtensionId(extensionId)
     local things = {}
     for thingId, thingConfiguration in pairs(self.root.configuration.things) do
-      if thingConfiguration.extensionId == extensionId then
+      if thingConfiguration.active and thingConfiguration.extensionId == extensionId then
         local thing = self.things[thingId]
         if thing then
           things[thingConfiguration.discoveryKey] = thing

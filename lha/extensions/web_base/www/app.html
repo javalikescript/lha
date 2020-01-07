@@ -13,30 +13,6 @@
 <body class="theme_boot">
 <!-- Custom pages used by components -->
 <div id="custom-pages" class="pages">
-  <app-page id="historicalData" title="Historical Data">
-    <page-article>
-      <div style="text-align: center;">
-        <span>To:</span>
-        <select v-model="toDays">
-          <option value="0">Now</option>
-          <option value="0.125">3 hours ago</option>
-          <option value="0.25">6 hours ago</option>
-          <option value="0.5">12 hours ago</option>
-          <option value="1">1 day ago</option>
-          <option value="2">2 days ago</option>
-          <option value="7">1 week ago</option>
-          <option value="14">2 weeks ago</option>
-          <option value="21">3 weeks ago</option>
-          <option value="28">4 weeks ago</option>
-          <option value="60">2 months ago</option>
-          <option value="180">6 months ago</option>
-          <option value="365">1 year ago</option>
-        </select>
-        <button v-on:click="loadHistoricalData"><i class="fas fa-sync"></i>&nbsp;Refresh</button>
-      </div>
-      <tree :model="root" :show-value="true" v-on:tree-path-selected="onTreePathSelected"></tree>
-    </page-article>
-  </app-page>
   <app-page id="data-chart" title="Data Chart">
     <page-article>
       <div style="text-align: center;">
@@ -109,33 +85,6 @@
       </div>
     </page-article>
   </app-page>
-  <app-page id="config" title="Configuration">
-    <page-article>
-      <tree :model="root" :show-value="true" :editable="true" v-on:tree-path-selected="onTreePathSelected"></tree>
-      <button v-on:click="onShow"><i class="fas fa-sync"></i>&nbsp;Refresh</button>
-      <button v-on:click="onSave"><i class="far fa-save"></i>&nbsp;Save</button>
-    </page-article>
-  </app-page>
-  <app-page id="itemConfig" title="Configuration">
-    <page-article>
-      <tree :model="root" :show-value="true" :editable="true"></tree>
-      <button v-on:click="onShow"><i class="fas fa-sync"></i>&nbsp;Refresh</button>
-      <button v-on:click="onSave"><i class="far fa-save"></i>&nbsp;Save</button>
-    </page-article>
-  </app-page>
-  <app-page id="liveData" title="Data">
-    <page-article>
-      <tree :model="root" :show-value="true" :editable="true"></tree>
-      <button v-on:click="onShow"><i class="fas fa-sync"></i>&nbsp;Refresh</button>
-    </page-article>
-  </app-page>
-  <app-page id="itemData" title="Data">
-    <page-article>
-      <tree :model="root" :show-value="true" :editable="true"></tree>
-      <button v-on:click="onShow"><i class="fas fa-sync"></i>&nbsp;Refresh</button>
-      <button v-on:click="onSave"><i class="far fa-save"></i>&nbsp;Save</button>
-    </page-article>
-  </app-page>
   <app-settings id="settings" title="Settings">
     <article class="content">
       <p>Information:</p>
@@ -172,33 +121,102 @@
     </article>
   </app-page>
   <app-page id="things" title="Things">
-    <page-article>
-      <table>
-        <tr><th>Name</th><th>Data</th><th>Archive</th><th>Poll</th><th>Reload</th></tr>
-        <tr v-for="thing in things">
-          <td v-on:click="openThing(thing)">{{thing.title}}</td>
-          <td style="text-align: center; " v-on:click="openThingData(thing)"><i class="fas fa-database"></i></td>
-          <td style="text-align: center; "><input type="checkbox" v-model="thing.archiveData" /></td>
-          <td style="text-align: center; " v-on:click="pollThing(thing)"><i class="far fa-bell"></i></td>
-          <td style="text-align: center; " v-on:click="reloadThing(thing)"><i class="fas fa-redo"></i></td>
-        </tr>
-      </table>
+    <template slot="bar-right">
       <button v-on:click="onShow"><i class="fas fa-sync"></i>&nbsp;Refresh</button>
       <button v-on:click="onSave"><i class="far fa-save"></i>&nbsp;Save</button>
+      <button v-on:click="app.toPage('addThings')"><i class="fa fa-plus"></i></button>
+    </template>
+    <page-article>
+      <div class="card-container">
+        <div class="card" v-for="thing in things">
+          <div class="bar">
+            <p>{{ thing.title }}</p>
+            <div>
+              <!-- fas fa-database -->
+              <button v-on:click="openThing(thing)"><i class="fas fa-info"></i>&nbsp;Details</button>
+            </div>
+          </div>
+          <p>{{ thing.description }}</p>
+          <p><input type="checkbox" v-model="thing.archiveData" /> Archive Data</p>
+        </div>
+      </div>
+    </page-article>
+  </app-page>
+  <app-page id="thing" title="Thing">
+    <template slot="bar-right">
+      <button v-on:click="onShow"><i class="fas fa-sync"></i>&nbsp;Refresh</button>
+      <button v-on:click="disableThing()"><i class="fa fa-trash"></i>&nbsp;Disable</button>
+    </template>
+    <page-article>
+      <div class="card-container">
+        <div class="card">
+          <p>{{ thing.title }}</p>
+          <p>{{ thing.description }}</p>
+        </div>
+        <div class="card" v-for="(property, name) in thing.properties">
+          <div class="bar">
+            <p>{{ property.title }}</p>
+            <div>
+              <button v-on:click="openHistoricalData(name)"><i class="fas fa-chart-line"></i>&nbsp;History</button>
+            </div>
+          </div>
+          <p>{{ property.description }}</p>
+        </div>
+      </div>
+    </page-article>
+  </app-page>
+  <app-page id="addThings" title="Add Things">
+    <template slot="bar-right">
+      <button v-on:click="onSave"><i class="far fa-save"></i>&nbsp;Save</button>
+    </template>
+    <page-article>
+      <div class="card-container">
+        <div class="card" v-for="thing in things" v-if="! thing.toAdd">
+          <div class="bar">
+            <p>{{ thing.title }}</p>
+            <button v-on:click="thing.toAdd = true"><i class="fa fa-plus"></i>&nbsp;Add</button>
+          </div>
+        </div>
+      </div>
     </page-article>
   </app-page>
   <app-page id="extensions" title="Extensions">
-    <page-article>
-      <table>
-        <tr><th>Name</th><th>Active</th><th>Reload</th></tr>
-        <tr v-for="extension in extensions">
-          <td v-on:click="openExtension(extension)">{{extension.id}}</td>
-          <td style="text-align: center; "><input type="checkbox" v-model="extension.active" /></td>
-          <td style="text-align: center; " v-on:click="reloadExtension(extension)"><i class="fas fa-redo"></i></td>
-        </tr>
-      </table>
+    <template slot="bar-right">
       <button v-on:click="onShow"><i class="fas fa-sync"></i>&nbsp;Refresh</button>
+      <button v-on:click="app.toPage('addExtensions')"><i class="fa fa-plus"></i></button>
+    </template>
+    <page-article>
+      <div class="card-container">
+        <div class="card" v-for="extension in extensions" v-if="extension.active">
+          <div class="bar">
+            <p>{{ extension.name }}</p>
+            <div>
+              <button v-on:click="extension.active = false"><i class="fa fa-minus"></i>&nbsp;Disable</button>
+              <button v-on:click="reloadExtension(extension)"><i class="fas fa-redo"></i>&nbsp;Reload</button>
+              <button v-on:click="pollExtension(extension)"><i class="far fa-bell"></i>&nbsp;Poll</button>
+            </div>
+          </div>
+          <p>{{ extension.description }}</p>
+        </div>
+      </div>
+    </page-article>
+  </app-page>
+  <app-page id="addExtensions" title="Add Extensions">
+    <template slot="bar-right">
       <button v-on:click="onSave"><i class="far fa-save"></i>&nbsp;Save</button>
+    </template>
+    <page-article>
+      <div class="card-container">
+        <div class="card" v-for="extension in extensions" v-if="! extension.active">
+          <div class="bar">
+            <p>{{ extension.name }}</p>
+            <div>
+              <button v-on:click="extension.active = true"><i class="fa fa-plus"></i>&nbsp;Add</button>
+            </div>
+          </div>
+          <p>{{ extension.description }}</p>
+        </div>
+      </div>
     </page-article>
   </app-page>
   <app-menu id="menu" title="Menu">
