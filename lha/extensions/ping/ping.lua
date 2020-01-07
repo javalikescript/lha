@@ -1,10 +1,10 @@
 local extension = ...
 
+local runtime = require('jls.lang.runtime')
 local system = require('jls.lang.system')
 local tables = require('jls.util.tables')
 local Thing = require('lha.engine.Thing')
 local logger = require('jls.lang.logger')
-local sysexec = require('lha.engine.sysexec')
 
 logger:info('ping extension under '..extension:getDir():getPath())
 
@@ -12,6 +12,8 @@ local configuration = extension:getConfiguration()
 tables.merge(configuration, {
   target_names = {'127.0.0.1'}
 }, true)
+
+local PING_COUNT = 1
 
 local thingsByTarget = {}
 
@@ -45,19 +47,21 @@ extension:subscribeEvent('things', function()
   end
 end)
 
+local function pingThing(targetName, thing)
+  local command
+  if system.isWindows() then
+    command = 'ping -n '..tostring(PING_COUNT)..' '..targetName..' >nul 2>nul'
+  else
+    command = 'ping -c '..tostring(PING_COUNT)..' '..targetName..' 2>&1 >/dev/null'
+  end
+  runtime.execute(command, function(err)
+    thing:updatePropertyValue('reachable', err == nil)
+  end)
+end
+
 extension:subscribeEvent('poll', function()
   logger:info('polling ping extension')
-  local count = 1
   for targetName, thing in pairs(thingsByTarget) do
-    local command
-    if system.isWindows() then
-      command = 'ping -n '..tostring(count)..' '..targetName..' >nul 2>nul'
-    else
-      command = 'ping -c '..tostring(count)..' '..targetName..' 2>&1 >/dev/null'
-    end
-    sysexec.execute(command, function(err, code)
-      thing:updatePropertyValue('reachable', code == true)
-    end)
-    
+    pingThing(targetName, thing)
   end
 end)
