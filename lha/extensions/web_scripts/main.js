@@ -274,31 +274,27 @@ define(['requirePath'], function(requirePath) {
       toaster.toast('Clear');
     });
     workspace.registerButtonCallback('delete', function() {
-      if (!self.name) {
-        return;
-      }
-      fetch('/engine/scripts/' + self.name + '.xml', {
-        method: 'DELETE'
-      }).then(function() {
-        toaster.toast('Deleted');
-        fetch('/engine/scripts/' + self.name + '.lua', {
+      if (self.scriptId) {
+        fetch('/engine/scripts/' + self.scriptId + '/', {
           method: 'DELETE'
+        }).then(function() {
+          toaster.toast('Deleted');
         });
-      });
+      }
     });
     workspace.registerButtonCallback('save', function() {
-      if (!self.name) {
+      if (!self.scriptId) {
         return;
       }
       // generate
       var code = exportToLua(workspace);
       var xmlText = exportToXml(workspace);
       // save
-      fetch('/engine/scripts/' + self.name + '.xml', {
+      fetch('/engine/scriptFiles/' + self.scriptId + '/blocks.xml', {
         method: 'PUT',
         body: xmlText
       }).then(function() {
-        return fetch('/engine/scripts/' + self.name + '.lua', {
+        return fetch('/engine/scriptFiles/' + self.scriptId + '/script.lua', {
           method: 'PUT',
           body: code
         });
@@ -320,33 +316,35 @@ define(['requirePath'], function(requirePath) {
       '<div id="scriptsEditorBlocklyDiv" style="height: 100%; width: 100%;"></div>' +
       '</page-article></app-page>',
     data: {
-      name: '',
+      scriptId: '',
       savedContent: null,
       workspace: null
     },
     methods: {
-      onShow: function() {
+      onShow: function(scriptId) {
         console.log('scriptsEditor.onShow()');
         if (this.workspace === null) {
+          if (scriptId) {
+            this.scriptId = scriptId;
+          }
           var self = this;
           fetch(requirePath + '/toolbox.xml').then(function(response) {
             return response.text();
           }).then(function(toolboxXml) {
             self.workspace = loadBlockly(self, toolboxXml);
-            if (self.name) {
+            if (self.scriptId) {
               self.refresh();
             }
           });
+        } else if (scriptId) {
+          this.scriptId = scriptId;
+          this.refresh();
         }
-      },
-      load: function(name) {
-        this.name = name;
-        this.refresh();
       },
       refresh: function() {
         var workspace = this.workspace;
         if (workspace) {
-          fetch('/engine/scripts/' + this.name + '.xml').then(function(response) {
+          fetch('/engine/scriptFiles/' + this.scriptId + '/blocks.xml').then(function(response) {
             return response.text();
           }).then(function(xmlText) {
             workspace.clear();
@@ -358,23 +356,23 @@ define(['requirePath'], function(requirePath) {
     }
   });
   
-
-
   var scriptsVue = new Vue({
-    template: '<app-page id="scripts" title="Scripts"><page-article>' +
-      '<table><tr><th>Name</th><th>Active</th></tr><tr v-for="script in scripts">' +
-      '<td v-on:click="openScript(script.id)">{{script.id}}</td>' +
-      '<td style="text-align: center; "><input v-bind:disabled="!script.loaded" type="checkbox" v-model="script.active" v-on:click="activateScript(script)" /></td>' +
-      '</tr></table><br />' +
-      '<input v-model="newName" type="text" placeholder="New Script Id">' +
-      '<button v-on:click="newScript"><i class="fas fa-plus"></i>&nbsp;New</button>' +
-      '</page-article></app-page>',
+    template: '<app-page id="scripts" title="Scripts"><template slot="bar-right">' +
+      '<button v-on:click="newScript"><i class="fa fa-plus"></i>&nbsp;Create</button>' +
+      '</template><page-article><div class="card-container">' +
+      '<div class="card" v-for="script in scripts">' +
+      '<div class="bar"><p>{{ script.name }}</p><div>' +
+      '<button v-on:click="reloadScript(script)"><i class="fas fa-redo"></i>&nbsp;Reload</button>' +
+      '<button v-on:click="openScript(script.id)"><i class="fas fa-info"></i>&nbsp;Details</button>' +
+      '</div></div><p>{{ script.description }}</p>' +
+      '<p><input type="checkbox" v-model="script.active" v-on:click="activateScript(script)" /> Active</p>' +
+      '</div></div></page-article></app-page>',
     data: {
-      newName: '',
       scripts: []
     },
     methods: {
       onShow: function () {
+        this.scripts = [];
         var self = this;
         fetch('/engine/scripts/', {
           headers: {
@@ -382,40 +380,21 @@ define(['requirePath'], function(requirePath) {
           }
         }).then(function(response) {
           return response.json();
-        }).then(function(files) {
-          self.scripts = files.filter(function(file) {
-            return file.isDirectory === false && file.name.endsWith('.xml');
-          }).map(function(file) {
-            return {
-              id: file.name.substring(0, file.name.lastIndexOf('.')),
-              loaded: false,
-              active: false
-            };
-          });
-          fetch('/engine/admin/listScripts').then(function(response) {
-            return response.json();
-          }).then(function(scripts) {
-            self.scripts.forEach(function(script) {
-              for (var i = 0; i < scripts.length; i++) {
-                var s = scripts[i];
-                if (s.id === script.id) {
-                  script.loaded = true;
-                  script.active = s.active;
-                  break;
-                }
-              }
-            });
-          });
-          console.log('scripts', self.scripts);
+        }).then(function(scripts) {
+          self.scripts = scripts;
         });
       },
-      openScript: function (name) {
-        app.toPage('scriptsEditor');
-        app.callPage('scriptsEditor', 'load', name);
+      reloadScript: function (script) {
+        fetch('/engine/scripts/' + script.id + '/reload', {method: 'POST'}).then(function() {
+          toaster.toast('Script reloaded');
+        });
+      },
+      openScript: function (scriptId) {
+        app.toPage('scriptsEditor', scriptId);
       },
       activateScript: function (script) {
         //console.log('activateScript()' + script.active);
-        fetch('/engine/configuration/script/' + script.id + '/active', {
+        fetch('/engine/configuration/extensions/' + script.id + '/active', {
           method: 'POST',
           body: JSON.stringify({
             value: !script.active
@@ -423,11 +402,9 @@ define(['requirePath'], function(requirePath) {
         });
       },
       newScript: function () {
-        fetch('/engine/scripts/' + this.newName + '.xml', {
-          method: 'PUT',
-          body: '<xml xmlns="http://www.w3.org/1999/xhtml"></xml>'
+        fetch('/engine/scripts/', {
+          method: 'PUT'
         });
-        this.newName = '';
         this.onShow();
       }
     }

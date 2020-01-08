@@ -253,7 +253,7 @@ local REST_EXTENSIONS = {
     local engine = exchange:getAttribute('engine')
     local list = {}
     for _, extension in ipairs(engine.extensions) do
-      if extension:isLoaded() then
+      if extension:isLoaded() and extension:getType() ~= 'script' then
         table.insert(list, extension:toJSON())
       end
     end
@@ -265,6 +265,56 @@ local REST_EXTENSIONS = {
         exchange.attributes.extension:publishEvent('poll')
       end
     end,
+    reload = function(exchange)
+      exchange.attributes.extension:reloadExtension()
+    end
+  },
+  name = 'extension',
+  value = function(exchange, name)
+    local engine = exchange:getAttribute('engine')
+    return engine:getExtensionById(name)
+  end
+}
+
+local REST_SCRIPTS = {
+  [''] = function(exchange)
+    local request = exchange:getRequest()
+    local method = string.upper(request:getMethod())
+    local engine = exchange:getAttribute('engine')
+    if method == http.CONST.METHOD_GET then
+      local list = {}
+      for _, extension in ipairs(engine.extensions) do
+        if extension:getType() == 'script' then
+          table.insert(list, extension:toJSON())
+        end
+      end
+      return list
+    elseif method == http.CONST.METHOD_PUT then
+      if engine.scriptsDir:isDirectory() then
+        local scriptId = engine:generateId()
+        local scriptDir = File:new(engine.scriptsDir, scriptId)
+        scriptDir:mkdir()
+        local blocksFile = File:new(scriptDir, 'blocks.xml')
+        local scriptFile = File:new(scriptDir, 'script.lua')
+        local manifestFile = File:new(scriptDir, 'manifest.json')
+        local manifest = {
+          name = "New script",
+          version = "1.0",
+          blocks = blocksFile:getName(),
+          script = scriptFile:getName()
+        }
+        blocksFile:write('<xml xmlns="http://www.w3.org/1999/xhtml"></xml>')
+        scriptFile:write("local script = ...\nlocal logger = require('jls.lang.logger')\n\n")
+        manifestFile:write(json.encode(manifest))
+        -- TODO Load new script?
+        return scriptId
+      end
+    else
+      httpHandler.methodNotAllowed(exchange)
+      return false
+    end
+  end,
+  ['/any'] = {
     reload = function(exchange)
       exchange.attributes.extension:reloadExtension()
     end
@@ -327,6 +377,7 @@ local REST_ENGINE_HANDLERS = {
     return descriptions
   end,
   extensions = REST_EXTENSIONS,
+  scripts = REST_SCRIPTS,
   things = {
     [''] = function(exchange)
       local engine = exchange:getAttribute('engine')
@@ -349,6 +400,9 @@ local REST_ENGINE_HANDLERS = {
           end
           engine:publishEvent('things')
         end
+      else
+        httpHandler.methodNotAllowed(exchange)
+        return false
       end
     end,
     ['/any'] = {
@@ -366,6 +420,9 @@ local REST_ENGINE_HANDLERS = {
           return thing:asEngineThingDescription()
         elseif method == http.CONST.METHOD_DELETE then
           engine:disableThing(thingId)
+        else
+          httpHandler.methodNotAllowed(exchange)
+          return false
         end
       end
     },
@@ -572,9 +629,19 @@ return class.create(function(engine)
       engine = self,
       publish = true
     })
-    httpServer:createContext('/engine/historicalData/(.*)', historicalDataHandler, {engine = self})
-    httpServer:createContext('/engine/scripts/(.*)', httpHandler.files, {rootFile = self.scriptsDir})
-    httpServer:createContext('/engine/tmp/(.*)', httpHandler.files, {rootFile = self.tmpDir})
+    httpServer:createContext('/engine/historicalData/(.*)', historicalDataHandler, {
+      engine = self
+    })
+    httpServer:createContext('/engine/scriptFiles/(.*)', httpHandler.files, {
+      rootFile = self.scriptsDir,
+      allowCreate = true,
+      allowDelete = true
+    })
+    httpServer:createContext('/engine/tmp/(.*)', httpHandler.files, {
+      rootFile = self.tmpDir,
+      allowCreate = true,
+      allowDelete = true
+    })
     self.server = httpServer
   end
 
@@ -661,7 +728,7 @@ return class.create(function(engine)
   end
 
   function engine:onExtension(id, fn)
-    local extension = self:getExtensionById(extensionId)
+    local extension = self:getExtensionById(id)
     if extension then
       fn(extension)
       return true

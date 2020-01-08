@@ -18,7 +18,7 @@ local PING_COUNT = 1
 local thingsByTarget = {}
 
 local function createThing(targetName)
-  return Thing:new('Host', 'Host Reachability', {'BinarySensor'}):addProperty('reachable', {
+  return Thing:new('Host '..targetName, 'Host Reachability', {'BinarySensor'}):addProperty('reachable', {
     ['@type'] = 'BooleanProperty',
     title = 'Host Reachability',
     type = 'boolean',

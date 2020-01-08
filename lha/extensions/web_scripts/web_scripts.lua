@@ -4,9 +4,12 @@ local logger = require('jls.lang.logger')
 
 extension:subscribeEvent('startup', function()
   logger:info('startup web scripts extension')
-  extension:getEngine():onExtension('web_base', function(webBaseExtension)
+  if not extension:getEngine():onExtension('web_base', function(webBaseExtension)
     webBaseExtension:registerAddonExtension(extension)
-  end)
+    logger:info('web scripts addon registered')
+  end) then
+    logger:info('extension web_base not found')
+  end
 end)
 
 
