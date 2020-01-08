@@ -181,6 +181,9 @@ Vue.component('app-page', {
 Vue.component('page-article', {
   template: '<article class="content"><slot>Content</slot></article>'
 });
+Vue.component('page-form', {
+  template: '<article class="form"><slot>Content</slot></article>'
+});
 
 /************************************************************
  * Application component pages

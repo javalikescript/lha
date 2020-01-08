@@ -86,7 +86,7 @@
     </page-article>
   </app-page>
   <app-settings id="settings" title="Settings">
-    <article class="content">
+    <article class="form">
       <p>Information:</p>
       <dl>
         <dt><label>CPU Time</label></dt><dd><span v-html="clock">na</span></dd>
@@ -107,7 +107,7 @@
     </article>
   </app-settings>
   <app-page id="moreSettings" title="More Settings">
-    <article class="content">
+    <article class="form">
       <p>Settings</p>
       <button v-on:click="saveConfig"><i class="far fa-save"></i>&nbsp;Save Configuration</button>
       <button v-on:click="stopServer"><i class="fas fa-power-off"></i>&nbsp;Stop the Server</button>
@@ -122,8 +122,8 @@
   </app-page>
   <app-page id="things" title="Things">
     <template slot="bar-right">
-      <button v-on:click="onShow"><i class="fas fa-sync"></i>&nbsp;Refresh</button>
-      <button v-on:click="onSave"><i class="far fa-save"></i>&nbsp;Save</button>
+      <button v-on:click="onShow" title="Refresh"><i class="fas fa-sync"></i></button>
+      <button v-on:click="onSave" title="Save"><i class="far fa-save"></i></button>
       <button v-on:click="app.toPage('addThings')"><i class="fa fa-plus"></i></button>
     </template>
     <page-article>
@@ -144,8 +144,8 @@
   </app-page>
   <app-page id="thing" title="Thing">
     <template slot="bar-right">
-      <button v-on:click="onShow"><i class="fas fa-sync"></i>&nbsp;Refresh</button>
-      <button v-on:click="disableThing()"><i class="fa fa-trash"></i>&nbsp;Disable</button>
+      <button v-on:click="onShow" title="Refresh"><i class="fas fa-sync"></i></button>
+      <button v-on:click="disableThing()" title="Disable"><i class="fa fa-trash"></i></button>
     </template>
     <page-article>
       <div class="card-container">
@@ -167,7 +167,7 @@
   </app-page>
   <app-page id="addThings" title="Add Things">
     <template slot="bar-right">
-      <button v-on:click="onSave"><i class="far fa-save"></i>&nbsp;Save</button>
+      <button v-on:click="onSave" title="Save"><i class="far fa-save"></i></button>
     </template>
     <page-article>
       <div class="card-container">
@@ -182,8 +182,8 @@
   </app-page>
   <app-page id="extensions" title="Extensions">
     <template slot="bar-right">
-      <button v-on:click="onShow"><i class="fas fa-sync"></i>&nbsp;Refresh</button>
-      <button v-on:click="app.toPage('addExtensions')"><i class="fa fa-plus"></i></button>
+      <button v-on:click="onShow" title="Refresh"><i class="fas fa-sync"></i></button>
+      <button v-on:click="app.toPage('addExtensions')" title="Add"><i class="fa fa-plus"></i></button>
     </template>
     <page-article>
       <div class="card-container">
@@ -203,7 +203,7 @@
   </app-page>
   <app-page id="addExtensions" title="Add Extensions">
     <template slot="bar-right">
-      <button v-on:click="onSave"><i class="far fa-save"></i>&nbsp;Save</button>
+      <button v-on:click="onSave" title="Save"><i class="far fa-save"></i></button>
     </template>
     <page-article>
       <div class="card-container">

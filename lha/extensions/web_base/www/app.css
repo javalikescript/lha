@@ -129,8 +129,6 @@ section > article {
 }
 section > article a,
 section > article p,
-section > article tr > th,
-section > article tr > td,
 section > article dl {
   font-size: 1.5rem;
   font-weight: normal;
@@ -273,18 +271,21 @@ li {
   padding: 1rem;
   width: 100%;
 }
-.card {
-  height: 12rem;
+.card, article.form {
   width: calc(100% - 4rem);
   max-width: 60rem;
+  margin: 0 auto;
   background: transparent;
+}
+.card {
+  height: 12rem;
   border: 1px solid transparent;
   box-shadow: 0 0 1px 1px rgba(0,0,0,0.1);
   box-sizing: border-box;
   margin: 0 auto 0.5rem;
   padding: 0.5rem;
   overflow: hidden;
-  cursor: pointer;
+  /*cursor: pointer;*/
 }
 .card > .bar {
   height: 3rem;

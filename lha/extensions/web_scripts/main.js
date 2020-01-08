@@ -358,7 +358,7 @@ define(['requirePath'], function(requirePath) {
   
   var scriptsVue = new Vue({
     template: '<app-page id="scripts" title="Scripts"><template slot="bar-right">' +
-      '<button v-on:click="newScript"><i class="fa fa-plus"></i>&nbsp;Create</button>' +
+      '<button v-on:click="newScript" title="Create"><i class="fa fa-plus"></i></button>' +
       '</template><page-article><div class="card-container">' +
       '<div class="card" v-for="script in scripts">' +
       '<div class="bar"><p>{{ script.name }}</p><div>' +
