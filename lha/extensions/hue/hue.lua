@@ -31,7 +31,7 @@ local function onHueThing(info, time, lastTime)
   if info.state and info.uniqueid then
     local thing = thingsMap[info.uniqueid]
     if not thing then
-      thing = HueBridge.createThingForType(info.type)
+      thing = HueBridge.createThingForType(info)
       if thing then
         logger:info('New '..extension:getPrettyName()..' thing found with type "'..tostring(info.type)..'" and id "'..tostring(info.uniqueid)..'"')
         extension:discoverThing(info.uniqueid, thing)

@@ -192,7 +192,7 @@ return require('jls.lang.class').create(function(hueBridge)
       -- Logarithm scale used because the human eye adjusts to light levels and small changes at low lux levels are more noticeable than at high lux levels.  
       thing:updatePropertyValue('lightlevel', state.lightlevel)
       -- dark, daylight true/false, lastupdated
-    elseif info.type == 'ZLLTemperature' and state.temperature ~= json.null then
+    elseif (info.type == 'ZLLTemperature' or info.type == 'ZHATemperature') and state.temperature ~= json.null then
       -- Current temperature in 0.01 degrees Celsius. (3000 is 30.00 degree)
       -- lastupdated
       thing:updatePropertyValue('temperature', state.temperature / 100)
@@ -269,26 +269,26 @@ end, function(HueBridge)
     }, 0)
   end
 
-  function HueBridge.createThingForType(type)
+  function HueBridge.createThingForType(info)
     -- see https://developers.meethue.com/develop/hue-api/supported-devices/
     -- type: Daylight, ZLLSwitch, Extended color light, Color temperature light
     -- On/off light, Dimmable light, Color light, ZGPSwitch
     -- CLIPGenericStatus, CLIPSwitch, CLIPOpenClose, CLIPPresence, CLIPTemperature, CLIPHumidity, CLIPLightlevel
-    if type == 'Color temperature light' then
-      local t = Thing:new('Color temperature light', 'Color temperature light', {'Light', 'OnOffSwitch', 'ColorControl'})
+    if info.type == 'Color temperature light' then
+      local t = Thing:new(info.name or 'Color temperature light', 'Color temperature light', {'Light', 'OnOffSwitch', 'ColorControl'})
       HueBridge.addLightOnOff(t)
       HueBridge.addLightBrightness(t)
       HueBridge.addLightColorTemperature(t)
       return t
-    elseif type == 'Extended color light' then
-      local t = Thing:new('Extended color light', 'Extended color light', {'Light', 'OnOffSwitch', 'ColorControl'})
+    elseif info.type == 'Extended color light' then
+      local t = Thing:new(info.name or 'Extended color light', 'Extended color light', {'Light', 'OnOffSwitch', 'ColorControl'})
       HueBridge.addLightOnOff(t)
       HueBridge.addLightBrightness(t)
       HueBridge.addLightColorTemperature(t)
       HueBridge.addLightColor(t)
       return t
-    elseif type == 'ZLLLightLevel' then
-      return Thing:new('Hue Light Level', 'Light Level Sensor', {'MultiLevelSensor'}):addProperty('lightlevel', {
+    elseif info.type == 'ZLLLightLevel' then
+      return Thing:new(info.name or 'Light Level', 'Light Level Sensor', {'MultiLevelSensor'}):addProperty('lightlevel', {
         ['@type'] = 'LevelProperty',
         title = 'Light Level',
         type = 'integer',
@@ -297,8 +297,8 @@ end, function(HueBridge)
         readOnly = true,
         unit = 'byte'
       }, 0)
-    elseif type == 'ZLLTemperature' then
-      return Thing:new('Hue Temperature', 'Temperature Sensor', {'TemperatureSensor'}):addProperty('temperature', {
+    elseif info.type == 'ZLLTemperature' or info.type == 'ZHATemperature' then
+      return Thing:new(info.name or 'Temperature', 'Temperature Sensor', {'TemperatureSensor'}):addProperty('temperature', {
         ['@type'] = 'TemperatureProperty',
         title = 'Light Level',
         type = 'number',
@@ -306,17 +306,17 @@ end, function(HueBridge)
         readOnly = true,
         unit = 'degree celsius'
       }, 0)
-    elseif type == 'ZLLPresence' then
-      return Thing:new('Hue Motion', 'Motion Sensor', {'MotionSensor'}):addProperty('presence', {
+    elseif info.type == 'ZLLPresence' then
+      return Thing:new(info.name or 'Presence', 'Motion Sensor', {'MotionSensor'}):addProperty('presence', {
         ['@type'] = 'Motion',
         title = 'Light Level',
         --label = 'Present',
         type = 'boolean',
-        description = 'Motion',
+        description = 'Motion detection',
         readOnly = true
       }, false)
-    elseif type == 'ZLLSwitch' then
-      return Thing:new('Pressure', 'Pressure Sensor', {'PushButton'}):addProperty('on', {
+    elseif info.type == 'ZLLSwitch' then
+      return Thing:new(info.name or 'Switch', 'Switch Button', {'PushButton'}):addProperty('on', {
         ['@type'] = 'PushedProperty',
         title = 'Switch Button',
         type = 'boolean',
@@ -327,8 +327,8 @@ end, function(HueBridge)
         title = 'Long Press',
         description = 'Indicates the button has been long-pressed'
       })
-    elseif type == 'ZHAHumidity' then
-      return Thing:new('Humidity', 'Humidity Sensor', {'MultiLevelSensor'}):addProperty('humidity', {
+    elseif info.type == 'ZHAHumidity' then
+      return Thing:new(info.name or 'Humidity', 'Humidity Sensor', {'MultiLevelSensor'}):addProperty('humidity', {
         ['@type'] = 'LevelProperty',
         title = 'Humidity',
         type = 'number',
@@ -336,8 +336,8 @@ end, function(HueBridge)
         readOnly = true,
         unit = 'percent'
       }, 0)
-    elseif type == 'ZHAPressure' then
-      return Thing:new('Pressure', 'Pressure Sensor', {'MultiLevelSensor'}):addProperty('pressure', {
+    elseif info.type == 'ZHAPressure' then
+      return Thing:new(info.name or 'Pressure', 'Pressure Sensor', {'MultiLevelSensor'}):addProperty('pressure', {
         ['@type'] = 'LevelProperty',
         title = 'Pressure',
         type = 'number',
@@ -347,8 +347,8 @@ end, function(HueBridge)
         maximum = 1100,
         unit = 'hPa'
       }, 0)
-    elseif type == 'ZHASwitch' then
-      return Thing:new('Pressure', 'Pressure Sensor', {'PushButton'}):addProperty('on', {
+    elseif info.type == 'ZHASwitch' then
+      return Thing:new(info.name or 'Switch', 'Switch Button', {'PushButton'}):addProperty('on', {
         ['@type'] = 'PushedProperty',
         title = 'Switch Button',
         type = 'boolean',
