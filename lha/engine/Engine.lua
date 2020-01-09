@@ -193,6 +193,15 @@ local EngineThing = class.create(Thing, function(engineThing, super)
 
 end)
 
+local function reloadExtension(extension)
+  if extension:isActive() then
+    extension:publishEvent('shutdown')
+  end
+  extension:reloadExtension()
+  if extension:isActive() then
+    extension:publishEvent('startup')
+  end
+end
 
 local REST_THING = {
   [''] = function(exchange)
@@ -260,13 +269,28 @@ local REST_EXTENSIONS = {
     return list
   end,
   ['/any'] = {
+    [''] = function(exchange)
+      local engine = exchange:getAttribute('engine')
+      local extension = exchange.attributes.extension
+      return {
+        config = engine.root.configuration.extensions[extension.id] or {},
+        info = extension:toJSON(),
+        manifest = extension:getManifest()
+      }
+    end,
+    info = function(exchange)
+      return exchange.attributes.extension:toJSON()
+    end,
+    manifest = function(exchange)
+      return exchange.attributes.extension:getManifest()
+    end,
     poll = function(exchange)
       if exchange.attributes.extension:isActive() then
         exchange.attributes.extension:publishEvent('poll')
       end
     end,
     reload = function(exchange)
-      exchange.attributes.extension:reloadExtension()
+      reloadExtension(exchange.attributes.extension)
     end
   },
   name = 'extension',
@@ -316,7 +340,7 @@ local REST_SCRIPTS = {
   end,
   ['/any'] = {
     reload = function(exchange)
-      exchange.attributes.extension:reloadExtension()
+      reloadExtension(exchange.attributes.extension)
     end
   },
   name = 'extension',
@@ -335,6 +359,16 @@ local REST_ADMIN = {
       return 'Done'
     end
   },
+  reloadExtensions = function(exchange)
+    local mode = httpHandler.shiftPath(exchange:getAttribute('path'))
+    exchange.attributes.engine:reloadExtensions(mode == 'full', true)
+    return 'Done'
+  end,
+  reloadScripts = function(exchange)
+    local mode = httpHandler.shiftPath(exchange:getAttribute('path'))
+    exchange.attributes.engine:reloadScripts(mode == 'full')
+    return 'Done'
+  end,
   stop = function(exchange)
     -- curl http://localhost:8080/engine/admin/configuration/stop
     event:setTimeout(function()
@@ -713,10 +747,14 @@ return class.create(function(engine)
   end
 
   function engine:publishEvent(...)
+    self:publishExtensionsEvent(nil, ...)
+  end
+
+  function engine:publishExtensionsEvent(source, ...)
     local name = ...
-    logger:fine('Publishing Event '..tostring(name))
+    logger:fine('Publishing Extensions Event '..tostring(name))
     for _, extension in ipairs(self.extensions) do
-      if extension:isActive() then
+      if extension ~= source and extension:isActive() then
         extension:publishEvent(...)
       end
     end
@@ -783,16 +821,74 @@ return class.create(function(engine)
     end
   end
 
-  function engine:loadExtensions()
-    self.extensions = {}
+  function engine:loadScriptExtensions()
+    if self.scriptsDir:isDirectory() then
+      self:loadExtensionsFromDirectory(self.scriptsDir, 'script')
+    end
+  end
+
+  function engine:loadOtherExtensions()
     if self.lhaExtensionsDir:isDirectory() then
       self:loadExtensionsFromDirectory(self.lhaExtensionsDir, 'core')
     end
     if self.extensionsDir:isDirectory() then
       self:loadExtensionsFromDirectory(self.extensionsDir, 'extension')
     end
-    if self.scriptsDir:isDirectory() then
-      self:loadExtensionsFromDirectory(self.scriptsDir, 'script')
+  end
+
+  function engine:loadExtensions()
+    self.extensions = {}
+    self:loadOtherExtensions()
+    self:loadScriptExtensions()
+  end
+
+  function engine:getScriptExtensions()
+    local scripts = {}
+    local others = {}
+    for _, extension in ipairs(self.extensions) do
+      if extension:getType() == 'script' then
+        table.insert(scripts, extension)
+      else
+        table.insert(others, extension)
+      end
+    end
+    return scripts, others
+  end
+
+  function engine:reloadExtensions(full, excludeScripts)
+    if excludeScripts then
+      local scripts, others = self:getScriptExtensions()
+      if full then
+        self.extensions = scripts
+        self:loadOtherExtensions()
+      else
+        for _, extension in ipairs(others) do
+          reloadExtension(extension)
+        end
+      end
+    else
+      if full then
+        self:publishEvent('shutdown')
+        self:loadExtensions()
+        self:publishEvent('startup')
+        self:publishEvent('things')
+      else
+        for _, extension in ipairs(self.extensions) do
+          reloadExtension(extension)
+        end
+      end
+    end
+  end
+
+  function engine:reloadScripts(full)
+    local scripts, others = self:getScriptExtensions()
+    if full then
+      self.extensions = others
+      self:loadScriptExtensions()
+    else
+      for _, extension in ipairs(scripts) do
+        reloadExtension(extension)
+      end
     end
   end
 

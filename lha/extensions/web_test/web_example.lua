@@ -8,5 +8,3 @@ extension:subscribeEvent('startup', function()
     webBaseExtension:registerAddonExtension(extension)
   end)
 end)
-
-

@@ -181,9 +181,6 @@ Vue.component('app-page', {
 Vue.component('page-article', {
   template: '<article class="content"><slot>Content</slot></article>'
 });
-Vue.component('page-form', {
-  template: '<article class="form"><slot>Content</slot></article>'
-});
 
 /************************************************************
  * Application component pages
@@ -283,10 +280,10 @@ new Vue({
       fetch('/engine/admin/configuration/save', {method: 'POST'});
     },
     reloadExtensions: function() {
-      fetch('/engine/admin/reloadExtensions', {method: 'POST'});
+      fetch('/engine/admin/reloadExtensions/all', {method: 'POST'});
     },
     reloadScripts: function() {
-      fetch('/engine/admin/reloadScripts', {method: 'POST'});
+      fetch('/engine/admin/reloadScripts/all', {method: 'POST'});
     },
     restartServer: function() {
       fetch('/engine/admin/restart', { method: 'POST'});
@@ -725,10 +722,6 @@ new Vue({
     things: []
   },
   methods: {
-    openThing: function(thing) {
-      //app.callPage('thing', 'setThingId', thing.thingId);
-      app.toPage('thing', thing.thingId);
-    },
     onShow: function() {
       var self = this;
       fetch('/engine/things').then(function(response) {
@@ -764,11 +757,7 @@ new Vue({
     thing: {}
   },
   methods: {
-    setThingId: function(thingId) {
-      this.thingId = thingId;
-    },
     openHistoricalData: function(propertyName) {
-      //app.callPage('data-chart', 'loadHistoricalData', '/' + this.thingId + '/' + propertyName);
       app.toPage('data-chart', this.thingId + '/' + propertyName);
     },
     disableThing: function() {
@@ -832,6 +821,78 @@ new Vue({
   }
 });
 
+Vue.component('json-item', {
+  props: ['name', 'obj', 'schema', 'root'],
+  data: function() {
+    return {
+      open: true
+    };
+  },
+  template: '<li class="json"><div @click="toggle">' +
+    '<span>{{ label }}:</span><br>' +
+    '<input v-if="hasValue" v-model="obj" type="text" placeholder="Value">' +
+    '</div><ul v-show="open" v-if="hasProperties"><json-item v-for="(ss, n) in schema.properties" :name="n" :obj="getProperty(n)" :schema="ss" :root="root"></json-item></ul></li>',
+  computed: {
+    label: function() {
+      return this.schema && this.schema.title || this.name || 'Value';
+    },
+    hasValue: function() {
+      return this.schema && ((this.schema.type === 'number') || (this.schema.type === 'integer') || (this.schema.type === 'string') || (this.schema.type === 'boolean'));
+    },
+    isList: function() {
+      return this.schema && (this.schema.type === 'array') && (typeof this.schema.items === 'object');
+    },
+    hasProperties: function() {
+      if (this.schema && (this.schema.type === 'object') && (typeof this.schema.properties === 'object')) {
+        for (var name in this.schema.properties) {
+          var ss = this.schema.properties[name];
+          if (!(name in this.obj)) {
+            var value;
+            switch(ss.type) {
+            case 'string':
+              value = '';
+              break;
+            case 'integer':
+            case 'number':
+              value = 0;
+              break;
+            case 'boolean':
+              value = false;
+              break;
+            case 'array':
+              value = [];
+              break;
+            case 'object':
+              value = {};
+              break;
+            }
+            this.obj[name] = value;
+          }
+        }
+        return true;
+      }
+      return false;
+    }
+  },
+  methods: {
+    getProperty: function(name) { 
+      if (!(name in this.obj)) {
+        this.obj[name] = '';
+      }
+      return this.obj[name];
+    },
+    toggle: function() {
+      if (this.isFolder) {
+        this.open = !this.open
+      }
+    }
+  }
+});
+Vue.component('json', {
+  props: ['name', 'obj', 'schema'],
+  template: '<json-item :name="name" :obj="obj" :schema="schema" :root="this"></json-item>'
+});
+
 new Vue({
   el: '#extensions',
   data: {
@@ -855,6 +916,41 @@ new Vue({
       }).then(function(extensions) {
         self.extensions = extensions;
         //console.log('extensions', self.extensions);
+      });
+    }
+  }
+});
+
+new Vue({
+  el: '#extension',
+  data: {
+    extensionId: '',
+    extension: {config: {}, info: {}, manifest: {}}
+  },
+  methods: {
+    onDisable: function() {
+      var config = {extensions: {}};
+      if (this.extensionId) {
+        config.extensions[this.extensionId] = {active: false};
+        fetch('/engine/configuration/', {
+          method: 'POST',
+          body: JSON.stringify({
+            value: config
+          })
+        });
+      }
+    },
+    onShow: function(extensionId) {
+      var self = this;
+      if (extensionId) {
+        this.extensionId = extensionId;
+      }
+      self.extension = {config: {}, info: {}, manifest: {}};
+      fetch('/engine/extensions/' + this.extensionId).then(function(response) {
+        return response.json();
+      }).then(function(extension) {
+        self.extension = extension;
+        //console.log('extension', self.extension);
       });
     }
   }

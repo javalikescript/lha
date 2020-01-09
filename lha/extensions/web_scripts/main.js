@@ -359,14 +359,14 @@ define(['requirePath'], function(requirePath) {
   var scriptsVue = new Vue({
     template: '<app-page id="scripts" title="Scripts"><template slot="bar-right">' +
       '<button v-on:click="newScript" title="Create"><i class="fa fa-plus"></i></button>' +
-      '</template><page-article><div class="card-container">' +
+      '</template><article class="cards">' +
       '<div class="card" v-for="script in scripts">' +
       '<div class="bar"><p>{{ script.name }}</p><div>' +
       '<button v-on:click="reloadScript(script)"><i class="fas fa-redo"></i>&nbsp;Reload</button>' +
-      '<button v-on:click="openScript(script.id)"><i class="fas fa-info"></i>&nbsp;Details</button>' +
+      '<button v-on:click="app.toPage(\'scriptsEditor\', script.id)"><i class="fas fa-info"></i>&nbsp;Details</button>' +
       '</div></div><p>{{ script.description }}</p>' +
       '<p><input type="checkbox" v-model="script.active" v-on:click="activateScript(script)" /> Active</p>' +
-      '</div></div></page-article></app-page>',
+      '</div></article></app-page>',
     data: {
       scripts: []
     },
@@ -388,9 +388,6 @@ define(['requirePath'], function(requirePath) {
         fetch('/engine/scripts/' + script.id + '/reload', {method: 'POST'}).then(function() {
           toaster.toast('Script reloaded');
         });
-      },
-      openScript: function (scriptId) {
-        app.toPage('scriptsEditor', scriptId);
       },
       activateScript: function (script) {
         //console.log('activateScript()' + script.active);

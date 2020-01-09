@@ -178,17 +178,13 @@ section > article > h1 {
   height: 5rem;
   vertical-align: left;
 }
-header button, li button {
+header button {
   border: none;
   background: none;
   position: relative;
   overflow: hidden;
   padding: 0 1rem;
   margin: 0;
-}
-li button {
-  color: #000;
-  height: 2.5rem;
 }
 header h1, footer h1 {
   font-size: 2rem;
@@ -216,7 +212,6 @@ li {
   font-size: 1.9rem;
   font-weight: normal;
   line-height: 2.5rem;
-  height: 4rem;
 }
 .scrollable {
   overflow-x: hidden;
@@ -229,10 +224,11 @@ li {
   flex-flow: row wrap;
   align-items: stretch;
 }
-.tile-container {
+article.tiles, .tile-container {
   display: flex;
   flex-wrap: wrap;
   padding: 1rem;
+  width: 100%;
 }
 .tile {
   height: 18rem;
@@ -267,11 +263,11 @@ li {
   line-height: 2.5rem;
   padding: 0.5rem;
 }
-.card-container {
+article.cards, .card-container {
   padding: 1rem;
   width: 100%;
 }
-.card, article.form {
+article.form, .card {
   width: calc(100% - 4rem);
   max-width: 60rem;
   margin: 0 auto;
@@ -286,6 +282,9 @@ li {
   padding: 0.5rem;
   overflow: hidden;
   /*cursor: pointer;*/
+}
+.card:hover {
+  background-color: rgba(0,0,0,0.01);
 }
 .card > .bar {
   height: 3rem;

@@ -2,5 +2,40 @@
   "name": "Engine Monitoring",
   "description": "Expose engine informations",
   "version": "1.0",
-  "script": "self.lua"
+  "script": "self.lua",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "aString": {
+        "title": "aString Title",
+        "type": "string"
+      },
+      "anInteger": {
+        "type": "integer"
+      },
+      "aNumber": {
+        "type": "number"
+      },
+      "aBoolean": {
+        "type": "boolean"
+      },
+      "anObject": {
+        "type": "object",
+        "properties": {
+          "anotherString": {
+            "type": "string"
+          },
+          "anotherInteger": {
+            "type": "integer"
+          }
+        }
+      },
+      "anArray": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    }
+  }
 }

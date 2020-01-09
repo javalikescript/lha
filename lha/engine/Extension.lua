@@ -73,6 +73,10 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     return self.loaded
   end
 
+  function extension:getManifest()
+    return self.manifest
+  end
+
   function extension:name()
     return self.manifest.name or self:getPrettyName()
   end
@@ -140,12 +144,6 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     return self:subscribeEvent('poll', fn)
   end
 
-  function extension:publishExtensionEvent(source, ...)
-    if self ~= source and self:isActive() then
-      self:publishEvent(...)
-    end
-  end
-
   function extension:fireExtensionEvent(...)
     logger:info('extension:fireExtensionEvent('..TableList.concat(table.pack(...), ', ')..')')
     self.engine:publishExtensionsEvent(self, ...)
@@ -153,10 +151,8 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
 
   function extension:reloadExtension()
     logger:info('extension:reloadExtension() '..self.id)
-    self:publishExtensionEvent(nil, 'shutdown')
     self:cleanExtension()
     self:loadExtension()
-    self:publishExtensionEvent(nil, 'startup')
   end
 
   function extension:cleanExtension()
