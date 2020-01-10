@@ -1,9 +1,9 @@
 define(function() {
 
   var aVue = new Vue({
-    template: '<app-page id="editor" title="Editor"><page-article>' +
+    template: '<app-page id="editor" title="Editor"><article class="content">' +
       '<div id="aceEditorDiv" style="height: 100%; width: 100%;"></div>' +
-      '</page-article></app-page>',
+      '</article></app-page>',
       data: {
         aceEditor: null
       },

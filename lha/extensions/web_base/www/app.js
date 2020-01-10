@@ -179,7 +179,7 @@ Vue.component('app-page', {
   }
 });
 Vue.component('page-article', {
-  template: '<article class="content"><slot>Content</slot></article>'
+  template: '<article class="content"><div class="card-width"><slot>Content</slot></div></article>'
 });
 
 /************************************************************
@@ -821,17 +821,58 @@ new Vue({
   }
 });
 
+var newJsonItem = function(type) {
+  switch(type) {
+    case 'string':
+      return '';
+    case 'integer':
+    case 'number':
+      return 0;
+    case 'boolean':
+      return false;
+    case 'array':
+      return [];
+    case 'object':
+      return {};
+    }
+    return undefined;
+};
+
+var parseJsonItemValue = function(type, value) {
+  switch(type) {
+  case 'string':
+    return value;
+  case 'integer':
+  case 'number':
+    value = parseFloat(value);
+    if (isNaN(value)) {
+      return 0;
+    }
+    return value;
+  case 'boolean':
+    value = value.trim().toLowerCase();
+    return value === 'true';
+  }
+  throw new Error('Invalid type ' + type);
+};
+
 Vue.component('json-item', {
-  props: ['name', 'obj', 'schema', 'root'],
+  props: ['name', 'obj', 'pobj', 'schema', 'root'],
   data: function() {
     return {
       open: true
     };
   },
   template: '<li class="json"><div @click="toggle">' +
-    '<span>{{ label }}:</span><br>' +
-    '<input v-if="hasValue" v-model="obj" type="text" placeholder="Value">' +
-    '</div><ul v-show="open" v-if="hasProperties"><json-item v-for="(ss, n) in schema.properties" :name="n" :obj="getProperty(n)" :schema="ss" :root="root"></json-item></ul></li>',
+    '<span>{{ label }}:</span><span v-if="hasValue">( {{ obj }} )</span><br>' +
+    '<input v-if="hasValue" v-model="value" type="text" placeholder="Value">' +
+    '</div>' +
+    '<ul v-show="open" v-if="hasProperties"><li is="json-item" v-for="(ss, n) in schema.properties" :key="n" :name="n" :pobj="obj" :obj="getProperty(n)" :schema="ss" :root="root"></li></ul>' +
+    '<ul v-show="open" v-if="isList">' +
+    '<li is="json-item" v-for="(so, i) in obj" :key="i" :name="\'#\' + i" :pobj="obj" :obj="so" :schema="schema.items" :root="root"></li>' +
+    '<li><button v-on:click="addItem" title="Add Item"><i class="fa fa-plus"></i></button></li>' +
+    '</ul>' +
+    '</li>',
   computed: {
     label: function() {
       return this.schema && this.schema.title || this.name || 'Value';
@@ -839,34 +880,24 @@ Vue.component('json-item', {
     hasValue: function() {
       return this.schema && ((this.schema.type === 'number') || (this.schema.type === 'integer') || (this.schema.type === 'string') || (this.schema.type === 'boolean'));
     },
+    value: {
+      get () {
+        return this.obj;
+      },
+      set (val) {
+        //console.log('value()', val, this.$vnode.key);
+        this.pobj[this.$vnode.key] = parseJsonItemValue(this.schema.type, val);
+      }
+    },
     isList: function() {
-      return this.schema && (this.schema.type === 'array') && (typeof this.schema.items === 'object');
+      return this.schema && (this.schema.type === 'array') && (typeof this.schema.items === 'object') && Array.isArray(this.obj);
     },
     hasProperties: function() {
       if (this.schema && (this.schema.type === 'object') && (typeof this.schema.properties === 'object')) {
         for (var name in this.schema.properties) {
           var ss = this.schema.properties[name];
           if (!(name in this.obj)) {
-            var value;
-            switch(ss.type) {
-            case 'string':
-              value = '';
-              break;
-            case 'integer':
-            case 'number':
-              value = 0;
-              break;
-            case 'boolean':
-              value = false;
-              break;
-            case 'array':
-              value = [];
-              break;
-            case 'object':
-              value = {};
-              break;
-            }
-            this.obj[name] = value;
+            this.obj[name] = newJsonItem(ss.type);
           }
         }
         return true;
@@ -877,12 +908,26 @@ Vue.component('json-item', {
   methods: {
     getProperty: function(name) { 
       if (!(name in this.obj)) {
-        this.obj[name] = '';
+        if (name in this.schema.properties) {
+          this.obj[name] = newJsonItem(this.schema.properties[name].type);
+        } else {
+          this.obj[name] = '';
+        }
       }
       return this.obj[name];
     },
+    addItem: function() {
+      if (this.schema && (this.schema.type === 'array') && (typeof this.schema.items === 'object') && Array.isArray(this.obj)) {
+        console.log('addItem()', this.obj, this.schema);
+        var item = newJsonItem(this.schema.items.type);
+        this.obj.push(item);
+        this.$forceUpdate();
+      } else {
+        console.error('Cannot add item', this.obj, this.schema);
+      }
+    },
     toggle: function() {
-      if (this.isFolder) {
+      if (this.schema && ((this.schema.type === 'array') || (this.schema.type === 'object'))) {
         this.open = !this.open
       }
     }
@@ -902,11 +947,6 @@ new Vue({
     pollExtension: function(extension) {
       fetch('/engine/extensions/' + extension.id + '/poll', {method: 'POST'}).then(function() {
         toaster.toast('extension polled');
-      });
-    },
-    reloadExtension: function(extension) {
-      fetch('/engine/extensions/' + extension.id + '/reload', {method: 'POST'}).then(function() {
-        toaster.toast('extension reloaded');
       });
     },
     onShow: function() {
@@ -929,13 +969,31 @@ new Vue({
   },
   methods: {
     onDisable: function() {
-      var config = {extensions: {}};
       if (this.extensionId) {
-        config.extensions[this.extensionId] = {active: false};
-        fetch('/engine/configuration/', {
+        if (this.extension.config) {
+          this.extension.config.active = false;
+        }
+        fetch('/engine/configuration/extensions/' + this.extensionId, {
           method: 'POST',
           body: JSON.stringify({
-            value: config
+            value: {active: false}
+          })
+        });
+      }
+    },
+    onReload: function(extension) {
+      if (this.extensionId) {
+        fetch('/engine/extensions/' + this.extensionId + '/reload', {method: 'POST'}).then(function() {
+          toaster.toast('Extension reloaded');
+        });
+      }
+    },
+    onSave: function() {
+      if (this.extensionId && this.extension.config) {
+        fetch('/engine/configuration/extensions/' + this.extensionId, {
+          method: 'POST',
+          body: JSON.stringify({
+            value: this.extension.config
           })
         });
       }

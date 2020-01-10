@@ -145,7 +145,9 @@ section > article > input {
   height: 5rem;
 }
 section > article > a,
-section > article > p {
+section > article > p,
+section > article > div > a,
+section > article > div > p {
   font-size: 1.9rem;
   font-weight: normal;
   line-height: 2.5rem;
@@ -267,7 +269,7 @@ article.cards, .card-container {
   padding: 1rem;
   width: 100%;
 }
-article.form, .card {
+.card-width, .card {
   width: calc(100% - 4rem);
   max-width: 60rem;
   margin: 0 auto;

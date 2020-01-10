@@ -312,9 +312,9 @@ define(['requirePath'], function(requirePath) {
   };
 
   var scriptsEditorVue = new Vue({
-    template: '<app-page id="scriptsEditor" title="Scripts Editor"><page-article>' +
+    template: '<app-page id="scriptsEditor" title="Scripts Editor"><article class="content">' +
       '<div id="scriptsEditorBlocklyDiv" style="height: 100%; width: 100%;"></div>' +
-      '</page-article></app-page>',
+      '</article></app-page>',
     data: {
       scriptId: '',
       savedContent: null,
