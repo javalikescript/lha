@@ -135,8 +135,8 @@ section > article dl {
   line-height: 2.0rem;
   padding: 0.3rem;
 }
-section > article > select,
-section > article > input {
+section > article > section > select,
+section > article > section > input {
   padding: 0.1rem;
   margin: 0 2rem;
   line-height: 5rem;
@@ -144,21 +144,19 @@ section > article > input {
   font-weight: normal;
   height: 5rem;
 }
-section > article > a,
-section > article > p,
-section > article > div > a,
-section > article > div > p {
+section > article > section > a,
+section > article > section > p {
   font-size: 1.9rem;
   font-weight: normal;
   line-height: 2.5rem;
   padding: 0.5rem;
 }
-section > article > select,
-section > article > input[type="text"],
-section > article > input[type="password"] {
+section > article > section > select,
+section > article > section > input[type="text"],
+section > article > section > input[type="password"] {
   width: calc(100% - 4rem);
 }
-section > article > button {
+section > article > section > button {
   width: calc(100% - 4rem);
   padding: 0.1rem;
   margin: 0.5rem 2rem;
@@ -169,10 +167,10 @@ section > article > button {
   color: #000;
   vertical-align: middle;
 }
-section.page > article > h1 {
+section.page > article > section > h1 {
   color: #000;
 }
-section > article > h1 {
+section > article > section > h1 {
   line-height: 5rem;
   font-size: 2.2rem;
   font-weight: normal;
@@ -214,6 +212,18 @@ li {
   font-size: 1.9rem;
   font-weight: normal;
   line-height: 2.5rem;
+}
+section > article > section > ul li button,
+section > article > section > ul li select,
+section > article > section > ul li input[type="text"],
+section > article > section > ul li input[type="number"],
+section > article > section > ul li input[type="checkbox"],
+section > article > section > ul li input[type="password"] {
+  width: calc(100% - 4rem);
+  font-size: 1.9rem;
+  font-weight: normal;
+  line-height: 2.5rem;
+  padding-bottom: 0.5rem;
 }
 .scrollable {
   overflow-x: hidden;
@@ -269,7 +279,7 @@ article.cards, .card-container {
   padding: 1rem;
   width: 100%;
 }
-.card-width, .card {
+section > article > section, .card {
   width: calc(100% - 4rem);
   max-width: 60rem;
   margin: 0 auto;

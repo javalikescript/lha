@@ -179,7 +179,7 @@ Vue.component('app-page', {
   }
 });
 Vue.component('page-article', {
-  template: '<article class="content"><div class="card-width"><slot>Content</slot></div></article>'
+  template: '<article class="content"><section><slot>Content</slot></section></article>'
 });
 
 /************************************************************
@@ -754,6 +754,7 @@ new Vue({
   el: '#thing',
   data: {
     thingId: '',
+    properties: {},
     thing: {}
   },
   methods: {
@@ -771,11 +772,15 @@ new Vue({
         this.thingId = thingId;
       }
       self.thing = {};
-      fetch('/things/' + this.thingId).then(function(response) {
+      fetch('/things/' + self.thingId).then(function(response) {
         return response.json();
       }).then(function(thing) {
         self.thing = thing;
-        //console.log('thing', self.thing);
+        return fetch('/things/' + self.thingId + '/properties');
+      }).then(function(response) {
+        return response.json();
+      }).then(function(properties) {
+        self.properties = properties;
       });
     }
   }
@@ -839,21 +844,39 @@ var newJsonItem = function(type) {
 };
 
 var parseJsonItemValue = function(type, value) {
+  var valueType = typeof value;
+  if ((valueType !== 'string') && (valueType !== 'number') && (valueType !== 'boolean')) {
+    throw new Error('Invalid value type ' + valueType);
+  }
   switch(type) {
   case 'string':
-    return value;
+    if (valueType !== 'string') {
+      value = '' + value;
+    }
+    break;
   case 'integer':
   case 'number':
-    value = parseFloat(value);
-    if (isNaN(value)) {
-      return 0;
+    if (valueType === 'string') {
+      value = parseFloat(value);
+      if (isNaN(value)) {
+        return 0;
+      }
+    } else if (valueType === 'boolean') {
+      value = value ? 1 : 0;
     }
-    return value;
+    break;
   case 'boolean':
-    value = value.trim().toLowerCase();
-    return value === 'true';
+    if (valueType === 'string') {
+      value = value.trim().toLowerCase();
+      value = value === 'true';
+    } else if (valueType === 'number') {
+      value = value !== 0;
+    }
+    break;
+  default:
+    throw new Error('Invalid type ' + type);
   }
-  throw new Error('Invalid type ' + type);
+  return value;
 };
 
 Vue.component('json-item', {
@@ -864,8 +887,10 @@ Vue.component('json-item', {
     };
   },
   template: '<li class="json"><div @click="toggle">' +
-    '<span>{{ label }}:</span><span v-if="hasValue">( {{ obj }} )</span><br>' +
-    '<input v-if="hasValue" v-model="value" type="text" placeholder="Value">' +
+    '<span>{{ label }}:</span><br>' +
+    '<input v-if="hasStringValue" v-model="value" type="text" placeholder="String Value">' +
+    '<input v-if="hasNumberValue" v-model="value" type="number" placeholder="Number Value">' +
+    '<input v-if="hasBooleanValue" v-model="value" type="checkbox">' +
     '</div>' +
     '<ul v-show="open" v-if="hasProperties"><li is="json-item" v-for="(ss, n) in schema.properties" :key="n" :name="n" :pobj="obj" :obj="getProperty(n)" :schema="ss" :root="root"></li></ul>' +
     '<ul v-show="open" v-if="isList">' +
@@ -877,8 +902,14 @@ Vue.component('json-item', {
     label: function() {
       return this.schema && this.schema.title || this.name || 'Value';
     },
-    hasValue: function() {
-      return this.schema && ((this.schema.type === 'number') || (this.schema.type === 'integer') || (this.schema.type === 'string') || (this.schema.type === 'boolean'));
+    hasStringValue: function() {
+      return this.schema && (this.schema.type === 'string');
+    },
+    hasNumberValue: function() {
+      return this.schema && ((this.schema.type === 'number') || (this.schema.type === 'integer'));
+    },
+    hasBooleanValue: function() {
+      return this.schema && (this.schema.type === 'boolean');
     },
     value: {
       get () {
@@ -935,7 +966,7 @@ Vue.component('json-item', {
 });
 Vue.component('json', {
   props: ['name', 'obj', 'schema'],
-  template: '<json-item :name="name" :obj="obj" :schema="schema" :root="this"></json-item>'
+  template: '<ul><json-item :name="name" :obj="obj" :schema="schema" :root="this"></json-item></ul>'
 });
 
 new Vue({
@@ -981,7 +1012,7 @@ new Vue({
         });
       }
     },
-    onReload: function(extension) {
+    onReload: function() {
       if (this.extensionId) {
         fetch('/engine/extensions/' + this.extensionId + '/reload', {method: 'POST'}).then(function() {
           toaster.toast('Extension reloaded');

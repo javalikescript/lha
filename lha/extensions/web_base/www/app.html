@@ -155,6 +155,10 @@
       <div class="card" v-for="(property, name) in thing.properties">
         <div class="bar">
           <p>{{ property.title }}</p>
+          <p>
+            <span v-if="name in properties"><b>{{ properties[name] }}</b>&nbsp;<span><i>{{ property.unit }}</i></span></span>
+            <span v-else><i>No value</i></span>
+          </p>
           <div>
             <button v-on:click="openHistoricalData(name)"><i class="fas fa-chart-line"></i>&nbsp;History</button>
           </div>
