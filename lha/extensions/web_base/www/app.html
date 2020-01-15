@@ -133,18 +133,22 @@
         <div class="bar">
           <p>{{ thing.title }}</p>
           <div>
-            <!-- fas fa-database -->
             <button v-on:click="app.toPage('thing', thing.thingId)"><i class="fas fa-info"></i>&nbsp;Details</button>
           </div>
         </div>
         <p>{{ thing.description }}</p>
-        <p><input type="checkbox" v-model="thing.archiveData" /> Archive Data</p>
+        <p><label class="switch"><input type="checkbox" v-model="thing.archiveData" /><span class="slider"></span></label>&nbsp;Archive Data</p>
       </div>
+      <section>
+        <!-- fas fa-history fas fa-database -->
+        <button v-on:click="onArchiveAll()"><i class="fas fa-history"></i>&nbsp;Archive All</button>
+        <button v-on:click="onRemoveAll()"><i class="fa fa-trash"></i>&nbsp;Disable All</button>
+      </section>
     </article>
   </app-page>
   <app-page id="thing" title="Thing">
     <template slot="bar-right">
-      <button v-on:click="onShow" title="Refresh"><i class="fas fa-sync"></i></button>
+      <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
       <button v-on:click="disableThing()" title="Disable"><i class="fa fa-trash"></i></button>
     </template>
     <article class="cards">
@@ -169,7 +173,8 @@
   </app-page>
   <app-page id="addThings" title="Add Things">
     <template slot="bar-right">
-      <button v-on:click="onSave" title="Save"><i class="far fa-save"></i></button>
+      <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
+      <button v-on:click="onSave()" title="Save"><i class="far fa-save"></i></button>
     </template>
     <article class="cards">
       <div class="card" v-for="thing in things" v-if="! thing.toAdd">
@@ -179,11 +184,14 @@
         </div>
         <p>{{ thing.description }}</p>
       </div>
+      <section>
+        <button v-on:click="onAddAll()"><i class="fa fa-plus"></i>&nbsp;Add All</button>
+      </section>
     </article>
   </app-page>
   <app-page id="extensions" title="Extensions">
     <template slot="bar-right">
-      <button v-on:click="onShow" title="Refresh"><i class="fas fa-sync"></i></button>
+      <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
       <button v-on:click="app.toPage('addExtensions')" title="Add"><i class="fa fa-plus"></i></button>
     </template>
     <article class="cards">
@@ -201,7 +209,7 @@
   </app-page>
   <app-page id="extension" title="Extension">
     <template slot="bar-right">
-      <button v-on:click="onShow" title="Refresh"><i class="fas fa-sync"></i></button>
+      <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
       <!-- fa fa-minus -->
       <button v-on:click="onDisable" title="Disable"><i class="fa fa-trash"></i></button>
       <button v-on:click="onReload" title="Reload"><i class="fas fa-redo"></i></button>
@@ -210,7 +218,7 @@
     <page-article>
       <p>{{ extension.info.name }}</p>
       <p>{{ extension.info.description }}</p>
-      <json :name="'Configuration'" :obj="extension.config" :schema="extension.manifest.schema"></json>
+      <json v-if="extension.manifest.schema" :name="'Configuration'" :obj="extension.config" :schema="extension.manifest.schema"></json>
     </page-article>
   </app-page>
   <app-page id="addExtensions" title="Add Extensions">

@@ -38,8 +38,22 @@ require(['_AMD'], function(_AMD) {
 });
 
 /************************************************************
- * Main application
+ * Helpers
  ************************************************************/
+var strcasecmp = function(a, b) {
+  var al = ('' + a).toLowerCase();
+  var bl = ('' + b).toLowerCase();
+  return al === bl ? 0 : (al > bl ? 1 : -1);
+};
+
+var compareByName = function(a, b) {
+  return strcasecmp(a.name, b.name);
+};
+
+var compareByTitle = function(a, b) {
+  return strcasecmp(a.title, b.title);
+};
+
 var setTheme = function(name) {
   var body = document.getElementsByTagName('body')[0];
   body.setAttribute('class', 'theme_' + name);
@@ -49,6 +63,55 @@ var formatNavigationPath = function(pageId, path) {
   return '/' + pageId + '/' + (path ? path : '');
 };
 
+var hsvToRgb = function(h, s, v) {
+  var r, g, b;
+  var i = Math.floor(h * 6);
+  var f = h * 6 - i;
+  var p = v * (1 - s);
+  var q = v * (1 - f * s);
+  var t = v * (1 - (1 - f) * s);
+  switch (i % 6) {
+  case 0: r = v, g = t, b = p; break;
+  case 1: r = q, g = v, b = p; break;
+  case 2: r = p, g = v, b = t; break;
+  case 3: r = p, g = q, b = v; break;
+  case 4: r = t, g = p, b = v; break;
+  case 5: r = v, g = p, b = q; break;
+  }
+  return 'rgb(' + Math.floor(r * 255) + ',' + Math.floor(g * 255) + ',' + Math.floor(b * 255) + ')';
+};
+
+var hashString = function(value) {
+  var hash = 0;
+  if (typeof value === 'string') {
+    for (var i = 0; i < value.length; i++) {
+      hash = ((hash << 5) - hash) + value.charCodeAt(i);
+      hash = hash & hash; // Convert to 32bit integer
+    }
+  }
+  return hash;
+};
+
+var SEC_IN_HOUR = 60 * 60;
+var SEC_IN_DAY = SEC_IN_HOUR * 24;
+
+var dateToSec = function(date) {
+  return Math.floor(date.getTime() / 1000);
+};
+
+var parseBoolean = function(value) {
+  switch (typeof value) {
+  case 'boolean':
+    return value;
+  case 'string':
+    return value.toLowerCase() === 'true';
+  }
+  return false;
+};
+
+/************************************************************
+ * Main application
+ ************************************************************/
 var app = new Vue({
   el: '#app',
   data: {
@@ -181,6 +244,11 @@ Vue.component('app-page', {
 Vue.component('page-article', {
   template: '<article class="content"><section><slot>Content</slot></section></article>'
 });
+/*
+Vue.component('switch', {
+  template: '<label class="switch"><slot><input type="checkbox" /></slot><span class="slider"></span></label>'
+});
+*/
 
 /************************************************************
  * Application component pages
@@ -324,87 +392,6 @@ new Vue({
     }
   }
 });
-
-var jsonToTree = function(name, obj, path) {
-  var treeItem = {
-    name: name,
-    path: path
-  };
-  if (Array.isArray(obj)) {
-    treeItem.children = [];
-    for (var i = 0; i < obj.length; i++) {
-      treeItem.children.push(jsonToTree('#' + i, obj[i], path + '/' + i));
-    }
-  } else if ((typeof obj === 'object') && (obj !== null)) {
-    treeItem.children = [];
-    var keys = Object.keys(obj).sort();
-    for (var i = 0; i < keys.length; i++) {
-      var key = keys[i];
-      treeItem.children.push(jsonToTree(key, obj[key], path + '/' + key));
-    }
-  } else {
-    treeItem.value = obj;
-  }
-  return treeItem;
-};
-
-var treeToJson = function(treeItem) {
-  if (Array.isArray(treeItem.children)) {
-    var obj = {};
-    for (var i = 0; i < treeItem.children.length; i++) {
-      var child = treeItem.children[i];
-      obj[child.name] = treeToJson(child);
-    }
-    return obj
-  }
-  return treeItem.value;
-};
-
-var hsvToRgb = function(h, s, v) {
-  var r, g, b;
-  var i = Math.floor(h * 6);
-  var f = h * 6 - i;
-  var p = v * (1 - s);
-  var q = v * (1 - f * s);
-  var t = v * (1 - (1 - f) * s);
-  switch (i % 6) {
-  case 0: r = v, g = t, b = p; break;
-  case 1: r = q, g = v, b = p; break;
-  case 2: r = p, g = v, b = t; break;
-  case 3: r = p, g = q, b = v; break;
-  case 4: r = t, g = p, b = v; break;
-  case 5: r = v, g = p, b = q; break;
-  }
-  return 'rgb(' + Math.floor(r * 255) + ',' + Math.floor(g * 255) + ',' + Math.floor(b * 255) + ')';
-};
-
-var hashString = function(value) {
-  var hash = 0;
-  if (typeof value === 'string') {
-    for (var i = 0; i < value.length; i++) {
-      hash = ((hash << 5) - hash) + value.charCodeAt(i);
-      hash = hash & hash; // Convert to 32bit integer
-    }
-  }
-  return hash;
-};
-
-var SEC_IN_HOUR = 60 * 60;
-var SEC_IN_DAY = SEC_IN_HOUR * 24;
-
-var dateToSec = function(date) {
-  return Math.floor(date.getTime() / 1000);
-};
-
-var parseBoolean = function(value) {
-  switch (typeof value) {
-  case 'boolean':
-    return value;
-  case 'string':
-    return value.toLowerCase() === 'true';
-  }
-  return false;
-};
 
 var createNumberChartDataSets = function(dataPointSet, datasets, prefix) {
   datasets = datasets || [];
@@ -727,9 +714,24 @@ new Vue({
       fetch('/engine/things').then(function(response) {
         return response.json();
       }).then(function(things) {
+        if (Array.isArray(things)) {
+          things.sort(compareByTitle);
+        }
         self.things = things;
         //console.log('things', self.things);
       });
+    },
+    onArchiveAll: function() {
+      for (var i = 0; i < this.things.length; i++) {
+        this.things[i].archiveData = true;
+      }
+    },
+    onRemoveAll: function() {
+      Promise.all(this.things.map(function(thing) {
+        return fetch('/engine/things/' + thing.thingId, {method: 'DELETE'});
+      })).then(function() {
+        toaster.toast('Things disabled');
+      })
     },
     onSave: function() {
       var config = {things: {}};
@@ -780,6 +782,9 @@ new Vue({
       }).then(function(response) {
         return response.json();
       }).then(function(properties) {
+        if (Array.isArray(properties)) {
+          properties.sort(compareByTitle);
+        }
         self.properties = properties;
       });
     }
@@ -798,6 +803,9 @@ new Vue({
       fetch('/engine/discoveredThings').then(function(response) {
         return response.json();
       }).then(function(things) {
+        if (Array.isArray(things)) {
+          things.sort(compareByTitle);
+        }
         for (var i = 0; i < things.length; i++) {
           var thing = things[i];
           thing.toAdd = false;
@@ -805,6 +813,11 @@ new Vue({
         }
         //console.log('things', self.things);
       });
+    },
+    onAddAll: function() {
+      for (var i = 0; i < this.things.length; i++) {
+        this.things[i].toAdd = true;
+      }
     },
     onSave: function() {
       var thingsToAdd = [];
@@ -890,7 +903,8 @@ Vue.component('json-item', {
     '<span>{{ label }}:</span><br>' +
     '<input v-if="hasStringValue" v-model="value" type="text" placeholder="String Value">' +
     '<input v-if="hasNumberValue" v-model="value" type="number" placeholder="Number Value">' +
-    '<input v-if="hasBooleanValue" v-model="value" type="checkbox">' +
+    '<label v-if="hasBooleanValue" class="switch"><input type="checkbox" v-model="value" /><span class="slider"></span></label>' +
+    //'<input v-if="hasBooleanValue" v-model="value" type="checkbox">' +
     '</div>' +
     '<ul v-show="open" v-if="hasProperties"><li is="json-item" v-for="(ss, n) in schema.properties" :key="n" :name="n" :pobj="obj" :obj="getProperty(n)" :schema="ss" :root="root"></li></ul>' +
     '<ul v-show="open" v-if="isList">' +
@@ -985,6 +999,9 @@ new Vue({
       fetch('/engine/extensions').then(function(response) {
         return response.json();
       }).then(function(extensions) {
+        if (Array.isArray(extensions)) {
+          extensions.sort(compareByName);
+        }
         self.extensions = extensions;
         //console.log('extensions', self.extensions);
       });
@@ -1056,6 +1073,9 @@ new Vue({
       fetch('/engine/extensions').then(function(response) {
         return response.json();
       }).then(function(extensions) {
+        if (Array.isArray(extensions)) {
+          extensions.sort(compareByName);
+        }
         self.extensions = extensions;
         //console.log('extensions', self.extensions);
       });
