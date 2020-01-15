@@ -26,7 +26,7 @@ local luaThing = Thing:new('Lua', 'Lua host engine', {'MultiLevelSensor'}):addPr
 }, 0):addProperty('user', {
   ['@type'] = 'LevelProperty',
   title = 'Lua User Time',
-  type = 'integer',
+  type = 'number',
   description = 'The amount in seconds of CPU time used by the program',
   minimum = 0,
   readOnly = true,
@@ -59,6 +59,6 @@ extension:subscribeEvent('poll', function()
   logger:info('polling self extension')
   local clock = os.clock()
   luaThing:updatePropertyValue('memory', math.floor(collectgarbage('count') * 1024))
-  luaThing:updatePropertyValue('user', math.floor(clock - lastClock))
+  luaThing:updatePropertyValue('user', math.floor((clock - lastClock) * 1000) / 1000)
   lastClock = clock
 end)

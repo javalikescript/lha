@@ -72,9 +72,10 @@ local PROPERTIES = {
 		['@type'] = 'LevelProperty',
 		type = 'integer',
 		title = 'Light Level',
-		description = 'The light level in Lux',
+		description = 'The light level in lux',
 		minimum = 0,
-		readOnly = true
+		readOnly = true,
+		unit = 'lux'
 	},
 	PUSHED = {
 		['@type'] = 'PushedProperty',

@@ -1,6 +1,6 @@
 {
-  "name": "Engine Monitoring",
-  "description": "Expose engine informations",
+  "name": "Lua Monitoring",
+  "description": "Expose Lua engine informations",
   "version": "1.0",
   "script": "self.lua"
 }

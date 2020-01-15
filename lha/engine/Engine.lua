@@ -243,10 +243,21 @@ local REST_THINGS = {
   [''] = function(exchange)
     local engine = exchange:getAttribute('engine')
     local descriptions = {}
+    local thingIds = tables.keys(engine.things)
+    table.sort(thingIds)
+    for _, thingId in ipairs(thingIds) do
+      local thing = engine.things[thingId]
+      if thing then
+        local description = thing:asThingDescription()
+        table.insert(descriptions, description)
+      end
+    end
+    --[[
     for _, thing in pairs(engine.things) do
       local description = thing:asThingDescription()
       table.insert(descriptions, description)
     end
+    ]]
     return descriptions
   end,
   ['/any'] = REST_THING,
@@ -454,6 +465,7 @@ local REST_ENGINE_HANDLERS = {
           return thing:asEngineThingDescription()
         elseif method == http.CONST.METHOD_DELETE then
           engine:disableThing(thingId)
+          engine:publishEvent('things')
         else
           httpHandler.methodNotAllowed(exchange)
           return false
