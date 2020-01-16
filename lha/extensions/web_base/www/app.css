@@ -213,6 +213,9 @@ li {
   font-weight: normal;
   line-height: 2.5rem;
 }
+article > ul > li {
+  height: 4rem;
+}
 section > article > section > ul li button,
 section > article > section > ul li select,
 section > article > section > ul li input[type="text"],

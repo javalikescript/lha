@@ -906,8 +906,8 @@ Vue.component('json-item', {
     '<label v-if="hasBooleanValue" class="switch"><input type="checkbox" v-model="value" /><span class="slider"></span></label>' +
     //'<input v-if="hasBooleanValue" v-model="value" type="checkbox">' +
     '</div>' +
-    '<ul v-show="open" v-if="hasProperties"><li is="json-item" v-for="(ss, n) in schema.properties" :key="n" :name="n" :pobj="obj" :obj="getProperty(n)" :schema="ss" :root="root"></li></ul>' +
-    '<ul v-show="open" v-if="isList">' +
+    '<ul class="json-properties" v-show="open" v-if="hasProperties"><li is="json-item" v-for="(ss, n) in schema.properties" :key="n" :name="n" :pobj="obj" :obj="getProperty(n)" :schema="ss" :root="root"></li></ul>' +
+    '<ul class="json-items" v-show="open" v-if="isList">' +
     '<li is="json-item" v-for="(so, i) in obj" :key="i" :name="\'#\' + i" :pobj="obj" :obj="so" :schema="schema.items" :root="root"></li>' +
     '<li><button v-on:click="addItem" title="Add Item"><i class="fa fa-plus"></i></button></li>' +
     '</ul>' +
@@ -980,7 +980,7 @@ Vue.component('json-item', {
 });
 Vue.component('json', {
   props: ['name', 'obj', 'schema'],
-  template: '<ul><json-item :name="name" :obj="obj" :schema="schema" :root="this"></json-item></ul>'
+  template: '<ul class="json-root"><json-item :name="name" :obj="obj" :schema="schema" :root="this"></json-item></ul>'
 });
 
 new Vue({

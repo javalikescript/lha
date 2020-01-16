@@ -15,6 +15,7 @@ tables.merge(configuration, {
 
 local hueBridge
 local thingsMap = {}
+local thingIdsMap = {}
 local lastSensorPollTime
 local lastLightPollTime
 
@@ -23,17 +24,18 @@ extension:subscribeEvent('things', function()
   local things = extension:getThings()
   thingsMap = {}
   for discoveryKey, thing in pairs(things) do
-    thingsMap[discoveryKey] = thing
+    thingsMap[discoveryKey] = hueBridge:connectThing(thing, thingIdsMap[discoveryKey])
   end
 end)
 
-local function onHueThing(info, time, lastTime)
+local function onHueThing(id, info, time, lastTime)
   if info.state and info.uniqueid then
     local thing = thingsMap[info.uniqueid]
     if not thing then
       thing = HueBridge.createThingForType(info)
       if thing then
         logger:info('New '..extension:getPrettyName()..' thing found with type "'..tostring(info.type)..'" and id "'..tostring(info.uniqueid)..'"')
+        thingIdsMap[info.uniqueid] = id
         extension:discoverThing(info.uniqueid, thing)
       end
     end
@@ -49,9 +51,9 @@ extension:subscribeEvent('poll', function()
   hueBridge:get(HueBridge.CONST.SENSORS):next(function(allSensors)
     local time = Date.now()
     if allSensors then
-      for _, sensor in pairs(allSensors) do
+      for sensorId, sensor in pairs(allSensors) do
         -- see https://www.developers.meethue.com/documentation/supported-sensors
-        onHueThing(sensor, time, lastSensorPollTime)
+        onHueThing(sensorId, sensor, time, lastSensorPollTime)
       end
     end
     lastSensorPollTime = time
@@ -62,7 +64,7 @@ extension:subscribeEvent('poll', function()
     local time = Date.now()
     if allLights then
       for lightId, light in pairs(allLights) do
-        onHueThing(light, time, lastLightPollTime)
+        onHueThing(lightId, light, time, lastLightPollTime)
       end
       lastLightPollTime = time
     end

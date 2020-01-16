@@ -7,6 +7,7 @@ local httpHandler = require('jls.net.http.handler')
 local Scheduler = require('jls.util.Scheduler')
 local runtime = require('jls.lang.runtime')
 local event = require('jls.lang.event')
+local Promise = require('jls.lang.Promise')
 local strings = require('jls.util.strings')
 local tables = require('jls.util.tables')
 local Date = require('jls.util.Date')
@@ -158,6 +159,8 @@ local EngineThing = class.create(Thing, function(engineThing, super)
     self.engine = engine
     self.extensionId = extensionId
     self.thingId = thingId
+    self.connected = false
+    self.setterFn = false
   end
 
   function engineThing:setArchiveData(archiveData)
@@ -168,6 +171,29 @@ local EngineThing = class.create(Thing, function(engineThing, super)
     return tables.getPath(self.engine.root, 'configuration/things/'..self.thingId..'/archiveData', false)
   end
 
+  function engineThing:setPropertyValue(name, value)
+		local property = self:findProperty(name)
+    if property and property:isReadOnly() then
+      return
+    end
+    if self.setterFn then
+      local r = self:setterFn(name, value)
+      if r ~= nil then
+        if Promise:isInstance(r) then
+          r:next(function(v)
+            if v ~= nil then
+              super.setPropertyValue(self, name, v)
+            end
+          end)
+        else
+          super.setPropertyValue(self, name, r)
+        end
+      end
+    else
+      super.setPropertyValue(self, name, value)
+    end
+	end
+
   function engineThing:updatePropertyValue(name, value)
     if self:getArchiveData() then
       self.engine:setRootValues('data/'..self.thingId..'/'..name, value, true)
@@ -175,14 +201,23 @@ local EngineThing = class.create(Thing, function(engineThing, super)
     return super.updatePropertyValue(self, name, value)
 	end
 
-  --[[
-  function engineThing:asThingDescription()
-    local description = super.asThingDescription(self)
-    description.archiveData = self:getArchiveData()
-    description.thingId = self.thingId
-    return description
+  function engineThing:connect(setterFn)
+    self.connected = true
+    self.setterFn = (type(setterFn) == 'function') and setterFn
+    return self
 	end
-  ]]
+
+  function engineThing:disconnect()
+    local setterFn = self.setterFn
+    self.connected = false
+    self.setterFn = false
+    return setterFn
+	end
+
+  function engineThing:isConnected()
+    return self.connected
+	end
+
   function engineThing:asEngineThingDescription()
     local description = self:asThingDescription()
     description.archiveData = self:getArchiveData()

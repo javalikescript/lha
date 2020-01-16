@@ -189,6 +189,29 @@ return require('jls.lang.class').create(function(hueBridge)
     end
   end
 
+  function hueBridge:setThingPropertyValue(thing, id, name, value)
+    if name == 'on' and thing:hasType('Light') then -- and thing:hasType('OnOffSwitch')
+      hueBridge:put(CONST.LIGHTS..'/'..id..'/state', {on = value})
+    end
+    if name == 'brightness' and thing:hasType('Light') then
+      hueBridge:put(CONST.LIGHTS..'/'..id..'/state', {bri = math.floor(value * 255 / 100)})
+    end
+    if name == 'colorTemperature' and thing:hasType('ColorControl') then
+      hueBridge:put(CONST.LIGHTS..'/'..id..'/state', {ct = math.floor(1000000 / value)})
+    end
+    if name == 'color' and thing:hasType('ColorControl') then
+      local h, s, v = Thing.rgbHexToHsv(value)
+      hueBridge:put(CONST.LIGHTS..'/'..id..'/state', {hue = math.floor(h * 65535), sat = math.floor(s * 254), bri = math.floor(v * 254)})
+    end
+  end
+
+  function hueBridge:connectThing(thing, id)
+    --thing.hueId = id
+    return thing:connect(function(t, name, value)
+      self:setThingPropertyValue(t, id, name, value)
+    end)
+  end
+
 end, function(HueBridge)
 
   HueBridge.CONST = CONST

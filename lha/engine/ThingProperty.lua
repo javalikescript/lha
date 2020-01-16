@@ -28,6 +28,10 @@ return require('jls.lang.class').create(function(thingProperty)
 		self.metadata = metadata or {}
 	end
 
+	function thingProperty:isReadOnly()
+		return self.metadata and (self.metadata.readOnly == true)
+	end
+
 	function thingProperty:getValue()
 		return self.value
 	end

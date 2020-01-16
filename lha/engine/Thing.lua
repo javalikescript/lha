@@ -1,4 +1,7 @@
 local tables = require('jls.util.tables')
+local TableList = require('jls.util.TableList')
+local color = require('jls.util.color')
+local hex = require('jls.util.hex')
 local ThingProperty = require('lha.engine.ThingProperty')
 local ThingEvent = require('lha.engine.ThingEvent')
 
@@ -149,6 +152,10 @@ return require('jls.lang.class').create(function(thing)
 	function thing:setDescription(description)
 		self.description = description
 		return self
+	end
+
+	function thing:hasType(type)
+		return TableList.indexOf(self.type, type) ~= nil
 	end
 
 	--- Adds a property to this thing.
@@ -325,33 +332,30 @@ return require('jls.lang.class').create(function(thing)
 
 end, function(Thing)
 
-	function Thing.hsvToRgb(h, s, v)
-		if s <= 0 then
-			return v, v, v
-		end
-		local c = v * s
-		local x = (1 - math.abs((h % 2) - 1)) * c
-		local m = v - c
-		local r, g, b = 0, 0, 0
-		if h < 1 then
-			r, g, b = c, x, 0
-		elseif h < 2 then
-			r, g, b = x, c, 0
-		elseif h < 3 then
-			r, g, b = 0, c, x
-		elseif h < 4 then
-			r, g, b = 0, x, c
-		elseif h < 5 then
-			r, g, b = x, 0, c
-		else
-			r, g, b = c, 0, x
-		end
-		return r + m, g + m, b + m
+	function Thing.formatRgbHex(r, g, b)
+		return string.format('#%02X%02X%02X', math.floor(r * 255), math.floor(g * 255), math.floor(b * 255))
 	end
-	
+
+	function Thing.parseRgbHex(rgbHex)
+		if string.sub(rgbHex, 1, 1) == '#' then
+			rgbHex = string.sub(rgbHex, 2)
+		end
+		if #rgbHex < 6 then
+			return 0, 0, 0
+		end
+		local rgb = hex.decode(rgbHex)
+		local r, g, b = string.byte(rgb, 1, 3)
+		return r / 255, g / 255, b / 255
+	end
+
 	function Thing.hsvToRgbHex(h, s, v)
-		local r, g, b = Thing.hsvToRgb(h, s, v)
-		return string.format('%02X%02X%02X', math.floor(r * 255), math.floor(g * 255), math.floor(b * 255))
+		local r, g, b = color.hsvToRgb(h, s, v)
+		return Thing.formatRgbHex(r, g, b)
+	end
+
+	function Thing.rgbHexToHsv(rgbHex)
+		local r, g, b = Thing.parseRgbHex(rgbHex)
+		return color.rgbToHsv(r, g, b)
 	end
 
 	function Thing.getDefaultValueForType(type)

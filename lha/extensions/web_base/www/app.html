@@ -164,7 +164,7 @@
             <span v-else><i>No value</i></span>
           </p>
           <div>
-            <button v-on:click="openHistoricalData(name)"><i class="fas fa-chart-line"></i>&nbsp;History</button>
+            <button v-if="property.type != 'string'" v-on:click="openHistoricalData(name)"><i class="fas fa-chart-line"></i>&nbsp;History</button>
           </div>
         </div>
         <p>{{ property.description }}</p>
@@ -177,15 +177,15 @@
       <button v-on:click="onSave()" title="Save"><i class="far fa-save"></i></button>
     </template>
     <article class="cards">
-      <div class="card" v-for="thing in things" v-if="! thing.toAdd">
+      <div class="card" v-for="thing in things">
         <div class="bar">
           <p>{{ thing.title }}</p>
-          <button v-on:click="thing.toAdd = true"><i class="fa fa-plus"></i>&nbsp;Add</button>
+          <label class="switch" title="Enable"><input type="checkbox" v-model="thing.toAdd" /><span class="slider"></span></label>
         </div>
         <p>{{ thing.description }}</p>
       </div>
       <section>
-        <button v-on:click="onAddAll()"><i class="fa fa-plus"></i>&nbsp;Add All</button>
+        <button v-on:click="onAddAll()"><i class="fa fa-plus"></i>&nbsp;Enable All</button>
       </section>
     </article>
   </app-page>
