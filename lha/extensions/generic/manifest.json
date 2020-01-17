@@ -1,0 +1,51 @@
+{
+  "name": "Generic Things",
+  "description": "Declare custom things",
+  "version": "1.0",
+  "script": "generic.lua",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "things": {
+        "title": "Generic Things",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "title": "Thing Title",
+              "type": "string"
+            },
+            "properties": {
+              "title": "Thing Properties",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "title": "Property Title",
+                    "type": "string"
+                  },
+                  "name": {
+                    "title": "Property Name",
+                    "type": "string"
+                  },
+                  "type": {
+                    "title": "Property Type",
+                    "type": "string",
+                    "enum": [
+                      "boolean",
+                      "integer",
+                      "number",
+                      "string"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

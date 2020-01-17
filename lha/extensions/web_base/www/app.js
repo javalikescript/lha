@@ -109,6 +109,62 @@ var parseBoolean = function(value) {
   return false;
 };
 
+var newJsonItem = function(type) {
+  switch(type) {
+    case 'string':
+      return '';
+    case 'integer':
+    case 'number':
+      return 0;
+    case 'boolean':
+      return false;
+    case 'array':
+      return [];
+    case 'object':
+      return {};
+    }
+    return undefined;
+};
+
+var parseJsonItemValue = function(type, value) {
+  if ((value === null) || (value === undefined)) {
+    return value;
+  }
+  var valueType = typeof value;
+  if ((valueType !== 'string') && (valueType !== 'number') && (valueType !== 'boolean')) {
+    throw new Error('Invalid value type ' + valueType);
+  }
+  switch(type) {
+  case 'string':
+    if (valueType !== 'string') {
+      value = '' + value;
+    }
+    break;
+  case 'integer':
+  case 'number':
+    if (valueType === 'string') {
+      value = parseFloat(value);
+      if (isNaN(value)) {
+        return 0;
+      }
+    } else if (valueType === 'boolean') {
+      value = value ? 1 : 0;
+    }
+    break;
+  case 'boolean':
+    if (valueType === 'string') {
+      value = value.trim().toLowerCase();
+      value = value === 'true';
+    } else if (valueType === 'number') {
+      value = value !== 0;
+    }
+    break;
+  default:
+    throw new Error('Invalid type ' + type);
+  }
+  return value;
+};
+
 /************************************************************
  * Main application
  ************************************************************/
@@ -755,8 +811,10 @@ new Vue({
 new Vue({
   el: '#thing',
   data: {
+    edit: false,
     thingId: '',
     properties: {},
+    props: {},
     thing: {}
   },
   methods: {
@@ -768,12 +826,38 @@ new Vue({
         toaster.toast('Thing disabled');
       });
     },
+    onEdit: function() {
+      this.edit = !this.edit;
+      if (this.edit) {
+        this.props = Object.assign({}, this.properties);
+      }
+    },
+    onSave: function() {
+      var modifiedProps = {};
+      for (var key in this.thing.properties) {
+        var tp = this.thing.properties[key];
+        var value = parseJsonItemValue(tp.type, this.props[key]);
+        //console.info(key, tp.type, value, this.props[key]);
+        //if ((value !== null) && (value !== undefined) && (value !== this.properties[key])) {
+        if (value !== this.properties[key]) {
+          modifiedProps[key] = value;
+        }
+      }
+      //console.info('onSave()', JSON.stringify(modifiedProps, undefined, 2));
+      fetch('/things/' + this.thingId + '/properties', {
+        method: 'PUT',
+        body: JSON.stringify(modifiedProps)
+      }).then(function() {
+        toaster.toast('Properties updated');
+      });
+    },
     onShow: function(thingId) {
-      var self = this;
+      this.edit = false;
       if (thingId) {
         this.thingId = thingId;
       }
-      self.thing = {};
+      this.thing = {};
+      var self = this;
       fetch('/things/' + self.thingId).then(function(response) {
         return response.json();
       }).then(function(thing) {
@@ -839,59 +923,6 @@ new Vue({
   }
 });
 
-var newJsonItem = function(type) {
-  switch(type) {
-    case 'string':
-      return '';
-    case 'integer':
-    case 'number':
-      return 0;
-    case 'boolean':
-      return false;
-    case 'array':
-      return [];
-    case 'object':
-      return {};
-    }
-    return undefined;
-};
-
-var parseJsonItemValue = function(type, value) {
-  var valueType = typeof value;
-  if ((valueType !== 'string') && (valueType !== 'number') && (valueType !== 'boolean')) {
-    throw new Error('Invalid value type ' + valueType);
-  }
-  switch(type) {
-  case 'string':
-    if (valueType !== 'string') {
-      value = '' + value;
-    }
-    break;
-  case 'integer':
-  case 'number':
-    if (valueType === 'string') {
-      value = parseFloat(value);
-      if (isNaN(value)) {
-        return 0;
-      }
-    } else if (valueType === 'boolean') {
-      value = value ? 1 : 0;
-    }
-    break;
-  case 'boolean':
-    if (valueType === 'string') {
-      value = value.trim().toLowerCase();
-      value = value === 'true';
-    } else if (valueType === 'number') {
-      value = value !== 0;
-    }
-    break;
-  default:
-    throw new Error('Invalid type ' + type);
-  }
-  return value;
-};
-
 Vue.component('json-item', {
   props: ['name', 'obj', 'pobj', 'schema', 'root'],
   data: function() {
@@ -902,9 +933,9 @@ Vue.component('json-item', {
   template: '<li class="json"><div @click="toggle">' +
     '<span>{{ label }}:</span><br>' +
     '<input v-if="hasStringValue" v-model="value" type="text" placeholder="String Value">' +
+    '<select v-if="hasEnumValue" v-model="value"><option v-for="label in schema.enum" :value="label">{{label}}</option></select>' +
     '<input v-if="hasNumberValue" v-model="value" type="number" placeholder="Number Value">' +
     '<label v-if="hasBooleanValue" class="switch"><input type="checkbox" v-model="value" /><span class="slider"></span></label>' +
-    //'<input v-if="hasBooleanValue" v-model="value" type="checkbox">' +
     '</div>' +
     '<ul class="json-properties" v-show="open" v-if="hasProperties"><li is="json-item" v-for="(ss, n) in schema.properties" :key="n" :name="n" :pobj="obj" :obj="getProperty(n)" :schema="ss" :root="root"></li></ul>' +
     '<ul class="json-items" v-show="open" v-if="isList">' +
@@ -917,7 +948,10 @@ Vue.component('json-item', {
       return this.schema && this.schema.title || this.name || 'Value';
     },
     hasStringValue: function() {
-      return this.schema && (this.schema.type === 'string');
+      return this.schema && (this.schema.type === 'string') && !Array.isArray(this.schema.enum);
+    },
+    hasEnumValue: function() {
+      return this.schema && (this.schema.type === 'string') && Array.isArray(this.schema.enum);
     },
     hasNumberValue: function() {
       return this.schema && ((this.schema.type === 'number') || (this.schema.type === 'integer'));

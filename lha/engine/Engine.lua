@@ -235,6 +235,7 @@ local function reloadExtension(extension)
   extension:reloadExtension()
   if extension:isActive() then
     extension:publishEvent('startup')
+    extension:publishEvent('things')
   end
 end
 
@@ -244,7 +245,22 @@ local REST_THING = {
   end,
   properties = {
       [''] = function(exchange)
+        local request = exchange:getRequest()
+        local method = string.upper(request:getMethod())
+        if method == http.CONST.METHOD_GET then
           return exchange.attributes.thing:getProperties()
+        elseif method == http.CONST.METHOD_PUT then
+          local rt = json.decode(request:getBody())
+          for name, value in pairs(rt) do
+            if value then
+              --property:setValue(value)
+              exchange.attributes.thing:setPropertyValue(name, value)
+            end
+          end
+        else
+          httpHandler.methodNotAllowed(exchange)
+          return false
+        end
       end,
       ['/any'] = function(exchange)
           local request = exchange:getRequest()
