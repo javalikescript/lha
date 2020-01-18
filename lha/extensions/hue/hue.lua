@@ -15,7 +15,6 @@ tables.merge(configuration, {
 
 local hueBridge
 local thingsMap = {}
-local thingIdsMap = {}
 local lastSensorPollTime
 local lastLightPollTime
 
@@ -24,18 +23,19 @@ extension:subscribeEvent('things', function()
   local things = extension:getThings()
   thingsMap = {}
   for discoveryKey, thing in pairs(things) do
-    thingsMap[discoveryKey] = hueBridge:connectThing(thing, thingIdsMap[discoveryKey])
+    thingsMap[discoveryKey] = thing
   end
 end)
 
 local function onHueThing(id, info, time, lastTime)
   if info.state and info.uniqueid then
     local thing = thingsMap[info.uniqueid]
-    if not thing then
+    if thing then
+      hueBridge:connectThing(thing, id)
+    else
       thing = HueBridge.createThingForType(info)
       if thing then
-        logger:info('New '..extension:getPrettyName()..' thing found with type "'..tostring(info.type)..'" and id "'..tostring(info.uniqueid)..'"')
-        thingIdsMap[info.uniqueid] = id
+        logger:info('New '..extension:getPrettyName()..' thing found with type "'..tostring(info.type)..'" id "'..tostring(id)..'" and uniqueid "'..tostring(info.uniqueid)..'"')
         extension:discoverThing(info.uniqueid, thing)
       end
     end
