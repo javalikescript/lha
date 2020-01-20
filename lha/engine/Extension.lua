@@ -109,6 +109,9 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
       pc = {}
       tables.setPath(rootTable, pp, pc)
     end
+    if self.manifest.config then
+      tables.merge(pc, self.manifest.config, true)
+    end
     -- TODO Cache
     return pc
   end
