@@ -2,5 +2,17 @@
   "name": "Web Base",
   "description": "Expose web base content",
   "version": "1.0",
-  "script": "web_base.lua"
+  "script": "web_base.lua",
+  "config": {
+    "assets": "lha/extensions/web_base/assets"
+  },
+  "schema": {
+    "type": "object",
+    "properties": {
+      "assets": {
+        "title": "Static assets directory",
+        "type": "string"
+      }
+    }
+  }
 }

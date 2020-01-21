@@ -11,9 +11,11 @@
     "type": "object",
     "properties": {
       "url": {
+        "title": "Bridge API URL",
         "type": "string"
       },
       "user": {
+        "title": "Bridge API username",
         "type": "string"
       }
     }

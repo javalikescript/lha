@@ -39,8 +39,12 @@ extension:subscribeEvent('startup', function()
 
   local engine = extension:getEngine()
   local server = engine:getHTTPServer()
-  local assetsDir = engine:getAssetsDir()
-  logger:info('using assetsDir "'..assetsDir:getPath()..'"')
+  local assetsDir = engine:getAbsoluteFile(configuration.assets or 'work')
+  if assetsDir:isDirectory() then
+    logger:info('Using assets directory "'..assetsDir:getPath()..'"')
+  else
+    logger:warn('Invalid assets directory "'..assetsDir:getPath()..'"')
+  end
 
   extension.appContext = server:createContext('/(.*)', httpHandler.file, {
     defaultFile = 'app.html',
@@ -48,7 +52,7 @@ extension:subscribeEvent('startup', function()
   })
 
   extension.baseContext = server:createContext('/static/(.*)', httpHandler.file, {
-    rootFile = File:new(assetsDir, 'www_static')
+    rootFile = assetsDir
   })
 
   extension.addonContext = server:createContext('/addon/([^/]*)/?(.*)', function(exchange)

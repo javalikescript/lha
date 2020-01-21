@@ -671,7 +671,7 @@ new Vue({
       if (this.chart) {
         this.chart.destroy();
       }
-      var title = this.path;
+      var title = this.path || 'multiple values';
       //var lastIndex = title.lastIndexOf('/');
       //if (lastIndex > 0) { title = title.substring(lastIndex + 1); }
       var chartTension = parseFloat(this.chartTension);

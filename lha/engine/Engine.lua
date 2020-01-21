@@ -252,10 +252,7 @@ local REST_THING = {
         elseif method == http.CONST.METHOD_PUT then
           local rt = json.decode(request:getBody())
           for name, value in pairs(rt) do
-            if value then
-              --property:setValue(value)
-              exchange.attributes.thing:setPropertyValue(name, value)
-            end
+            exchange.attributes.thing:setPropertyValue(name, value)
           end
         else
           httpHandler.methodNotAllowed(exchange)
@@ -273,10 +270,7 @@ local REST_THING = {
               elseif method == http.CONST.METHOD_PUT then
                   local rt = json.decode(request:getBody())
                   local value = rt[propertyName]
-                  if value then
-                      --property:setValue(value)
-                      exchange.attributes.thing:setPropertyValue(propertyName, value)
-                  end
+                  exchange.attributes.thing:setPropertyValue(propertyName, value)
               else
                   httpHandler.methodNotAllowed(exchange)
                   return false
@@ -543,10 +537,8 @@ return class.create(function(engine)
     self.things = {}
     self.extensions = {}
     self.idGenerator = IdGenerator:new()
-    -- setup
-    self.assetsDir = self:getAbsoluteFile(self.options.assets or 'assets')
-    logger:debug('assetsDir is '..self.assetsDir:getPath())
 
+    -- setup
     local workDir = self:getAbsoluteFile(self.options.work or 'work')
     checkDirectoryOrExit(workDir)
     logger:debug('workDir is '..workDir:getPath())
@@ -581,10 +573,6 @@ return class.create(function(engine)
     createDirectoryOrExit(self.tmpDir)
   end
 
-  function engine:getAssetsDir()
-    return self.assetsDir
-  end
-
   function engine:generateId()
     return self.idGenerator:generate()
   end
@@ -611,11 +599,13 @@ return class.create(function(engine)
       clean the first day of every month.
     ]]
     tables.merge(self.root.configuration, {
-      schedule = {
-        clean = '0 0 1 * *',
-        configuration = '0 0 * * *',
-        data = '5-55/15 * * * *',
-        poll = '*/15 * * * *'
+      engine = {
+        schedule = {
+          clean = '0 0 1 * *',
+          configuration = '0 0 * * *',
+          data = '5-55/15 * * * *',
+          poll = '*/15 * * * *'
+        }
       },
       extensions = {},
       things = {}
@@ -630,14 +620,15 @@ return class.create(function(engine)
   function engine:createScheduler()
     local engine = self
     local scheduler = Scheduler:new()
+    local schedules = self.root.configuration.engine.schedule
     -- poll things schedule
-    scheduler:schedule(engine.root.configuration.schedule.poll, function(t)
+    scheduler:schedule(schedules.poll, function(t)
       logger:info('Polling things')
       -- TODO Clean data
       engine:publishEvent('poll')
     end)
     -- data schedule
-    scheduler:schedule(engine.root.configuration.schedule.data, function(t)
+    scheduler:schedule(schedules.data, function(t)
       logger:info('Archiving data')
       -- archive data
       engine.dataHistory:save()
@@ -645,14 +636,14 @@ return class.create(function(engine)
       -- TODO
     end)
     -- configuration schedule
-    scheduler:schedule(engine.root.configuration.schedule.configuration, function(t)
+    scheduler:schedule(schedules.configuration, function(t)
       logger:info('Archiving configuration')
       engine.configHistory:save(false, true)
       engine.dataHistory:save(true)
       engine:publishEvent('refresh')
     end)
     -- clean schedule
-    scheduler:schedule(engine.root.configuration.schedule.clean, function(t)
+    scheduler:schedule(schedules.clean, function(t)
       logger:info('Cleaning')
       engine.configHistory:save(true, true)
       engine:publishEvent('clean')
