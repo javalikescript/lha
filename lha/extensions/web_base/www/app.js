@@ -353,13 +353,11 @@ var settings = new Vue({
   data: {
     clock: '...',
     memory: '...',
-    time: '...',
-    theme: 'ms'
+    time: '...'
   },
   methods: {
-    onShow: function() {
+    refreshInfo: function() {
       var page = this;
-      //console.log('onShow() server', this);
       fetch('/engine/admin/info').then(function(response) {
         return response.json();
       }).then(function(data) {
@@ -375,23 +373,43 @@ var settings = new Vue({
     gc: function() {
       var page = this;
       fetch('/engine/admin/gc', {method: 'POST'}).then(function(response) {
-        page.onShow();
+        page.refreshInfo();
       });
-    },
-    changeTheme: function() {
-      //console.log('changeTheme() ' + this.theme);
-      setTheme(this.theme);
-      fetch('/engine/configuration/extensions/web_base/theme', {
-        method: 'POST',
-        body: JSON.stringify({
-          value: this.theme
-        })
-      });
-      toaster.toast('Theme is now ' + this.theme);
     },
     pollThings: function() {
       fetch('/engine/admin/pollThings', {method: 'POST'}).then(function() {
         toaster.toast('Polling triggered');
+      });
+    }
+  }
+});
+
+new Vue({
+  el: '#engineConfig',
+  data: {
+    schema: {},
+    config: {}
+  },
+  methods: {
+    onShow: function() {
+      var page = this;
+      fetch('/engine/schema').then(function(response) {
+        return response.json();
+      }).then(function(schemaData) {
+        fetch('/engine/configuration/engine').then(function(response) {
+          return response.json();
+        }).then(function(configData) {
+          page.schema = schemaData;
+          page.config = configData.value;
+        });
+      });
+    },
+    onSave: function() {
+      fetch('/engine/configuration/engine', {
+        method: 'POST',
+        body: JSON.stringify({
+          value: this.config
+        })
       });
     }
   }
@@ -932,12 +950,12 @@ Vue.component('json-item', {
   },
   template: '<li class="json"><div @click="toggle">' +
     '<span>{{ label }}:</span><br>' +
-    '<input v-if="hasStringValue" v-model="value" type="text" placeholder="String Value">' +
-    '<select v-if="hasEnumValue" v-model="value"><option v-for="label in schema.enum" :value="label">{{label}}</option></select>' +
+    '<input v-if="hasStringValue && !hasEnumValues" v-model="value" type="text" placeholder="String Value">' +
+    '<select v-if="hasStringValue && hasEnumValues" v-model="value"><option v-for="ev in enumValues" :value="ev.const">{{ev.title}}</option></select>' +
     '<input v-if="hasNumberValue" v-model="value" type="number" placeholder="Number Value">' +
     '<label v-if="hasBooleanValue" class="switch"><input type="checkbox" v-model="value" /><span class="slider"></span></label>' +
     '</div>' +
-    '<ul class="json-properties" v-show="open" v-if="hasProperties"><li is="json-item" v-for="(ss, n) in schema.properties" :key="n" :name="n" :pobj="obj" :obj="getProperty(n)" :schema="ss" :root="root"></li></ul>' +
+    '<ul class="json-properties" v-show="open" v-if="hasProperties"><li is="json-item" v-for="n in propertyNames" :key="n" :name="n" :pobj="obj" :obj="getProperty(n)" :schema="schema.properties[n]" :root="root"></li></ul>' +
     '<ul class="json-items" v-show="open" v-if="isList">' +
     '<li is="json-item" v-for="(so, i) in obj" :key="i" :name="\'#\' + i" :pobj="obj" :obj="so" :schema="schema.items" :root="root"></li>' +
     '<li><button v-on:click="addItem" title="Add Item"><i class="fa fa-plus"></i></button></li>' +
@@ -948,16 +966,37 @@ Vue.component('json-item', {
       return this.schema && this.schema.title || this.name || 'Value';
     },
     hasStringValue: function() {
-      return this.schema && (this.schema.type === 'string') && !Array.isArray(this.schema.enum);
+      return this.schema && (this.schema.type === 'string');
     },
-    hasEnumValue: function() {
-      return this.schema && (this.schema.type === 'string') && Array.isArray(this.schema.enum);
+    hasEnumValues: function() {
+      return this.schema && (Array.isArray(this.schema.enum) || Array.isArray(this.schema.enumValues));
     },
     hasNumberValue: function() {
       return this.schema && ((this.schema.type === 'number') || (this.schema.type === 'integer'));
     },
     hasBooleanValue: function() {
       return this.schema && (this.schema.type === 'boolean');
+    },
+    propertyNames: function() {
+      var names = [];
+      for (var name in this.schema.properties) {
+        names.push(name);
+      }
+      names.sort(strcasecmp);
+      return names;
+    },
+    enumValues: function() {
+      if (Array.isArray(this.schema.enumValues)) {
+        return this.schema.enumValues;
+      } else if (Array.isArray(this.schema.enum)) {
+        return this.schema.enum.map(function(key) {
+          return {
+            "const": key,
+            "title": key
+          };
+        });
+      }
+      return [];
     },
     value: {
       get () {

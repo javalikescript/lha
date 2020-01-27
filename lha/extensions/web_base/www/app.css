@@ -40,28 +40,29 @@ section.menu {
 }
 div.toaster {
   position: fixed;
-  bottom: 100px;
-  left: 50%;
+  transition: all 0.25s ease;
+  bottom: 4rem;
+  width: 60rem;
+  left: calc(50% - 30rem);
   box-sizing: border-box;
-  max-width: 80%;
-  height: 40px;
-  line-height: 20px;
+  height: 4rem;
+  line-height: 3rem;
   padding: 10px 20px;
   text-align: center;
   z-index: 1000;
-  font-size: 14px;
+  font-size: 2rem;
   color: #fff;
   border-radius: 5px;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(77, 77, 77, 0.7);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  transition: all 1s ease;
 }
 div.toaster.hide {
   opacity: 0;
 }
-.theme_boot > div.pages {
+.theme_boot > div.pages,
+.theme_boot > div.toaster {
   display: none;
 }
 div.splash {

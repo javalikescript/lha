@@ -12,6 +12,14 @@
       "assets": {
         "title": "Static assets directory",
         "type": "string"
+      },
+      "theme": {
+        "title": "User Interface Theme",
+        "type": "string",
+        "enumValues": [
+          {"const": "light", "title": "Light"},
+          {"const": "ms", "title": "Windows"}
+        ]
       }
     }
   }

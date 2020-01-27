@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>App</title>
   <link rel="stylesheet" href="app.css">
-  <link rel="stylesheet" href="static/fa/css/fontawesome-all.min.css">
+  <link rel="stylesheet" href="static/fa/css/all.min.css">
   <script src="static/v/vue.min.js" type="text/javascript" charset="utf-8"></script>
 </head>
 <body class="theme_boot">
@@ -97,16 +97,22 @@
       <!--
       <button v-on:click="toaster.toast('Message')"><i class="far fa-bell"></i>&nbsp;Toast</button>
       -->
-      <button v-on:click="onShow"><i class="fas fa-sync"></i>&nbsp;Refresh</button>
-      <button v-on:click="gc"><i class="fa fa-trash"></i>&nbsp;Collect Garbage</button>
-      <select v-model="theme" v-on:click="changeTheme">
-        <option value="ms">Windows</option>
-        <option value="light">Light</option>
-      </select>
-      <button v-on:click="pollThings"><i class="far fa-bell"></i>&nbsp;Poll Things</button>
+      <button v-on:click="refreshInfo()"><i class="fas fa-sync"></i>&nbsp;Refresh</button>
+      <button v-on:click="gc()"><i class="fa fa-trash"></i>&nbsp;Collect Garbage</button>
+      <button v-on:click="pollThings()"><i class="far fa-bell"></i>&nbsp;Poll Things</button>
+      <button v-on:click="app.toPage('engineConfig')"><i class="fas fa-sliders-h"></i>&nbsp;Configuration</button>
       <button v-on:click="app.toPage('moreSettings')"><i class="fas fa-tools"></i>&nbsp;More...</button>
     </page-article>
   </app-settings>
+  <app-page id="engineConfig" title="Engine Configuration">
+    <template slot="bar-right">
+      <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
+      <button v-on:click="onSave()" title="Save"><i class="far fa-save"></i></button>
+    </template>
+    <page-article>
+      <json :name="'Configuration'" :obj="config" :schema="schema"></json>
+    </page-article>
+  </app-page>
   <app-page id="moreSettings" title="More Settings">
     <page-article>
       <p>Settings</p>
@@ -269,8 +275,8 @@
   </app-page>
 </div>
 <div id="app"></div>
-<!-- v-bind:class="{toaster: true, hide: !}" -->
-<div id="toaster" v-if="show" class="toaster" style="display: none;">{{message}}</div>
+<!-- v-if="show" class="toaster" -->
+<div id="toaster" :class="['toaster', show ? '' : 'hide']">{{message}}</div>
 <div class="splash">
   Loading...
   <!--

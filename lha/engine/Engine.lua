@@ -519,6 +519,35 @@ local REST_ENGINE_HANDLERS = {
     },
     name = 'thingId'
   },
+  schema = function(exchange)
+    return {
+      type = "object",
+      properties = {
+        schedule = {
+          title = "Group for scheduling using cron like syntax",
+          type = "object",
+          properties = {
+            clean = {
+              title = "Schedule for cleaning",
+              type = "string"
+            },
+            configuration = {
+              title = "Schedule for archiving configuration",
+              type = "string"
+            },
+            data = {
+              title = "Schedule for archiving data",
+              type = "string"
+            },
+            poll = {
+              title = "Schedule for polling extension things",
+              type = "string"
+            }
+          }
+        }
+      }
+    }
+  end,
   admin = REST_ADMIN
 }
 
