@@ -331,12 +331,16 @@ var toaster = new Vue({
   methods: {
     toast: function(message, duration) {
       console.log('toast("' + message + '", ' + duration + ')');
-      this.message = message;
-      this.show = true;
-      var self = this;
-      setTimeout(function () {
-        self.show = false;
-      }, duration || 3000)
+      if (this.show) {
+        this.message += '\n' + message;
+      } else {
+        this.message = message;
+        this.show = true;
+        var self = this;
+        setTimeout(function () {
+          self.show = false;
+        }, duration || 3000)
+      }
     }
   }
 });
@@ -377,7 +381,7 @@ var settings = new Vue({
       });
     },
     pollThings: function() {
-      fetch('/engine/admin/pollThings', {method: 'POST'}).then(function() {
+      fetch('/engine/poll', {method: 'POST'}).then(function() {
         toaster.toast('Polling triggered');
       });
     }

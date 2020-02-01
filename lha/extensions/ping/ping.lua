@@ -54,8 +54,10 @@ local function pingThing(targetName, thing)
   else
     command = 'ping -c '..tostring(PING_COUNT)..' '..targetName..' 2>&1 >/dev/null'
   end
+  logger:debug('executing "'..command..'"')
   runtime.execute(command, function(err)
     thing:updatePropertyValue('reachable', err == nil)
+    logger:info('executed "'..command..'" => '..tostring(err and err.code or 0))
   end)
 end
 

@@ -466,6 +466,14 @@ local REST_ENGINE_HANDLERS = {
     end
     return descriptions
   end,
+  poll = function(exchange)
+    if not httpHandler.methodAllowed(exchange, 'POST') then
+      return false
+    end
+    local engine = exchange:getAttribute('engine')
+    engine:publishEvent('poll')
+    return 'Polled'
+  end,
   extensions = REST_EXTENSIONS,
   scripts = REST_SCRIPTS,
   things = {

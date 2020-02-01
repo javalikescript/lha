@@ -67,6 +67,8 @@ engine:start()
 engine:publishEvent('poll')
 
 logger:debug('starting event loop')
+
 event:loop()
-event:close()
+
 logger:debug('event loop ended')
+logger:info('Engine stopped')
