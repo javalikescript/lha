@@ -138,7 +138,7 @@
     <article class="cards">
       <div class="card" v-for="thing in things">
         <div class="bar">
-          <p>{{ thing.title }}</p>
+          <p>{{ thing.title + ' (' + extensionsById[thing.extensionId].name + ')' }}</p>
           <div>
             <button v-on:click="app.toPage('thing', thing.thingId)"><i class="fas fa-info"></i>&nbsp;Details</button>
           </div>

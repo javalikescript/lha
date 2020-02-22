@@ -784,6 +784,7 @@ new Vue({
 new Vue({
   el: '#things',
   data: {
+    extensionsById: {},
     things: []
   },
   methods: {
@@ -797,7 +798,19 @@ new Vue({
         }
         self.things = things;
         //console.log('things', self.things);
+        return fetch('/engine/extensions');
+      }).then(function(response) {
+        return response.json();
+      }).then(function(extensions) {
+        var extensionsById = {};
+        for (var i = 0; i < extensions.length; i++) {
+          var extension = extensions[i];
+          extensionsById[extension.id] = extension;
+        }
+        self.extensionsById = extensionsById;
+        //console.log('extensionsById', self.extensionsById);
       });
+
     },
     onArchiveAll: function() {
       for (var i = 0; i < this.things.length; i++) {
