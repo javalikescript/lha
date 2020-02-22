@@ -55,7 +55,9 @@ local function discoverThings(extension, connect)
   for index, thingConfig in ipairs(configuration.things) do
     local key = formatKey(index, thingConfig)
     local thing = things and things[key]
-    if not thing then
+    if thing then
+      thing:connect()
+    else
       local discoveredThing = createThing(thingConfig)
       if discoveredThing then
         extension:discoverThing(key, discoveredThing)

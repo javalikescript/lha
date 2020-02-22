@@ -149,6 +149,10 @@ local function tableHandler(exchange)
   end
 end
 
+local function getUpdateTime()
+  return Date.now()
+end
+
 
 local EngineThing = class.create(Thing, function(engineThing, super)
 
@@ -161,6 +165,7 @@ local EngineThing = class.create(Thing, function(engineThing, super)
     self.thingId = thingId
     self.connected = false
     self.setterFn = false
+    self.lastupdated = 0
   end
 
   function engineThing:setArchiveData(archiveData)
@@ -195,6 +200,7 @@ local EngineThing = class.create(Thing, function(engineThing, super)
 	end
 
   function engineThing:updatePropertyValue(name, value)
+    self.lastupdated = getUpdateTime()
     if self:getArchiveData() then
       self.engine:setRootValues('data/'..self.thingId..'/'..name, value, true)
     end
@@ -203,7 +209,7 @@ local EngineThing = class.create(Thing, function(engineThing, super)
 
   function engineThing:connect(setterFn)
     self.connected = true
-    self.setterFn = (type(setterFn) == 'function') and setterFn
+    self.setterFn = (type(setterFn) == 'function') and setterFn or false
     return self
 	end
 
@@ -218,9 +224,17 @@ local EngineThing = class.create(Thing, function(engineThing, super)
     return self.connected
 	end
 
+  function engineThing:isReachable(since, time)
+    since = since or 3600000
+    time = time or Date.now()
+    return (time - self.lastupdated) < since
+	end
+
   function engineThing:asEngineThingDescription()
     local description = self:asThingDescription()
     description.archiveData = self:getArchiveData()
+    --description.connected = self:isConnected()
+    --description.reachable = self:isReachable()
     description.extensionId = self.extensionId
     description.thingId = self.thingId
     return description
