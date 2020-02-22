@@ -31,7 +31,9 @@ local function onHueThing(id, info, time, lastTime)
   if info.state and info.uniqueid then
     local thing = thingsMap[info.uniqueid]
     if thing then
-      hueBridge:connectThing(thing, id)
+      if not thing:isConnected() then
+        hueBridge:connectThing(thing, id)
+      end
     else
       thing = HueBridge.createThingForType(info)
       if thing then
@@ -57,10 +59,8 @@ extension:subscribeEvent('poll', function()
       end
     end
     lastSensorPollTime = time
-  end):catch(function(err)
-    logger:warn('Fail to get '..extension:getPrettyName()..' sensors, due to "'..tostring(err)..'"')
-  end)
-  hueBridge:get(HueBridge.CONST.LIGHTS):next(function(allLights)
+    return hueBridge:get(HueBridge.CONST.LIGHTS)
+  end):next(function(allLights)
     local time = Date.now()
     if allLights then
       for lightId, light in pairs(allLights) do
@@ -68,8 +68,13 @@ extension:subscribeEvent('poll', function()
       end
       lastLightPollTime = time
     end
+    --[[for discoveryKey, thing in pairs(thingsMap) do
+      if not thing:isConnected() then
+        thing:setReachable(false)
+      end
+    end]]
   end):catch(function(err)
-    logger:warn('fail to get '..extension:getPrettyName()..' lights, due to "'..tostring(err)..'"')
+    logger:warn('fail to get '..extension:getPrettyName()..' things, due to "'..tostring(err)..'"')
   end)
 end)
 

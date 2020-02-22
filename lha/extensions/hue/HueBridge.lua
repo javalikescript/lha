@@ -227,11 +227,11 @@ end, function(HueBridge)
     elseif info.type == 'Extended color light' then
       local t = Thing:new(info.name or 'Extended color light', 'Extended color light', {'Light', 'OnOffSwitch', 'ColorControl'})
       return t:addOnOffProperty():addBrightnessProperty():addColorTemperatureProperty():addColorProperty()
-    elseif info.type == 'ZLLLightLevel' then
+    elseif info.type == 'ZLLLightLevel' or info.type == 'ZHALightLevel' then
       return Thing:new(info.name or 'Light Level', 'Light Level Sensor', {'MultiLevelSensor'}):addLightLevelProperty()
     elseif info.type == 'ZLLTemperature' or info.type == 'ZHATemperature' then
       return Thing:new(info.name or 'Temperature', 'Temperature Sensor', {'TemperatureSensor'}):addTemperatureProperty()
-    elseif info.type == 'ZLLPresence' then
+    elseif info.type == 'ZLLPresence' or info.type == 'ZHAPresence' then
       return Thing:new(info.name or 'Presence', 'Motion Sensor', {'MotionSensor'}):addPresenceProperty()
     elseif info.type == 'ZLLSwitch' then
       return Thing:new(info.name or 'Switch', 'Switch Button', {'PushButton'}):addProperty('on', {
