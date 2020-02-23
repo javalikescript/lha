@@ -785,6 +785,7 @@ new Vue({
   el: '#things',
   data: {
     extensionsById: {},
+    propertiesById: {},
     things: []
   },
   methods: {
@@ -798,6 +799,28 @@ new Vue({
         }
         self.things = things;
         //console.log('things', self.things);
+        return fetch('/engine/properties');
+      }).then(function(response) {
+        return response.json();
+      }).then(function(properties) {
+        self.propertiesById = {};
+        for (var i = 0; i < self.things.length; i++) {
+          var thing = self.things[i];
+          var props = properties[thing.thingId];
+          var propNames = Object.keys(props);
+          if (propNames.length === 1) {
+            var propName = propNames[0];
+            var propDef = thing.properties[propName];
+            self.propertiesById[thing.thingId] = {
+              value: props[propName],
+              unit: propDef.unit
+            };
+          } else {
+            // found the default property
+            var thingType = thing['@type'][0];
+          }
+        }
+        //console.log('properties', self.properties);
         return fetch('/engine/extensions');
       }).then(function(response) {
         return response.json();

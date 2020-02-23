@@ -488,6 +488,14 @@ local REST_ENGINE_HANDLERS = {
     engine:publishEvent('poll')
     return 'Polled'
   end,
+  properties = function(exchange)
+    local engine = exchange:getAttribute('engine')
+    local t = {}
+    for thingId, thing in pairs(engine.things) do
+      t[thingId] = thing:getProperties()
+    end
+    return t
+  end,
   extensions = REST_EXTENSIONS,
   scripts = REST_SCRIPTS,
   things = {

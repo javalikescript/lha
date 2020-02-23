@@ -75,6 +75,7 @@ div.splash {
   text-align: center;
   z-index: 1000;
 }
+.theme_boot > div.toaster,
 :not(.theme_boot) > div.splash {
   display: none;
 }
@@ -272,6 +273,9 @@ article.tiles, .tile-container {
   display: flex;
   justify-content: space-between;
   width: 100%;
+}
+.bar p {
+  display: inline;
 }
 .tile > span, .tile > p {
   font-size: 1.9rem;

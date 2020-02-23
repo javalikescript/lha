@@ -138,13 +138,16 @@
     <article class="cards">
       <div class="card" v-for="thing in things">
         <div class="bar">
-          <p>{{ thing.title + ' (' + extensionsById[thing.extensionId].name + ')' }}</p>
+          <p>{{ thing.title + (thing.extensionId in extensionsById ? (' (' + extensionsById[thing.extensionId].name + ')') : '') }}</p>
           <div>
             <button v-on:click="app.toPage('thing', thing.thingId)"><i class="fas fa-info"></i>&nbsp;Details</button>
           </div>
         </div>
         <p>{{ thing.description }}</p>
-        <p><label class="switch"><input type="checkbox" v-model="thing.archiveData" /><span class="slider"></span></label>&nbsp;Archive Data</p>
+        <div class="bar">
+          <p>{{ (thing.thingId in propertiesById ? propertiesById[thing.thingId].value : '') }}</p>
+          <p><label class="switch"><input type="checkbox" v-model="thing.archiveData" /><span class="slider"></span></label>&nbsp;Archive Data</p>
+        </div>
       </div>
       <section>
         <!-- fas fa-history fas fa-database -->
