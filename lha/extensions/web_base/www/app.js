@@ -813,7 +813,7 @@ new Vue({
             var propDef = thing.properties[propName];
             self.propertiesById[thing.thingId] = {
               value: props[propName],
-              unit: propDef.unit
+              unit: (propDef.unit || '')
             };
           } else {
             // found the default property
