@@ -25,6 +25,8 @@ if tables.getArgument(tArg, '-h') or tables.getArgument(tArg, '--help') then
   usage()
 end
 local sourceDirname = tables.getArgument(tArg, '-s')
+local pathPattern = tables.getArgument(tArg, '-pp')
+local pathPatternExclude = tables.getArgument(tArg, '-ppe')
 local destDirname = tables.getArgument(tArg, '-d')
 local mappingFilename = tables.getArgument(tArg, '-m')
 local htName = tables.getArgument(tArg, '-n', 'data')
@@ -156,8 +158,19 @@ end
 if showMapping then
   local identityMapping = {}
   local paths = tables.keys(values)
+  table.sort(paths)
   for _, path in ipairs(paths) do
-    identityMapping[path] = path
+    if pathPattern then
+      if string.find(path, pathPattern) then
+        identityMapping[path] = path
+      end
+    elseif pathPatternExclude then
+      if not string.find(path, pathPatternExclude) then
+        identityMapping[path] = path
+      end
+    else
+      identityMapping[path] = path
+    end
   end
   print('identity mapping:')
   print(json.encode(identityMapping))
