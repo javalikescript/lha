@@ -156,7 +156,7 @@ return require('jls.lang.class').create(function(hueBridge)
       thing:updatePropertyValue('colorTemperature', math.floor(1000000 / state.ct))
       -- Hue has hue and sat properties
       thing:updatePropertyValue('color', Thing.hsvToRgbHex(state.hue / 65535, state.sat / 254, state.bri / 254))
-    elseif info.type == 'ZLLLightLevel' and state.lightlevel ~= json.null then
+    elseif (info.type == 'ZLLLightLevel' or info.type == 'ZHALightLevel') and state.lightlevel ~= json.null then
       -- Light level in 10000 log10 (lux) +1 measured by info.
       -- Logarithm scale used because the human eye adjusts to light levels and small changes at low lux levels are more noticeable than at high lux levels.  
       thing:updatePropertyValue('lightlevel', state.lightlevel)
@@ -165,7 +165,7 @@ return require('jls.lang.class').create(function(hueBridge)
       -- Current temperature in 0.01 degrees Celsius. (3000 is 30.00 degree)
       -- lastupdated
       thing:updatePropertyValue('temperature', state.temperature / 100)
-    elseif info.type == 'ZLLPresence' and state.presence ~= json.null then
+    elseif (info.type == 'ZLLPresence' or info.type == 'ZHAPresence') and state.presence ~= json.null then
       -- presence True if info detects presence
       -- lastupdated Last time the info state was updated, probably UTC
       -- see https://developers.meethue.com/develop/hue-api/supported-devices/
