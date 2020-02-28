@@ -2,9 +2,16 @@ local logger = require('jls.lang.logger')
 local File = require('jls.io.File')
 local json = require('jls.util.json')
 local runtime = require('jls.lang.runtime')
+local system = require('jls.lang.system')
 local event = require('jls.lang.event')
 
 local Engine = require('lha.engine.Engine')
+
+if not system.isWindows() then
+  -- lua socket installs a handler to ignore sigpipe in order to avoid crash
+  -- signal(SIGPIPE, SIG_IGN);
+  require('socket.core')
+end
 
 local DEFAULT_CONFIG = {
   ["address"] = "::",
