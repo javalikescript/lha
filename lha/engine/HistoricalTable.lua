@@ -11,6 +11,9 @@ local Inflater = require('jls.util.zip.Inflater')
 
 local NO_VALUE = {}
 
+-- The value aggregator enables to aggregate values,
+-- slice aggregated values on specified time then
+-- finish the aggregation by enriching the first value
 local ValueAggregator = class.create(function(valueAggregator)
 
   function valueAggregator:initialize()
@@ -43,6 +46,7 @@ local ValueAggregator = class.create(function(valueAggregator)
     t.count = self.count
   end
 
+  -- Insert the computed aggregated value in the specified table
   function valueAggregator:slice(values, time)
     local t = {
       time = time // 1000
@@ -394,15 +398,17 @@ return class.create(function(historicalTable, _, HistoricalTable)
     end
     local periodEndTime = fromTime + period
     self:forEachTable(fromTime, toTime, function(t, tTime)
-      -- close period and fill blanks
+      -- close periods and fill blanks
       while tTime > periodEndTime do
         periodFn(periodEndTime)
         periodEndTime = periodEndTime + period
       end
       tableFn(t)
     end)
-    if periodEndTime <= toTime then
+    -- close periods and fill blanks
+    while periodEndTime <= toTime do
       periodFn(periodEndTime)
+      periodEndTime = periodEndTime + period
     end
   end
 
