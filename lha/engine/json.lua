@@ -21,7 +21,7 @@ if tables.getArgument(tArg, '-h') or tables.getArgument(tArg, '--help') then
   usage()
 end
 local filename = tables.getArgument(tArg, '-f')
-local filterPattern = tables.getArgument(tArg, '-p')
+local filterPatterns = tables.getArguments(tArg, '-p')
 
 local file = filename and File:new(filename)
 
@@ -36,12 +36,21 @@ local valuesByPath = tables.mapValuesByPath(t)
 local paths = tables.keys(valuesByPath)
 table.sort(paths)
 
+local lastMatch
 for _, path in ipairs(paths) do
   local value = valuesByPath[path]
-  if filterPattern then
-    local match = string.match(path, filterPattern)
-    if match then
-      print(match, value)
+  if #filterPatterns > 0 then
+    for _, filterPattern in ipairs(filterPatterns) do
+      local match, mm = string.match(path, filterPattern)
+      if match then
+        if match ~= lastMatch then
+          lastMatch = match
+          print(match, mm or value)
+        else
+          print('', mm or value)
+        end
+        break
+      end
     end
   else
     print(path, value)
