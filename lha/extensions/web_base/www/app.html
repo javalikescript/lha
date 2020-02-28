@@ -21,7 +21,7 @@
     <article class="content">
       <div style="text-align: center;">
         <span>Duration:</span>
-        <select v-model="duration">
+        <select v-model="duration" v-on:change="reloadHistoricalData">
           <option value="7200">2 hours</option>
           <option value="21600">6 hours</option>
           <option value="43200">12 hours</option>
@@ -35,9 +35,11 @@
           <option value="5443200">2 months</option>
           <option value="15768000">6 months</option>
           <option value="31536000">1 year</option>
+          <option value="63072000">2 years</option>
+          <option value="315360000">10 years</option>
         </select>
         <span>Period:</span>
-        <select v-model="period">
+        <select v-model="period" v-on:change="reloadHistoricalData">
           <option value="0">Auto</option>
           <option value="60">1 min</option>
           <option value="180">3 min</option>
@@ -49,7 +51,7 @@
           <option value="86400">24 hours</option>
         </select>
         <span>To:</span>
-        <select v-model="toDays">
+        <select v-model="toDays" v-on:change="reloadHistoricalData">
           <option value="0">Now</option>
           <option value="1">1 day ago</option>
           <option value="2">2 days ago</option>

@@ -579,16 +579,21 @@ var listDates = function(dataPointSet) {
   return dates;
 };
 var createChartDataSets = function(dataPointSet, datasets, prefix) {
+  console.log('createChartDataSets()', dataPointSet, datasets, prefix);
   if (dataPointSet.length === 0) {
     return [];
   }
   var firstItem = dataPointSet[0];
+  if ('map' in firstItem) {
+    return createMappedChartDataSets(dataPointSet, datasets, prefix, firstItem.map);
+  }
+  if (firstItem.type === 'number') {
+    return createNumberChartDataSets(dataPointSet, datasets, prefix);
+  }
+  // TODO Remove
   var lastItem = dataPointSet[dataPointSet.length - 1];
   if ('average' in lastItem) {
     return createNumberChartDataSets(dataPointSet, datasets, prefix);
-  }
-  if ('map' in firstItem) {
-    return createMappedChartDataSets(dataPointSet, datasets, prefix, firstItem.map);
   }
   if ('changes' in lastItem) {
     return createChangesChartDataSets(dataPointSet, datasets, prefix);
