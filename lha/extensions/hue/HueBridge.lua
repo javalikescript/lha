@@ -157,9 +157,17 @@ return require('jls.lang.class').create(function(hueBridge)
       -- Hue has hue and sat properties
       thing:updatePropertyValue('color', Thing.hsvToRgbHex(state.hue / 65535, state.sat / 254, state.bri / 254))
     elseif (info.type == 'ZLLLightLevel' or info.type == 'ZHALightLevel') and state.lightlevel ~= json.null then
-      -- Light level in 10000 log10 (lux) +1 measured by info.
+      --[[
+        From ZigBee Cluster Library
+        u16IlluminanceTargetLevel is a mandatory attribute representing the illuminance level at the centre of the target band. 
+        The value of this attribute is calculated as 10000 x log10(Illuminance) where Illuminance is measured in Lux (lx) and can take values in the range 1 lx ≤Illuminance≤ 3.576x106 lx,
+        corresponding to attribute values in the range 0x0000 to 0xFFFE. The value 0xFFFF is used to indicate that the attribute is invalid.
+      ]]
+      -- ConBee examples: 9614=>9 0=>0
+      -- From Hue Dev: Light level in 10000 log10 (lux) +1 measured by info.
       -- Logarithm scale used because the human eye adjusts to light levels and small changes at low lux levels are more noticeable than at high lux levels.  
       thing:updatePropertyValue('lightlevel', state.lightlevel)
+      --thing:updatePropertyValue('illuminance', math.floor(10 ^ ((state.lightlevel - 1) / 10000)))
       -- dark, daylight true/false, lastupdated
     elseif (info.type == 'ZLLTemperature' or info.type == 'ZHATemperature') and state.temperature ~= json.null then
       -- Current temperature in 0.01 degrees Celsius. (3000 is 30.00 degree)

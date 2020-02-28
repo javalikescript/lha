@@ -75,7 +75,15 @@ local PROPERTIES = {
 		['@type'] = 'LevelProperty',
 		type = 'integer',
 		title = 'Light Level',
-		description = 'The light level in lux',
+		description = 'The light level in 10000 x log10(Illuminance)',
+		minimum = 0,
+		readOnly = true
+	},
+	ILLUMINANCE = {
+		['@type'] = 'LevelProperty',
+		type = 'integer',
+		title = 'Illuminance',
+		description = 'The illuminance in lux',
 		minimum = 0,
 		readOnly = true,
 		unit = 'lux'
@@ -324,6 +332,10 @@ return require('jls.lang.class').create(function(thing)
 
   function thing:addLightLevelProperty(title, description, initialValue)
 		return self:addPropertyFrom('lightlevel', PROPERTIES.LIGHT_LEVEL, title, description, initialValue)
+  end
+
+  function thing:addIlluminanceProperty(title, description, initialValue)
+		return self:addPropertyFrom('illuminance', PROPERTIES.ILLUMINANCE, title, description, initialValue)
   end
 
   function thing:addPushedProperty(title, description, initialValue)
