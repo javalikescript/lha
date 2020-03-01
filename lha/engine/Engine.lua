@@ -37,6 +37,7 @@ end
 local function writeCertificateAndPrivateKey(certFile, pkeyFile, commonName)
   local secure = require('jls.net.secure')
   local cacert, pkey = secure.createCertificate({
+    --duration = (3600 * 24 * (365 + 31)),
     commonName = commonName or 'localhost'
   })
   local cacertPem  = cacert:export('pem')
@@ -45,6 +46,11 @@ local function writeCertificateAndPrivateKey(certFile, pkeyFile, commonName)
   pkeyFile:write(pkeyPem)
 end
 
+local function readCertificate(certFile)
+  local secure = require('jls.net.secure')
+  local cert = secure.readCertificate(certFile:readAll())
+  return cert
+end
 
 local function historicalDataHandler(exchange)
   if httpHandler.methodAllowed(exchange, 'GET') then
@@ -725,6 +731,16 @@ return class.create(function(engine)
       if not certFile:exists() or not pkeyFile:exists() then
         writeCertificateAndPrivateKey(certFile, pkeyFile, self.options.secure.commonName or self.options.hostname)
         logger:info('Generate certificate '..certFile:getPath()..' and associated private key '..pkeyFile:getPath())
+      else
+        -- check and log certificate expiration
+        local cert = readCertificate(certFile)
+        local isValid, notbefore, notafter = cert:validat()
+        local notafterDate = Date:new(notafter:get() * 1000)
+        local notafterText = notafterDate:toISOString(true)
+        logger:info('Using certificate '..certFile:getPath()..' valid until '..notafterText)
+        if not isValid then
+          logger:warn('The certificate is no more valid since '..notafterText)
+        end
       end
       local httpSecureServer = http.Server.createSecure({
         certificate = certFile:getPath(),
