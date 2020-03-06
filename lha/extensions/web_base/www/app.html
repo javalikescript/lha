@@ -20,6 +20,12 @@
     </template>
     <article class="content">
       <div style="text-align: center;">
+        <select v-model="path" v-on:change="openPath">
+          <option value="" disabled selected>(Choose something)</option>
+          <optgroup  v-for="thing in things" :label="thing.title" v-if="thing.archiveData">
+            <option v-for="(property, name) in thing.properties" :value="thing.thingId + '/' + name">{{ property.title }}</option>
+          </optgroup>
+        </select>
         <span>Duration:</span>
         <select v-model="duration" v-on:change="reloadHistoricalData">
           <option value="7200">2 hours</option>
@@ -102,6 +108,7 @@
       <button v-on:click="refreshInfo()"><i class="fas fa-sync"></i>&nbsp;Refresh</button>
       <button v-on:click="gc()"><i class="fa fa-trash"></i>&nbsp;Collect Garbage</button>
       <button v-on:click="pollThings()"><i class="far fa-bell"></i>&nbsp;Poll Things</button>
+      <button v-on:click="clearCache()"><i class="fa fa-trash"></i>&nbsp;Clear Cache</button>
       <button v-on:click="app.toPage('engineConfig')"><i class="fas fa-sliders-h"></i>&nbsp;Configuration</button>
       <button v-on:click="app.toPage('moreSettings')"><i class="fas fa-tools"></i>&nbsp;More...</button>
     </page-article>

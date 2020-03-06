@@ -176,13 +176,11 @@ var app = new Vue({
     page: '',
     path: '',
     pages: {},
-    pageHistory: []
+    pageHistory: [],
+    cache: {}
   },
   methods: {
     toPage: function(id, path) {
-      if (this.page === id) {
-          return;
-      }
       this.navigateTo(formatNavigationPath(id, path));
     },
     navigateTo: function(path, noHistory) {
@@ -195,7 +193,10 @@ var app = new Vue({
           this.pageHistory.push(this.path);
         }
         this.path = path;
-        this.selectPage(matches[1], matches[2]);
+        var id = matches[1];
+        var pagePath = matches[2];
+        //if (this.page === id) {}
+        this.selectPage(id, pagePath);
         return true;
       }
       return false;
@@ -237,6 +238,72 @@ var app = new Vue({
       } else {
         this.toPage('main');
       }
+    },
+    clearCache: function() {
+      this.cache = {};
+    },
+    putInCache: function(cacheId, value) {
+      if (value === undefined) {
+        delete this.cache[cacheId];
+      } else {
+        this.cache[cacheId] = {
+          time: Date.now(),
+          value: value
+        };
+      }
+    },
+    getFromCache: function(cacheId) {
+      var cacheEntry = this.cache[cacheId];
+      return cacheEntry ? cacheEntry.value : undefined;
+    },
+    getThings: function() {
+      var cacheValue = this.getFromCache('/engine/things');
+      if (cacheValue) {
+        return Promise.resolve(cacheValue);
+      }
+      var self = this;
+      return fetch('/engine/things').then(function(response) {
+        return response.json();
+      }).then(function(things) {
+        if (Array.isArray(things)) {
+          things.sort(compareByTitle);
+        }
+        self.putInCache('/engine/things', things);
+        return things;
+      });
+    },
+    getExtensions: function() {
+      var cacheValue = this.getFromCache('/engine/extensions');
+      if (cacheValue) {
+        return Promise.resolve(cacheValue);
+      }
+      var self = this;
+      return fetch('/engine/extensions').then(function(response) {
+        return response.json();
+      }).then(function(extensions) {
+        if (Array.isArray(extensions)) {
+          extensions.sort(compareByName);
+        }
+        self.putInCache('/engine/extensions', extensions);
+        return extensions;
+      });
+    },
+    getExtensionsById: function() {
+      var cacheValue = this.getFromCache('/engine/extensions?byId');
+      if (cacheValue) {
+        return Promise.resolve(cacheValue);
+      }
+      return this.getExtensions().then(function(extensions) {
+        var extensionsById = {};
+        if (Array.isArray(extensions)) {
+          for (var i = 0; i < extensions.length; i++) {
+            var extension = extensions[i];
+            extensionsById[extension.id] = extension;
+          }
+        }
+        self.putInCache('/engine/extensions?byId', extensionsById);
+        return extensionsById;
+      });
     }
   }
 });
@@ -313,6 +380,9 @@ var menu = new Vue({
   el: '#menu',
   data: {
     pages: [{
+      id: 'data-chart',
+      name: 'Timelines'
+    }, {
       id: 'things',
       name: 'Things'
     }, {
@@ -374,6 +444,9 @@ var settings = new Vue({
         toaster.toast('Refreshed')
       });
     },
+    clearCache: function() {
+      app.clearCache();
+    },
     gc: function() {
       var page = this;
       fetch('/engine/admin/gc', {method: 'POST'}).then(function(response) {
@@ -414,6 +487,8 @@ new Vue({
         body: JSON.stringify({
           value: this.config
         })
+      }).then(function() {
+        app.clearCache();
       });
     }
   }
@@ -423,13 +498,19 @@ new Vue({
   el: '#moreSettings',
   methods: {
     saveConfig: function() {
-      fetch('/engine/admin/configuration/save', {method: 'POST'});
+      fetch('/engine/admin/configuration/save', {method: 'POST'}).then(function() {
+        app.clearCache();
+      });
     },
     reloadExtensions: function() {
-      fetch('/engine/admin/reloadExtensions/all', {method: 'POST'});
+      fetch('/engine/admin/reloadExtensions/all', {method: 'POST'}).then(function() {
+        app.clearCache();
+      });
     },
     reloadScripts: function() {
-      fetch('/engine/admin/reloadScripts/all', {method: 'POST'});
+      fetch('/engine/admin/reloadScripts/all', {method: 'POST'}).then(function() {
+        app.clearCache();
+      });
     },
     restartServer: function() {
       fetch('/engine/admin/restart', { method: 'POST'});
@@ -610,6 +691,7 @@ new Vue({
     path: '',
     paths: [],
     toDays: 0,
+    things: [],
     duration: 43200,
     period: 0,
     chart: null
@@ -662,7 +744,7 @@ new Vue({
     loadHistoricalData: function(path) {
       this.path = path;
       var self = this;
-      fetch('/engine/historicalData' + path, {
+      fetch('/engine/historicalData/' + path, {
         method: 'GET',
         headers: this.getHistoricalDataHeaders()
       }).then(function(response) {
@@ -672,10 +754,21 @@ new Vue({
         self.createChart(listDates(dataPointSet), createChartDataSets(dataPointSet));
       });
     },
+    openPath: function() {
+      console.info('openPath() ' + this.path);
+      if (this.path) {
+        app.toPage('data-chart', this.path);
+      }
+    },
     onShow: function(path) {
       if (path) {
-        this.loadHistoricalData('/' + path);
+        this.loadHistoricalData(path);
       }
+      var self = this;
+      app.getThings().then(function(things) {
+        console.info('onShow() path = "' + self.path + '"');
+        self.things = things;
+      });
     },
     cleanMultiHistoricalData: function() {
       this.paths = [];
@@ -698,7 +791,6 @@ new Vue({
       if (this.chart) {
         this.chart.destroy();
       }
-      var title = this.path || 'multiple values';
       //var lastIndex = title.lastIndexOf('/');
       //if (lastIndex > 0) { title = title.substring(lastIndex + 1); }
       var chartTension = parseFloat(this.chartTension);
@@ -749,10 +841,6 @@ new Vue({
           datasets: datasets
         },
         options: {
-          title: {
-            display: true,
-            text: 'Historical data for ' + title
-          },
           //responsive: true,
           elements: {
             line: {
@@ -796,14 +884,8 @@ new Vue({
   methods: {
     onShow: function() {
       var self = this;
-      fetch('/engine/things').then(function(response) {
-        return response.json();
-      }).then(function(things) {
-        if (Array.isArray(things)) {
-          things.sort(compareByTitle);
-        }
+      app.getThings().then(function(things) {
         self.things = things;
-        //console.log('things', self.things);
         return fetch('/engine/properties');
       }).then(function(response) {
         return response.json();
@@ -826,17 +908,9 @@ new Vue({
           }
         }
         //console.log('properties', self.properties);
-        return fetch('/engine/extensions');
-      }).then(function(response) {
-        return response.json();
-      }).then(function(extensions) {
-        var extensionsById = {};
-        for (var i = 0; i < extensions.length; i++) {
-          var extension = extensions[i];
-          extensionsById[extension.id] = extension;
-        }
+        return app.getExtensionsById();
+      }).then(function(extensionsById) {
         self.extensionsById = extensionsById;
-        //console.log('extensionsById', self.extensionsById);
       });
 
     },
@@ -850,7 +924,8 @@ new Vue({
         return fetch('/engine/things/' + thing.thingId, {method: 'DELETE'});
       })).then(function() {
         toaster.toast('Things disabled');
-      })
+        app.clearCache();
+      });
     },
     onSave: function() {
       var config = {things: {}};
@@ -866,6 +941,8 @@ new Vue({
         body: JSON.stringify({
           value: config
         })
+      }).then(function() {
+        app.clearCache();
       });
     }
   }
@@ -887,6 +964,8 @@ new Vue({
     disableThing: function() {
       fetch('/engine/things/' + this.thingId, {method: 'DELETE'}).then(function() {
         toaster.toast('Thing disabled');
+      }).then(function() {
+        app.clearCache();
       });
     },
     onEdit: function() {
@@ -912,6 +991,7 @@ new Vue({
         body: JSON.stringify(modifiedProps)
       }).then(function() {
         toaster.toast('Properties updated');
+        app.clearCache();
       });
     },
     onShow: function(thingId) {
@@ -980,6 +1060,7 @@ new Vue({
           body: JSON.stringify(thingsToAdd)
         }).then(function() {
           toaster.toast('Things added');
+          app.clearCache();
         });
       }
     }
@@ -1114,14 +1195,8 @@ new Vue({
     },
     onShow: function() {
       var self = this;
-      fetch('/engine/extensions').then(function(response) {
-        return response.json();
-      }).then(function(extensions) {
-        if (Array.isArray(extensions)) {
-          extensions.sort(compareByName);
-        }
+      app.getExtensions().then(function(extensions) {
         self.extensions = extensions;
-        //console.log('extensions', self.extensions);
       });
     }
   }
@@ -1144,6 +1219,8 @@ new Vue({
           body: JSON.stringify({
             value: {active: false}
           })
+        }).then(function() {
+          app.clearCache();
         });
       }
     },
@@ -1161,6 +1238,8 @@ new Vue({
           body: JSON.stringify({
             value: this.extension.config
           })
+        }).then(function() {
+          app.clearCache();
         });
       }
     },
@@ -1188,14 +1267,8 @@ new Vue({
   methods: {
     onShow: function() {
       var self = this;
-      fetch('/engine/extensions').then(function(response) {
-        return response.json();
-      }).then(function(extensions) {
-        if (Array.isArray(extensions)) {
-          extensions.sort(compareByName);
-        }
+      app.getExtensions().then(function(extensions) {
         self.extensions = extensions;
-        //console.log('extensions', self.extensions);
       });
     },
     onSave: function() {
@@ -1211,6 +1284,8 @@ new Vue({
         body: JSON.stringify({
           value: config
         })
+      }).then(function() {
+        app.clearCache();
       });
     }
   }

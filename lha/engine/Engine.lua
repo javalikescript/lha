@@ -48,6 +48,9 @@ end
 
 local function readCertificate(certFile)
   local secure = require('jls.net.secure')
+  -- Certificate must have cer extension to be imported in windows phone
+  -- openssl x509 -outform der -in cert.pem -out cert.cer
+  -- openssl x509 -inform der -in cert.cer -out cert.pem
   local cert = secure.readCertificate(certFile:readAll())
   return cert
 end
