@@ -1098,6 +1098,10 @@ return class.create(function(engine)
     end
   end
 
+  function engine:getThingById(thingId)
+    return self.things[thingId]
+  end
+
   function engine:start()
     self:load()
     self:createScheduler()

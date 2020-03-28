@@ -209,6 +209,34 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     return self:watchPattern('^configuration/'..pattern, fn)
   end
 
+  function extension:getConfigurationValue(path)
+    return tables.getPath(self.engine.root, 'configuration/'..path)
+  end
+
+  function extension:setConfigurationValue(path, value)
+    self.engine:setRootValues('configuration/'..path, value, true)
+  end
+
+  function extension:getDataValue(path)
+    local thingId, propertyName = string.match(path, '^[^/]+/[^/]+$')
+    if thingId then
+      local thing = self.engine:getThingById(thingId)
+      if thing then
+        return thing:getPropertyValue(propertyName)
+      end
+    end
+  end
+
+  function extension:setDataValue(path, value)
+    local thingId, propertyName = string.match(path, '^[^/]+/[^/]+$')
+    if thingId then
+      local thing = self.engine:getThingById(thingId)
+      if thing then
+        thing:setPropertyValue(propertyName, value)
+      end
+    end
+  end
+
   function extension:watchValue(path, fn)
     return self:addWatcher({
       path = path,
