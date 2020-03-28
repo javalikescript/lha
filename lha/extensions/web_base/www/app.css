@@ -17,6 +17,7 @@ section.page {
   height: 100%;
   width: 100%;
   transition: all 0.25s ease;
+  background-color: #fff;
 }
 section.page.hideLeft {
   transform: translateX(-100%);
@@ -38,6 +39,9 @@ section.menu {
   transition: all 0.25s ease;
   z-index: 100;
 }
+section.settings {
+  z-index: 200;
+}
 div.toaster {
   position: fixed;
   transition: all 0.25s ease;
@@ -49,7 +53,7 @@ div.toaster {
   line-height: 3rem;
   padding: 10px 20px;
   text-align: center;
-  z-index: 1000;
+  z-index: 900;
   font-size: 2rem;
   color: #fff;
   border-radius: 5px;

@@ -140,7 +140,9 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
           lastPoll = date
           fn(...)
         else
-          logger:info('minimum polling interval not reached ('..tostring(minIntervalSec + lastPoll - date)..'s)')
+          if logger:isLoggable(logger.INFO) then
+            logger:info('minimum polling interval not reached ('..tostring(minIntervalSec + lastPoll - date)..'s)')
+          end
         end
       end)
     end
@@ -148,12 +150,16 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
   end
 
   function extension:fireExtensionEvent(...)
-    logger:info('extension:fireExtensionEvent('..TableList.concat(table.pack(...), ', ')..')')
+    if logger:isLoggable(logger.INFO) then
+      logger:info('extension:fireExtensionEvent('..TableList.concat(table.pack(...), ', ')..')')
+    end
     self.engine:publishExtensionsEvent(self, ...)
   end
 
   function extension:reloadExtension()
-    logger:info('extension:reloadExtension() '..self.id)
+    if logger:isLoggable(logger.INFO) then
+      logger:info('extension:reloadExtension() '..self.id)
+    end
     self:cleanExtension()
     self:loadExtension()
   end
@@ -218,17 +224,18 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
   end
 
   function extension:getDataValue(path)
-    local thingId, propertyName = string.match(path, '^[^/]+/[^/]+$')
+    local thingId, propertyName = string.match(path, '^([^/]+)/([^/]+)$')
     if thingId then
       local thing = self.engine:getThingById(thingId)
       if thing then
         return thing:getPropertyValue(propertyName)
       end
     end
+    return nil
   end
 
   function extension:setDataValue(path, value)
-    local thingId, propertyName = string.match(path, '^[^/]+/[^/]+$')
+    local thingId, propertyName = string.match(path, '^([^/]+)/([^/]+)$')
     if thingId then
       local thing = self.engine:getThingById(thingId)
       if thing then
@@ -286,7 +293,9 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
   function extension:refresh()
     local lastModified = self:getLastModified()
     if lastModified > self.lastModified then
-      logger:info('reloading extension '..self.id)
+      if logger:isLoggable(logger.INFO) then
+        logger:info('reloading extension '..self.id)
+      end
       self:reloadExtension()
     elseif lastModified <= 0 then
       self.lastModified = 0
@@ -305,7 +314,9 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
   function extension:loadManifest()
     local manifestFile = self:getManifestFile()
     if manifestFile:isFile() then
-      logger:debug('reading manifest for extension '..self:getPrettyName())
+      if logger:isLoggable(logger.FINEST) then
+        logger:finest('reading manifest for extension '..self:getPrettyName())
+      end
       return json.decode(manifestFile:readAll())
     end
   end
@@ -323,7 +334,9 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     -- TODO handle dependencies
     local scriptFile = self:getScriptFile()
     if scriptFile:isFile() then
-      logger:debug('loading extension '..self:getPrettyName())
+      if logger:isLoggable(logger.FINEST) then
+        logger:finest('loading extension '..self:getPrettyName())
+      end
       local scriptFn, err = loadfile(scriptFile:getPath())
       if not scriptFn or err then
         logger:warn('Cannot load extension "'..self:getPrettyName()..'" from script "'..scriptFile:getPath()..'" due to '..tostring(err))

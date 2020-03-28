@@ -169,7 +169,7 @@ Vue.component('app-settings', {
       return {app: app};
   },
   props: ['id', 'title'],
-  template: '<section v-bind:id="id" class="page" v-bind:class="{ hideTop: app.settings !== id }">' +
+  template: '<section v-bind:id="id" class="page settings" v-bind:class="{ hideTop: app.settings !== id }">' +
     '<header><div /><h1>{{ title }}</h1>' +
     '<button v-on:click="app.settings = \'\'"><i class="fa fa-window-close"></i></button>' +
     '</header><slot>Article</slot></section>'
@@ -375,25 +375,27 @@ var confirmation = new Vue({
   },
   methods: {
     ask: function(message) {
+      //console.log('confirmation.ask("' + message + '")');
       this.message = message || 'Are you sure?';
       app.settings = 'confirmation';
       var self = this;
       return new Promise(function(resolve, reject) {
-        self._reply = function(confirm) {
-          app.settings = '';
+        self._close = function(confirm) {
+          console.log('confirmation._close(' + confirm + ')');
           if (confirm) {
             resolve();
           } else {
             reject();
           }
+          app.settings = '';
         };
       });
     },
     onConfirm: function() {
-      this._reply(true);
+      this._close(true);
     },
     onCancel: function() {
-      this._reply();
+      this._close(false);
     }
   }
 });

@@ -189,19 +189,12 @@ return require('jls.lang.class').create(function(thing)
 		return self
 	end
 
-	function thing:findProperty(name)
+	function thing:getProperty(name)
 		return self.properties[name]
 	end
 
-	function thing:getProperty(name)
-		local property = self:findProperty(name)
-		if property then
-			return property:getValue()
-		end
-	end
-
 	function thing:getPropertyValue(name)
-		local property = self:findProperty(name)
+		local property = self.properties[name]
 		if property then
 			return property:getValue()
 		end
@@ -222,7 +215,7 @@ return require('jls.lang.class').create(function(thing)
 	-- @param name The property's name
 	-- @param value The property value to update
 	function thing:updatePropertyValue(name, value)
-		local property = self:findProperty(name)
+		local property = self.properties[name]
 		if property then
 			property:setValue(value)
 		end

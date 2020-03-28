@@ -307,8 +307,8 @@ define(['requirePath'], function(requirePath) {
         }
       },
       onSave: function() {
-        console.log('scriptsEditor.onSave()');
         var scriptId = this.scriptId;
+        console.log('scriptsEditor.onSave(), scriptId is "' + scriptId + '"');
         var workspace = this.workspace;
         if (!scriptId || !workspace) {
           return;

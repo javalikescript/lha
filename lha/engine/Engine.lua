@@ -10,6 +10,7 @@ local event = require('jls.lang.event')
 local Promise = require('jls.lang.Promise')
 local strings = require('jls.util.strings')
 local tables = require('jls.util.tables')
+local TableList = require('jls.util.TableList')
 local Date = require('jls.util.Date')
 local HistoricalTable = require('lha.engine.HistoricalTable')
 local IdGenerator = require('lha.engine.IdGenerator')
@@ -186,7 +187,7 @@ local EngineThing = class.create(Thing, function(engineThing, super)
   end
 
   function engineThing:setPropertyValue(name, value)
-		local property = self:findProperty(name)
+		local property = self:getProperty(name)
     if property and property:isReadOnly() then
       return
     end
@@ -286,7 +287,7 @@ local REST_THING = {
           local request = exchange:getRequest()
           local method = string.upper(request:getMethod())
           local propertyName = exchange.attributes.propertyName
-          local property = exchange.attributes.thing:findProperty(propertyName)
+          local property = exchange.attributes.thing:getProperty(propertyName)
           if property then
               if method == http.CONST.METHOD_GET then
                   return {[propertyName] = property:getValue()}
@@ -409,8 +410,11 @@ local REST_SCRIPTS = {
         blocksFile:write('<xml xmlns="http://www.w3.org/1999/xhtml"></xml>')
         scriptFile:write("local script = ...\nlocal logger = require('jls.lang.logger')\n\n")
         manifestFile:write(json.encode(manifest))
-        -- TODO Load new script?
+        logger:fine('Created script "'..scriptId..'"')
+        engine:loadExtensionFromDirectory(scriptDir, 'script')
         return scriptId
+      else
+        logger:warn('Cannot create script')
       end
     else
       httpHandler.methodNotAllowed(exchange)
@@ -418,6 +422,23 @@ local REST_SCRIPTS = {
     end
   end,
   ['/any'] = {
+    [''] = function(exchange)
+      local request = exchange:getRequest()
+      local method = string.upper(request:getMethod())
+      local engine = exchange:getAttribute('engine')
+      local extension = exchange:getAttribute('extension')
+      if method == http.CONST.METHOD_DELETE then
+        local extensionDir = extension:getDir()
+        if extension:isActive() then
+          extension:publishEvent('shutdown')
+        end
+        engine:removeExtension(extension)
+        extensionDir:deleteRecursive()
+      else
+        httpHandler.methodNotAllowed(exchange)
+        return false
+      end
+    end,
     reload = function(exchange)
       reloadExtension(exchange.attributes.extension)
     end
@@ -895,6 +916,10 @@ return class.create(function(engine)
   function engine:addExtension(extension)
     table.insert(self.extensions, extension)
     return extension
+  end
+
+  function engine:removeExtension(extension)
+    TableList.removeFirst(self.extensions, extension)
   end
 
   function engine:onExtension(id, fn)
