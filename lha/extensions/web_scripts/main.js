@@ -1,13 +1,71 @@
 define(['requirePath'], function(requirePath) {
 //define(['./toolbox.xml'], function(toolboxXml) {
 
+  var exportToLua = function(workspace) {
+    //Blockly.Lua.INFINITE_LOOP_TRAP = 'if(--window.LoopTrap == 0) throw "Infinite loop.";\n';
+    var code = Blockly.Lua.workspaceToCode(workspace);
+    code = "local script = ...\nlocal logger = require('jls.lang.logger')\n\n" + code;
+    return code;
+  };
+  var exportToXml = function(workspace) {
+    var xml = Blockly.Xml.workspaceToDom(workspace);
+    // domToPrettyText domToText
+    var xmlText = Blockly.Xml.domToPrettyText(xml);
+    //console.log('scriptsEditor.save()', xmlText);
+    return xmlText;
+  };
+  var exportAs = function(text, filename, type) {
+    console.log('exportAs()', text);
+    var blob = new window.Blob([text], {type : (type || 'text/plain')});
+    var blobUrl = window.URL.createObjectURL(blob);
+    var clickHandler = function() {
+      setTimeout(function() {
+        URL.revokeObjectURL(blobUrl);
+      }, 150);
+    };
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename || 'download';
+    a.addEventListener('click', clickHandler, {capture: false, once: true});
+    a.click();
+    //window.open(blobUrl);
+    //window.URL.revokeObjectURL(blobUrl);
+  };
+
   var loadBlockly = function(self, toolboxXml) {
     //console.log('using toolbox', toolboxXml);
     var workspace = Blockly.inject('scriptsEditorBlocklyDiv', {
       media: '/static/blockly/media/',
       toolbox: toolboxXml
     });
-    var lhaColor = 58;
+    var lhaEventColor = 48;
+    var lhaStatementColor = 58;
+    // Prepare data fields
+    var dataPathField = {
+      "type": "field_input",
+      "name": "PATH",
+      "text": "some/path"
+    };
+    if (self.things && self.things.length > 0) {
+      // thing in things thing.title
+      // v-for="(property, name) in thing.properties thing.thingId + '/' + name  property.title
+      var thingPathOptions = [];
+      for (var i = 0; i < self.things.length; i++) {
+        var thing = self.things[i];
+        for (var name in thing.properties) {
+          var property = thing.properties[name];
+          thingPathOptions.push([
+            thing.title + ' - ' + property.title,
+            thing.thingId + '/' + name
+          ]);
+        }
+      }
+      dataPathField = {
+        "type": "field_dropdown",
+        "name": "PATH",
+        "options": thingPathOptions
+      };
+    }
     // Register custom blocks
     Blockly.Blocks['lha_poll'] = {
       init: function() {
@@ -18,7 +76,7 @@ define(['requirePath'], function(requirePath) {
             "type": "input_statement",
             "name": "DO"
           }],
-          "colour": lhaColor
+          "colour": lhaEventColor
         });
       }
     };
@@ -45,7 +103,7 @@ define(['requirePath'], function(requirePath) {
             "type": "input_statement",
             "name": "DO"
           }],
-          "colour": lhaColor
+          "colour": lhaEventColor
         });
       }
     };
@@ -67,7 +125,6 @@ define(['requirePath'], function(requirePath) {
               [ "WARN", "WARN" ],
               [ "INFO", "INFO" ],
               [ "CONFIG", "CONFIG" ],
-              [ "DEBUG", "DEBUG" ],
               [ "FINE", "FINE" ],
               [ "FINER", "FINER" ],
               [ "FINEST", "FINEST" ]
@@ -79,7 +136,7 @@ define(['requirePath'], function(requirePath) {
           }],
           "previousStatement": null,
           "nextStatement": null,
-          "colour": lhaColor
+          "colour": lhaStatementColor
         });
       }
     };
@@ -92,7 +149,7 @@ define(['requirePath'], function(requirePath) {
     Blockly.Blocks['lha_schedule'] = {
       init: function() {
         this.jsonInit({
-          "message0": "When %1",
+          "message0": "Every %1",
           "args0": [{
             "type": "field_input",
             "name": "VALUE",
@@ -103,7 +160,7 @@ define(['requirePath'], function(requirePath) {
             "type": "input_statement",
             "name": "DO"
           }],
-          "colour": lhaColor
+          "colour": lhaEventColor
         });
       }
     };
@@ -113,210 +170,102 @@ define(['requirePath'], function(requirePath) {
       code = "script:registerSchedule('" + value + "', function()\n" + code + "end)\n";
       return code;
     };
-    var lhaPrefixes = [
-      [ "data", "data/" ],
-      [ "configuration", "configuration/" ]
-    ];
-    Blockly.Blocks['lha_get'] = {
+    Blockly.Blocks['lha_get_data'] = {
       init: function() {
         this.jsonInit({
-          "message0": "Get %1 %2",
-          "args0": [{
-            "type": "field_dropdown",
-            "name": "PREFIX",
-            "options": lhaPrefixes
-          }, {
-            "type": "field_input",
-            "name": "PATH",
-            "text": "some/path"
-          }],
+          "message0": "Get %1",
+          "args0": [dataPathField],
           "output": null,
-          "colour": lhaColor
+          "colour": lhaStatementColor
         });
       }
     };
-    Blockly.Lua['lha_get'] = function(block) {
-      var prefix = block.getFieldValue('PREFIX')
+    Blockly.Lua['lha_get_data'] = function(block) {
       var path = block.getFieldValue('PATH');
-      var code = "script:getValue('" + prefix + path + "')";
+      var code = "script:getDataValue('" + path + "')";
       return [code, Blockly.JavaScript.ORDER_MEMBER];
     };
-    Blockly.Blocks['lha_set'] = {
+    Blockly.Blocks['lha_set_data'] = {
       init: function() {
         this.jsonInit({
-          "message0": "Set %1 %2 %3",
-          "args0": [{
-            "type": "field_dropdown",
-            "name": "PREFIX",
-            "options": lhaPrefixes
-          }, {
-            "type": "field_input",
-            "name": "PATH",
-            "text": "some/path"
-          }, {
+          "message0": "Set %1 %2",
+          "args0": [dataPathField, {
             "type": "input_value",
             "name": "VALUE"
             //"check": "String"
           }],
           "previousStatement": null,
           "nextStatement": null,
-          "colour": lhaColor
+          "colour": lhaStatementColor
         });
       }
     };
-    Blockly.Lua['lha_set'] = function(block) {
-      var prefix = block.getFieldValue('PREFIX')
+    Blockly.Lua['lha_set_data'] = function(block) {
       var path = block.getFieldValue('PATH');
       var value = Blockly.Lua.valueToCode(block, 'VALUE', Blockly.JavaScript.ORDER_NONE);
-      return "script:setValue('" + prefix + path + "', " + value + ")\n";
+      return "script:setDataValue('" + path + "', " + value + ")\n";
     };
-    Blockly.Blocks['lha_fire'] = {
+    Blockly.Blocks['lha_watch_data'] = {
       init: function() {
         this.jsonInit({
-          "message0": "Fire %1 %2 %3",
-          "args0": [{
-            "type": "field_dropdown",
-            "name": "PREFIX",
-            "options": lhaPrefixes
-          }, {
-            "type": "field_input",
-            "name": "PATH",
-            "text": "some/path"
-          }, {
-            "type": "input_value",
-            "name": "VALUE"
-            //"check": "String"
-          }],
-          "previousStatement": null,
-          "nextStatement": null,
-          "colour": lhaColor
-        });
-      }
-    };
-    Blockly.Lua['lha_fire'] = function(block) {
-      var prefix = block.getFieldValue('PREFIX')
-      var path = block.getFieldValue('PATH');
-      var value = Blockly.Lua.valueToCode(block, 'VALUE', Blockly.JavaScript.ORDER_NONE);
-      return "script:fireChange('" + prefix + path + "', " + value + ")\n";
-    };
-    Blockly.Blocks['lha_watch'] = {
-      init: function() {
-        this.jsonInit({
-          "message0": "Watch %1 %2",
-          "args0": [{
-            "type": "field_dropdown",
-            "name": "PREFIX",
-            "options": lhaPrefixes
-          }, {
-            "type": "field_input",
-            "name": "PATH",
-            "text": "some/path"
-          }],
-          //"message1": "new: %1, previous: %2",
+          "message0": "Watch %1",
+          "args0": [dataPathField],
           "message1": "new: %1",
           "args1": [{
             "type": "field_variable",
             "name": "NEW_VALUE",
             "variable": null
-          }/*, {
-            "type": "field_variable",
-            "name": "OLD_VALUE",
-            "variable": null
-          }*/],
+          }],
           "message2": "do %1",
           "args2": [{
             "type": "input_statement",
             "name": "DO"
           }],
-          "colour": lhaColor
+          "colour": lhaEventColor
         });
       }
     };
-    Blockly.Lua['lha_watch'] = function(block) {
+    Blockly.Lua['lha_watch_data'] = function(block) {
       var code = Blockly.Lua.statementToCode(block, 'DO');
-      var prefix = block.getFieldValue('PREFIX')
       var path = block.getFieldValue('PATH');
-      //var newValue = Blockly.Lua.valueToCode(block, 'NEW_VALUE', Blockly.JavaScript.ORDER_NONE);
-      //var oldValue = Blockly.Lua.valueToCode(block, 'OLD_VALUE', Blockly.JavaScript.ORDER_NONE);
-      //var newValue = block.getFieldValue('NEW_VALUE');
-      //var oldValue = block.getFieldValue('OLD_VALUE');
       var newValue = Blockly.Lua.variableDB_.getName(block.getFieldValue('NEW_VALUE'), Blockly.Variables.NAME_TYPE);
       //var oldValue = Blockly.Lua.variableDB_.getName(block.getFieldValue('OLD_VALUE'), Blockly.Variables.NAME_TYPE);
       var oldValue = '_';
-      code = "script:watchValue('" + prefix + path + "', function(" + newValue + ", " + oldValue + ")\n" + code + "end)\n";
+      code = "script:watchValue('data/" + path + "', function(" + newValue + ", " + oldValue + ")\n" + code + "end)\n";
       return code;
     };
     // Registers action buttons
-    var exportToLua = function(workspace) {
-      //Blockly.Lua.INFINITE_LOOP_TRAP = 'if(--window.LoopTrap == 0) throw "Infinite loop.";\n';
-      var code = Blockly.Lua.workspaceToCode(workspace);
-      code = "local script = ...\nlocal logger = require('jls.lang.logger')\n\n" + code;
-      return code;
-    };
-    var exportToXml = function(workspace) {
-      var xml = Blockly.Xml.workspaceToDom(workspace);
-      // domToPrettyText domToText
-      var xmlText = Blockly.Xml.domToPrettyText(xml);
-      //console.log('scriptsEditor.save()', xmlText);
-      return xmlText;
-    };
-    var saveAs = function(text, type, filename) {
-      var blob = new window.Blob([text], {type : (type || 'text/plain')});
-      var blobUrl = window.URL.createObjectURL(blob);
-      window.open(blobUrl, 'script')
-    };
     workspace.registerButtonCallback('refresh', function() {
-      self.refresh();
-      toaster.toast('Refreshed');
+      self.refresh().then(function() {
+        toaster.toast('Refreshed');
+      });
     });
     workspace.registerButtonCallback('clear', function() {
       workspace.clear();
-      toaster.toast('Clear');
+      toaster.toast('Cleared');
     });
-    workspace.registerButtonCallback('delete', function() {
-      if (self.scriptId) {
-        fetch('/engine/scripts/' + self.scriptId + '/', {
-          method: 'DELETE'
-        }).then(function() {
-          toaster.toast('Deleted');
-        });
-      }
-    });
-    workspace.registerButtonCallback('save', function() {
-      if (!self.scriptId) {
-        return;
-      }
-      // generate
-      var code = exportToLua(workspace);
-      var xmlText = exportToXml(workspace);
-      // save
-      fetch('/engine/scriptFiles/' + self.scriptId + '/blocks.xml', {
-        method: 'PUT',
-        body: xmlText
-      }).then(function() {
-        return fetch('/engine/scriptFiles/' + self.scriptId + '/script.lua', {
-          method: 'PUT',
-          body: code
-        });
-      }).then(function() {
-        toaster.toast('Saved');
-      });
-    });
+    workspace.registerButtonCallback('delete', self.onDelete);
+    workspace.registerButtonCallback('save', self.onSave);
     workspace.registerButtonCallback('exportLua', function() {
-      saveAs(exportToLua(workspace));
+      exportAs(exportToLua(workspace), 'script.lua');
     });
     workspace.registerButtonCallback('exportXml', function() {
-      saveAs(exportToXml(workspace));
+      exportAs(exportToXml(workspace), 'script.xml');
     });
     return workspace;
   };
 
   var scriptsEditorVue = new Vue({
-    template: '<app-page id="scriptsEditor" title="Scripts Editor"><article class="content">' +
+    template: '<app-page id="scriptsEditor" title="Scripts Editor">' +
+      '<template slot="bar-right">'+
+      '<button v-on:click="onDelete" title="Delete"><i class="fa fa-trash"></i></button>' +
+      '<button v-on:click="onSave" title="Save"><i class="far fa-save"></i></button>' +
+      '</template><article class="content">' +
       '<div id="scriptsEditorBlocklyDiv" style="height: 100%; width: 100%;"></div>' +
       '</article></app-page>',
     data: {
       scriptId: '',
+      things: [],
       savedContent: null,
       workspace: null
     },
@@ -328,7 +277,10 @@ define(['requirePath'], function(requirePath) {
             this.scriptId = scriptId;
           }
           var self = this;
-          fetch(requirePath + '/toolbox.xml').then(function(response) {
+          app.getThings().then(function(things) {
+            self.things = things;
+            return fetch(requirePath + '/toolbox.xml')
+          }).then(function(response) {
             return response.text();
           }).then(function(toolboxXml) {
             self.workspace = loadBlockly(self, toolboxXml);
@@ -341,10 +293,46 @@ define(['requirePath'], function(requirePath) {
           this.refresh();
         }
       },
+      onDelete: function() {
+        var scriptId = this.scriptId;
+        console.log('scriptsEditor.onDelete(), scriptId is "' + scriptId + '"');
+        if (scriptId) {
+          confirmation.ask('Delete the script?').then(function() {
+            fetch('/engine/scripts/' + scriptId + '/', {
+              method: 'DELETE'
+            }).then(function() {
+              toaster.toast('Deleted');
+            });
+          });
+        }
+      },
+      onSave: function() {
+        console.log('scriptsEditor.onSave()');
+        var scriptId = this.scriptId;
+        var workspace = this.workspace;
+        if (!scriptId || !workspace) {
+          return;
+        }
+        // generate
+        var code = exportToLua(workspace);
+        var xmlText = exportToXml(workspace);
+        // save
+        fetch('/engine/scriptFiles/' + scriptId + '/blocks.xml', {
+          method: 'PUT',
+          body: xmlText
+        }).then(function() {
+          return fetch('/engine/scriptFiles/' + scriptId + '/script.lua', {
+            method: 'PUT',
+            body: code
+          });
+        }).then(function() {
+          toaster.toast('Saved');
+        });
+      },
       refresh: function() {
         var workspace = this.workspace;
         if (workspace) {
-          fetch('/engine/scriptFiles/' + this.scriptId + '/blocks.xml').then(function(response) {
+          return fetch('/engine/scriptFiles/' + this.scriptId + '/blocks.xml').then(function(response) {
             return response.text();
           }).then(function(xmlText) {
             workspace.clear();
@@ -352,6 +340,7 @@ define(['requirePath'], function(requirePath) {
             Blockly.Xml.domToWorkspace(xml, workspace);
           });
         }
+        return Promise.reject('workspace not initialized');
       }
     }
   });
@@ -363,7 +352,7 @@ define(['requirePath'], function(requirePath) {
       '<div class="card" v-for="script in scripts">' +
       '<div class="bar"><p>{{ script.name }}</p><div>' +
       '<button v-on:click="reloadScript(script)"><i class="fas fa-redo"></i>&nbsp;Reload</button>' +
-      '<button v-on:click="app.toPage(\'scriptsEditor\', script.id)"><i class="fas fa-info"></i>&nbsp;Details</button>' +
+      '<button v-on:click="app.toPage(\'scriptsEditor\', script.id)"><i class="fas fa-edit"></i>&nbsp;Open</button>' +
       '</div></div><p>{{ script.description }}</p>' +
       '<p><input type="checkbox" v-model="script.active" v-on:click="activateScript(script)" /> Active</p>' +
       '</div></article></app-page>',
