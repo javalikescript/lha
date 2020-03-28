@@ -12,6 +12,11 @@
 <body class="theme_boot">
 <!-- Custom pages used by components -->
 <div id="custom-pages" class="pages">
+  <!--
+    ======================================================================
+    == charts
+    ======================================================================
+  -->
   <app-page id="data-chart" title="Data Chart">
     <template slot="bar-right">
       <button v-if="paths.length > 0" v-on:click="cleanMultiHistoricalData" title="Clean stack"><i class="fas fa-eraser"></i></button>
@@ -94,50 +99,11 @@
       </div>
     </article>
   </app-page>
-  <app-settings id="settings" title="Settings">
-    <page-article>
-      <p>Information:</p>
-      <dl>
-        <dt><label>CPU Time</label></dt><dd><span v-html="clock">na</span></dd>
-        <dt><label>Memory size</label></dt><dd><span v-html="memory">na</span></dd>
-        <dt><label>Server Time</label></dt><dd><span v-html="time">na</span></dd>
-      </dl>
-      <!--
-      <button v-on:click="toaster.toast('Message')"><i class="far fa-bell"></i>&nbsp;Toast</button>
-      -->
-      <button v-on:click="refreshInfo()"><i class="fas fa-sync"></i>&nbsp;Refresh</button>
-      <button v-on:click="gc()"><i class="fa fa-trash"></i>&nbsp;Collect Garbage</button>
-      <button v-on:click="pollThings()"><i class="far fa-bell"></i>&nbsp;Poll Things</button>
-      <button v-on:click="clearCache()"><i class="fa fa-trash"></i>&nbsp;Clear Cache</button>
-      <button v-on:click="app.toPage('engineConfig')"><i class="fas fa-sliders-h"></i>&nbsp;Configuration</button>
-      <button v-on:click="app.toPage('moreSettings')"><i class="fas fa-tools"></i>&nbsp;More...</button>
-    </page-article>
-  </app-settings>
-  <app-page id="engineConfig" title="Engine Configuration">
-    <template slot="bar-right">
-      <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
-      <button v-on:click="onSave()" title="Save"><i class="far fa-save"></i></button>
-    </template>
-    <page-article>
-      <json :name="'Configuration'" :obj="config" :schema="schema"></json>
-    </page-article>
-  </app-page>
-  <app-page id="moreSettings" title="More Settings">
-    <page-article>
-      <p>Settings</p>
-      <button v-on:click="saveConfig"><i class="far fa-save"></i>&nbsp;Save Configuration</button>
-      <button v-on:click="stopServer"><i class="fas fa-power-off"></i>&nbsp;Stop the Server</button>
-      <p>Advanced</p>
-      <button v-on:click="reloadExtensions"><i class="fas fa-redo"></i>&nbsp;Reload the Extensions</button>
-      <button v-on:click="reloadScripts"><i class="fas fa-redo"></i>&nbsp;Reload the Scripts</button>
-      <!--
-      <p>Beyond</p>
-      <button v-on:click="restartServer"><i class="fas fa-redo"></i>&nbsp;Restart the Server</button>
-      <button v-on:click="selectFile"><i class="fas fa-upload"></i>&nbsp;Upgrade the Server</button>
-      <input v-on:change="uploadFile" type="file" accept=".zip" ref="uploadInput" style="display: none;" />
-      -->
-    </page-article>
-  </app-page>
+  <!--
+    ======================================================================
+    == things
+    ======================================================================
+  -->
   <app-page id="things" title="Things">
     <template slot="bar-right">
       <button v-on:click="onShow" title="Refresh"><i class="fas fa-sync"></i></button>
@@ -223,6 +189,11 @@
       </section>
     </article>
   </app-page>
+  <!--
+    ======================================================================
+    == extensions
+    ======================================================================
+  -->
   <app-page id="extensions" title="Extensions">
     <template slot="bar-right">
       <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
@@ -271,6 +242,67 @@
       </div>
     </article>
   </app-page>
+  <!--
+    ======================================================================
+    == Settings
+    ======================================================================
+  -->
+  <app-settings id="settings" title="Settings">
+    <page-article>
+      <p>Information:</p>
+      <dl>
+        <dt><label>CPU Time</label></dt><dd><span v-html="clock">na</span></dd>
+        <dt><label>Memory size</label></dt><dd><span v-html="memory">na</span></dd>
+        <dt><label>Server Time</label></dt><dd><span v-html="time">na</span></dd>
+      </dl>
+      <!--
+      <button v-on:click="toaster.toast('Message')"><i class="far fa-bell"></i>&nbsp;Toast</button>
+      -->
+      <button v-on:click="refreshInfo()"><i class="fas fa-sync"></i>&nbsp;Refresh</button>
+      <button v-on:click="gc()"><i class="fa fa-trash"></i>&nbsp;Collect Garbage</button>
+      <button v-on:click="pollThings()"><i class="far fa-bell"></i>&nbsp;Poll Things</button>
+      <button v-on:click="clearCache()"><i class="fa fa-trash"></i>&nbsp;Clear Cache</button>
+      <button v-on:click="app.toPage('engineConfig')"><i class="fas fa-sliders-h"></i>&nbsp;Configuration</button>
+      <button v-on:click="app.toPage('moreSettings')"><i class="fas fa-tools"></i>&nbsp;More...</button>
+    </page-article>
+  </app-settings>
+  <app-page id="engineConfig" title="Engine Configuration">
+    <template slot="bar-right">
+      <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
+      <button v-on:click="onSave()" title="Save"><i class="far fa-save"></i></button>
+    </template>
+    <page-article>
+      <json :name="'Configuration'" :obj="config" :schema="schema"></json>
+    </page-article>
+  </app-page>
+  <app-page id="moreSettings" title="More Settings">
+    <page-article>
+      <p>Settings</p>
+      <button v-on:click="saveConfig"><i class="far fa-save"></i>&nbsp;Save Configuration</button>
+      <button v-on:click="stopServer"><i class="fas fa-power-off"></i>&nbsp;Stop the Server</button>
+      <p>Advanced</p>
+      <button v-on:click="reloadExtensions"><i class="fas fa-redo"></i>&nbsp;Reload the Extensions</button>
+      <button v-on:click="reloadScripts"><i class="fas fa-redo"></i>&nbsp;Reload the Scripts</button>
+      <!--
+      <p>Beyond</p>
+      <button v-on:click="restartServer"><i class="fas fa-redo"></i>&nbsp;Restart the Server</button>
+      <button v-on:click="selectFile"><i class="fas fa-upload"></i>&nbsp;Upgrade the Server</button>
+      <input v-on:change="uploadFile" type="file" accept=".zip" ref="uploadInput" style="display: none;" />
+      -->
+    </page-article>
+  </app-page>
+  <app-settings id="confirmation" title="Confirm">
+    <page-article>
+      <p>{{ message }}</p>
+      <button v-on:click="onConfirm()"><i class="fas fa-check"></i>&nbsp;Confirm</button>
+      <button v-on:click="onCancel()"><i class="fas fa-times"></i>&nbsp;Cancel</button>
+    </page-article>
+  </app-settings>
+  <!--
+    ======================================================================
+    == Menu
+    ======================================================================
+  -->
   <app-menu id="menu" title="Menu">
     <article class="content">
       <ul>
@@ -324,7 +356,11 @@
   }
 //-->
 </script>
-<script src="app.js" type="text/javascript" charset="utf-8"></script>
+<script src="app/utils.js" type="text/javascript" charset="utf-8"></script>
+<script src="app/main.js" type="text/javascript" charset="utf-8"></script>
+<script src="app/charts.js" type="text/javascript" charset="utf-8"></script>
+<script src="app/extensions.js" type="text/javascript" charset="utf-8"></script>
+<script src="app/things.js" type="text/javascript" charset="utf-8"></script>
 <!-- blockly for web_script extension -->
 <script src="static/blockly/blockly_compressed.js"></script>
 <script src="static/blockly/blocks_compressed.js"></script>
