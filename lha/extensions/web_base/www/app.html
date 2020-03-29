@@ -10,8 +10,43 @@
   <script src="static/v/vue.min.js" type="text/javascript" charset="utf-8"></script>
 </head>
 <body class="theme_boot">
+<div class="splash">
+  Loading...
+  <!--
+    <i class="fas fa-spinner fa-spin"></i>
+  -->
+</div>
+<!-- v-if="show" class="toaster" -->
+<div id="toaster" :class="['toaster', show ? '' : 'hide']">{{message}}</div>
 <!-- Custom pages used by components -->
 <div id="custom-pages" class="pages">
+  <!--
+    ======================================================================
+    == Confirmation dialog
+    ======================================================================
+  -->
+  <app-dialog id="confirmation" title="Confirm">
+    <template slot="bar-right">
+      <button v-on:click="onCancel()"><i class="fa fa-window-close"></i></button>
+    </template>
+    <page-article>
+      <p>{{ message }}</p>
+      <button v-on:click="onConfirm()"><i class="fas fa-check"></i>&nbsp;Confirm</button>
+      <button v-on:click="onCancel()"><i class="fas fa-times"></i>&nbsp;Cancel</button>
+    </page-article>
+  </app-dialog>
+  <!--
+    ======================================================================
+    == Menu
+    ======================================================================
+  -->
+  <app-menu id="menu" title="Menu">
+    <article class="content">
+      <ul>
+        <li v-for="page in pages" v-on:click="app.toPage(page.id)">{{ page.name }}</li>
+      </ul>
+    </article>
+  </app-menu>
   <!--
     ======================================================================
     == charts
@@ -291,25 +326,11 @@
       -->
     </page-article>
   </app-page>
-  <app-settings id="confirmation" title="Confirm">
-    <page-article>
-      <p>{{ message }}</p>
-      <button v-on:click="onConfirm()"><i class="fas fa-check"></i>&nbsp;Confirm</button>
-      <button v-on:click="onCancel()"><i class="fas fa-times"></i>&nbsp;Cancel</button>
-    </page-article>
-  </app-settings>
   <!--
     ======================================================================
-    == Menu
+    == Main
     ======================================================================
   -->
-  <app-menu id="menu" title="Menu">
-    <article class="content">
-      <ul>
-        <li v-for="page in pages" v-on:click="app.toPage(page.id)">{{ page.name }}</li>
-      </ul>
-    </article>
-  </app-menu>
   <app-root-page id="main" title="Welcome">
     <article class="tiles">
       <div class="tile" v-for="page in pages" v-on:click="app.toPage(page.id)"><span>{{ page.name }}</span></div>
@@ -325,14 +346,6 @@
   </app-page>
 </div>
 <div id="app"></div>
-<!-- v-if="show" class="toaster" -->
-<div id="toaster" :class="['toaster', show ? '' : 'hide']">{{message}}</div>
-<div class="splash">
-  Loading...
-  <!--
-    <i class="fas fa-spinner fa-spin"></i>
-  -->
-</div>
 </body>
 <script src="static/moment.js" type="text/javascript"></script>
 <script src="static/chart/Chart.min.js"></script>

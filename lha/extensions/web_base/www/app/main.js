@@ -6,6 +6,7 @@ var app = new Vue({
   data: {
     menu: '',
     settings: '',
+    dialog: '',
     page: '',
     path: '',
     pages: {},
@@ -126,6 +127,7 @@ var app = new Vue({
       if (cacheValue) {
         return Promise.resolve(cacheValue);
       }
+      var self = this;
       return this.getExtensions().then(function(extensions) {
         var extensionsById = {};
         if (Array.isArray(extensions)) {
@@ -152,7 +154,7 @@ Vue.component('app-root-page', {
   template: '<section v-bind:id="id" class="page" v-bind:class="{ hideLeft: app.page !== id, hideBottom: app.settings !== \'\' }"><header>' +
     '<button v-on:click="app.menu = \'menu\'"><i class="fa fa-bars"></i></button>' +
     '<h1>{{ title }}</h1>' +
-    '<button v-on:click="app.settings = \'settings\'"><i class="fa fa-cog"></i></button>' +
+    '<button v-on:click="app.settings = \'settings\'; app.menu = \'\'"><i class="fa fa-cog"></i></button>' +
     '</header><slot>Article</slot></section>'
 });
 Vue.component('app-menu', {
@@ -164,15 +166,25 @@ Vue.component('app-menu', {
     '<button v-on:click="app.menu = \'\'"><i class="fa fa-window-close"></i></button>' +
     '<h1>{{ title }}</h1><div /></header><slot>Article</slot></section>'
 });
+Vue.component('app-dialog', {
+  data: function() {
+      return {app: app};
+  },
+  props: ['id', 'title'],
+  template: '<section v-bind:id="id" class="page dialog" v-bind:class="{ hide: app.dialog !== id }">' +
+    '<header><div /><h1>{{ title }}</h1><div><slot name="bar-right">' +
+    '<button v-on:click="app.dialog = \'\'"><i class="fa fa-window-close"></i></button>' +
+    '</slot></div></header><slot>Article</slot></section>'
+});
 Vue.component('app-settings', {
   data: function() {
       return {app: app};
   },
   props: ['id', 'title'],
   template: '<section v-bind:id="id" class="page settings" v-bind:class="{ hideTop: app.settings !== id }">' +
-    '<header><div /><h1>{{ title }}</h1>' +
+    '<header><div /><h1>{{ title }}</h1><div><slot name="bar-right">' +
     '<button v-on:click="app.settings = \'\'"><i class="fa fa-window-close"></i></button>' +
-    '</header><slot>Article</slot></section>'
+    '</slot></div></header><slot>Article</slot></section>'
 });
 Vue.component('app-page', {
   data: function() {
@@ -377,17 +389,16 @@ var confirmation = new Vue({
     ask: function(message) {
       //console.log('confirmation.ask("' + message + '")');
       this.message = message || 'Are you sure?';
-      app.settings = 'confirmation';
+      app.dialog = 'confirmation';
       var self = this;
       return new Promise(function(resolve, reject) {
         self._close = function(confirm) {
-          console.log('confirmation._close(' + confirm + ')');
           if (confirm) {
             resolve();
           } else {
-            reject();
+            reject('user did not confirm');
           }
-          app.settings = '';
+          app.dialog = '';
         };
       });
     },
@@ -509,9 +520,11 @@ new Vue({
       });
     },
     stopServer: function() {
-      fetch('/engine/admin/stop', { method: 'POST'}).then(function() {
-        app.toPage('main');
-        toaster.toast('Server stopped');
+      confirmation.ask('Stop the server?').then(function() {
+        fetch('/engine/admin/stop', { method: 'POST'}).then(function() {
+          app.toPage('main');
+          toaster.toast('Server stopped');
+        });
       });
     },
     selectFile: function(event) {
