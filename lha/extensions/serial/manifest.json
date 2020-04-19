@@ -1,0 +1,72 @@
+{
+  "name": "Serial",
+  "description": "Serial RF and sensors",
+  "version": "1.0",
+  "script": "serial.lua",
+  "config": {
+    "portName": "/dev/ttyUSB0",
+    "-portName": "\\\\.\\COM3",
+    "baudRate": 9600,
+    "dataBits": 8,
+    "stopBits": 1,
+    "parity": 0
+  },
+  "schema": {
+    "type": "object",
+    "properties": {
+      "portName": {
+        "title": "The port for communications",
+        "type": "string"
+      },
+      "baudRate": {
+        "title": "The serial baud rate",
+        "type": "integer"
+      },
+      "dataBits": {
+        "title": "The standard length of data bits per byte",
+        "type": "integer"
+      },
+      "stopBits": {
+        "title": "The standard number of stopbits per byte",
+        "type": "integer"
+      },
+      "parity": {
+        "title": "The parity-checking protocol",
+        "type": "integer"
+      },
+      "setupMessages": {
+        "title": "Setup Messages",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "commandId": {
+              "title": "Command Id",
+              "type": "integer",
+              "enumValues": [
+                {"const": 0, "title": "Welcome"},
+                {"const": 1, "title": "Info"},
+                {"const": 2, "title": "Read"},
+                {"const": 3, "title": "Write"},
+                {"const": 4, "title": "Subscribe"},
+                {"const": 5, "title": "Echo"}
+              ]
+            },
+            "thingId": {
+              "title": "Thing Id",
+              "type": "integer"
+            },
+            "value": {
+              "title": "Value",
+              "type": "integer"
+            },
+            "propertyId": {
+              "title": "Property Id",
+              "type": "integer"
+            }
+          }
+        }
+      }
+    }
+  }
+}
