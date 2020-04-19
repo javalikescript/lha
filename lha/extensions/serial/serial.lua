@@ -120,7 +120,9 @@ function serialLineHandler:onData(line)
           end
           thing:updatePropertyValue(propertyName, value)
         else
-          logger:warn('serial received read for thing '..thingId..' with missing property "'..tostring(propertyName)..'"')
+          if logger:isLoggable(logger.FINE) then
+            logger:fine('serial received read for thing '..thingId..' with missing property "'..tostring(propertyName)..'"')
+          end
         end
       end
     else
@@ -163,7 +165,11 @@ end)
 
 extension:subscribeEvent('things', function()
   logger:info('looking for serial things')
-  serial:write(createMessage(COMMAND.WELCOME))
+  if serial then
+    serial:write(createMessage(COMMAND.WELCOME))
+  else
+    logger:info('things serial device disabled as serial is not available')
+  end
 end)
 
 extension:subscribeEvent('poll', function()
