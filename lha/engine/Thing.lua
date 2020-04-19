@@ -162,6 +162,13 @@ return require('jls.lang.class').create(function(thing)
 		return self
 	end
 
+	function thing:addType(type)
+		if not self:hasType(type) then
+			table.insert(self.type, type)
+		end
+		return self
+	end
+
 	function thing:hasType(type)
 		return TableList.indexOf(self.type, type) ~= nil
 	end
@@ -187,6 +194,10 @@ return require('jls.lang.class').create(function(thing)
 			end
 		end
 		return self
+	end
+
+	function thing:getProperties()
+		return self.properties
 	end
 
 	function thing:getProperty(name)
@@ -229,12 +240,20 @@ return require('jls.lang.class').create(function(thing)
 		return descriptions
 	end
 
-	function thing:getProperties()
+	function thing:getPropertyValues()
 		local props = {}
 		for name, property in pairs(self.properties) do
 			props[name] = property:getValue()
 		end
 		return props
+	end
+
+	function thing:getPropertyNames()
+		local names = {}
+		for name in pairs(self.properties) do
+			table.insert(names, name)
+		end
+		return names
 	end
 
 	function thing:addEvent(name, event)

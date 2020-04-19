@@ -290,6 +290,10 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     return self:getEngine():getThingsByExtensionId(self:getId())
   end
 
+  function extension:getThingByDiscoveryKey(discoveryKey)
+    return self:getEngine():getThingByDiscoveryKey(self:getId(), discoveryKey)
+  end
+
   function extension:refresh()
     local lastModified = self:getLastModified()
     if lastModified > self.lastModified then

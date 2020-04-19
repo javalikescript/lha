@@ -272,7 +272,7 @@ local REST_THING = {
         local request = exchange:getRequest()
         local method = string.upper(request:getMethod())
         if method == http.CONST.METHOD_GET then
-          return exchange.attributes.thing:getProperties()
+          return exchange.attributes.thing:getPropertyValues()
         elseif method == http.CONST.METHOD_PUT then
           local rt = json.decode(request:getBody())
           for name, value in pairs(rt) do
@@ -522,7 +522,7 @@ local REST_ENGINE_HANDLERS = {
     local engine = exchange:getAttribute('engine')
     local t = {}
     for thingId, thing in pairs(engine.things) do
-      t[thingId] = thing:getProperties()
+      t[thingId] = thing:getPropertyValues()
     end
     return t
   end,
@@ -1121,6 +1121,7 @@ return class.create(function(engine)
         return self.things[thingId], thingId
       end
     end
+    return nil
   end
 
   function engine:getThingById(thingId)
