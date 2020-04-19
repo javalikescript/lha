@@ -156,6 +156,8 @@ return require('jls.lang.class').create(function(hueBridge)
       thing:updatePropertyValue('colorTemperature', math.floor(1000000 / state.ct))
       -- Hue has hue and sat properties
       thing:updatePropertyValue('color', Thing.hsvToRgbHex(state.hue / 65535, state.sat / 254, state.bri / 254))
+    elseif info.type == 'On/Off plug-in unit' then
+      thing:updatePropertyValue('on', state.on)
     elseif (info.type == 'ZLLLightLevel' or info.type == 'ZHALightLevel') and state.lightlevel ~= json.null then
       --[[
         From ZigBee Cluster Library
@@ -235,6 +237,9 @@ end, function(HueBridge)
     elseif info.type == 'Extended color light' then
       local t = Thing:new(info.name or 'Extended color light', 'Extended color light', {'Light', 'OnOffSwitch', 'ColorControl'})
       return t:addOnOffProperty():addBrightnessProperty():addColorTemperatureProperty():addColorProperty()
+    elseif info.type == 'On/Off plug-in unit' then
+      local t = Thing:new(info.name or 'On/Off outlet', 'On/Off outlet', {'Light', 'OnOffSwitch'})
+      return t:addOnOffProperty()
     elseif info.type == 'ZLLLightLevel' or info.type == 'ZHALightLevel' then
       return Thing:new(info.name or 'Light Level', 'Light Level Sensor', {'MultiLevelSensor'}):addLightLevelProperty()
     elseif info.type == 'ZLLTemperature' or info.type == 'ZHATemperature' then
