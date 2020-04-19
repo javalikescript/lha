@@ -227,9 +227,9 @@ Vue.component('json-item', {
   template: '<li class="json"><div @click="toggle">' +
     '<span>{{ label }}:</span><br>' +
     '<input v-if="hasStringValue && !hasEnumValues" v-model="value" type="text" placeholder="String Value">' +
-    '<select v-if="hasStringValue && hasEnumValues" v-model="value"><option v-for="ev in enumValues" :value="ev.const">{{ev.title}}</option></select>' +
-    '<input v-if="hasNumberValue" v-model="value" type="number" placeholder="Number Value">' +
+    '<input v-if="hasNumberValue && !hasEnumValues" v-model="value" type="number" placeholder="Number Value">' +
     '<label v-if="hasBooleanValue" class="switch"><input type="checkbox" v-model="value" /><span class="slider"></span></label>' +
+    '<select v-if="hasEnumValues && (hasStringValue || hasNumberValue)" v-model="value"><option v-for="ev in enumValues" :value="ev.const">{{ev.title}}</option></select>' +
     '</div>' +
     '<ul class="json-properties" v-show="open" v-if="hasProperties"><li is="json-item" v-for="n in propertyNames" :key="n" :name="n" :pobj="obj" :obj="getProperty(n)" :schema="schema.properties[n]" :root="root"></li></ul>' +
     '<ul class="json-items" v-show="open" v-if="isList">' +
