@@ -4,7 +4,6 @@ local File = require('jls.io.File')
 local FileDescriptor = require('jls.io.FileDescriptor')
 local json = require('jls.util.json')
 local tables = require('jls.util.tables')
-local integers = require('jls.util.integers')
 local Date = require('jls.util.Date')
 local Deflater = require('jls.util.zip.Deflater')
 local Inflater = require('jls.util.zip.Inflater')
@@ -204,6 +203,8 @@ return class.create(function(historicalTable, _, HistoricalTable)
 
   HistoricalTable.DEFAULT_FILE_MINUTES = 10080 -- one week
 
+  local HEADER_FORMAT = '>BI4I4' -- c3
+
   function historicalTable:initialize(dir, name, fileMin, t)
     self.dir = dir
     self.name = name
@@ -284,11 +285,10 @@ return class.create(function(historicalTable, _, HistoricalTable)
         break
       end
       offset = offset + 12
-      local kind = string.byte(header, 4)
+      local kind, time, size = string.unpack(HEADER_FORMAT, header, 4)
       local isFull = (kind & 1) == 1
       local isDeflated = (kind & 2) == 2
-      local time = integers.be.toUInt32(string.sub(header, 5)) * 1000
-      local size = integers.be.toUInt32(string.sub(header, 9))
+      time = time * 1000
       if time > toTime then
         break
       end
@@ -516,7 +516,7 @@ return class.create(function(historicalTable, _, HistoricalTable)
       size = #data
       kind = kind | 2
     end
-    local header = 'LHA'..string.char(kind)..integers.be.fromUInt32(time // 1000)..integers.be.fromUInt32(size)
+    local header = 'LHA'..string.pack(HEADER_FORMAT, kind, time // 1000, size)
     local fd, err = FileDescriptor.openSync(file, 'a')
     -- fd may be null
     -- 2018-10-28T09:50:11 90 Scheduled failed due to "./lha/engine/HistoricalTable.lua:282: attempt to index a nil value (local 'fd')"
