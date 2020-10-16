@@ -4,6 +4,7 @@ local File = require('jls.io.File')
 local json = require('jls.util.json')
 local http = require('jls.net.http')
 local httpHandler = require('jls.net.http.handler')
+local httpHandlerBase = require('jls.net.http.handler.base')
 local Scheduler = require('jls.util.Scheduler')
 local runtime = require('jls.lang.runtime')
 local event = require('jls.lang.event')
@@ -57,7 +58,7 @@ local function readCertificate(certFile)
 end
 
 local function historicalDataHandler(exchange)
-  if httpHandler.methodAllowed(exchange, 'GET') then
+  if httpHandlerBase.methodAllowed(exchange, 'GET') then
     local context = exchange:getContext()
     local engine = context:getAttribute('engine')
     local path = exchange:getRequestArguments()
@@ -108,7 +109,7 @@ local function historicalDataHandler(exchange)
       end
       httpHandler.replyJson(exchange:getResponse(), result)
     else
-      httpHandler.badRequest(exchange)
+      httpHandlerBase.badRequest(exchange)
     end
   end
 end
@@ -128,14 +129,14 @@ local function tableHandler(exchange)
   if method == http.CONST.METHOD_GET then
     local value = tables.getPath(engine.root, tp)
     if value then
-      httpHandler.ok(exchange, json.encode({
+      httpHandlerBase.ok(exchange, json.encode({
         value = value
       }), 'application/json')
     else
-      httpHandler.notFound(exchange)
+      httpHandlerBase.notFound(exchange)
     end
   elseif not context:getAttribute('editable') then
-    httpHandler.methodNotAllowed(exchange)
+    httpHandlerBase.methodNotAllowed(exchange)
   elseif method == http.CONST.METHOD_PUT or method == http.CONST.METHOD_POST then
     if logger:isLoggable(logger.FINEST) then
       logger:finest('tableHandler(), request body: "'..request:getBody()..'"')
@@ -150,9 +151,9 @@ local function tableHandler(exchange)
         end
       end
     end
-    httpHandler.ok(exchange)
+    httpHandlerBase.ok(exchange)
   else
-    httpHandler.methodNotAllowed(exchange)
+    httpHandlerBase.methodNotAllowed(exchange)
   end
   if logger:isLoggable(logger.FINE) then
     logger:fine('tableHandler(), status: '..tostring(exchange:getResponse():getStatusCode()))
@@ -279,7 +280,7 @@ local REST_THING = {
             exchange.attributes.thing:setPropertyValue(name, value)
           end
         else
-          httpHandler.methodNotAllowed(exchange)
+          httpHandlerBase.methodNotAllowed(exchange)
           return false
         end
       end,
@@ -296,11 +297,11 @@ local REST_THING = {
                   local value = rt[propertyName]
                   exchange.attributes.thing:setPropertyValue(propertyName, value)
               else
-                  httpHandler.methodNotAllowed(exchange)
+                  httpHandlerBase.methodNotAllowed(exchange)
                   return false
               end
           else
-              httpHandler.notFound(exchange)
+              httpHandlerBase.notFound(exchange)
               return false
           end
       end,
@@ -417,7 +418,7 @@ local REST_SCRIPTS = {
         logger:warn('Cannot create script')
       end
     else
-      httpHandler.methodNotAllowed(exchange)
+      httpHandlerBase.methodNotAllowed(exchange)
       return false
     end
   end,
@@ -435,7 +436,7 @@ local REST_SCRIPTS = {
         engine:removeExtension(extension)
         extensionDir:deleteRecursive()
       else
-        httpHandler.methodNotAllowed(exchange)
+        httpHandlerBase.methodNotAllowed(exchange)
         return false
       end
     end,
@@ -477,7 +478,7 @@ local REST_ADMIN = {
     return 'Bye'
   end,
   gc = function(exchange)
-    if not httpHandler.methodAllowed(exchange, 'POST') then
+    if not httpHandlerBase.methodAllowed(exchange, 'POST') then
       return false
     end
     runtime.gc()
@@ -511,7 +512,7 @@ local REST_ENGINE_HANDLERS = {
     return descriptions
   end,
   poll = function(exchange)
-    if not httpHandler.methodAllowed(exchange, 'POST') then
+    if not httpHandlerBase.methodAllowed(exchange, 'POST') then
       return false
     end
     local engine = exchange:getAttribute('engine')
@@ -551,7 +552,7 @@ local REST_ENGINE_HANDLERS = {
           engine:publishEvent('things')
         end
       else
-        httpHandler.methodNotAllowed(exchange)
+        httpHandlerBase.methodNotAllowed(exchange)
         return false
       end
     end,
@@ -561,7 +562,7 @@ local REST_ENGINE_HANDLERS = {
         local engine = exchange:getAttribute('engine')
         local thing = engine.things[thingId]
         if not thing then
-          httpHandler.notFound(exchange)
+          httpHandlerBase.notFound(exchange)
           return false
         end
         local request = exchange:getRequest()
@@ -572,7 +573,7 @@ local REST_ENGINE_HANDLERS = {
           engine:disableThing(thingId)
           engine:publishEvent('things')
         else
-          httpHandler.methodNotAllowed(exchange)
+          httpHandlerBase.methodNotAllowed(exchange)
           return false
         end
       end

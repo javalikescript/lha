@@ -3,6 +3,7 @@ local extension = ...
 local logger = require('jls.lang.logger')
 local http = require('jls.net.http')
 local httpHandler = require('jls.net.http.handler')
+local httpHandlerBase = require('jls.net.http.handler.base')
 local File = require('jls.io.File')
 local json = require("jls.util.json")
 
@@ -63,7 +64,7 @@ extension:subscribeEvent('startup', function()
       for name, addon in pairs(extension.addons) do
         table.insert(names, name)
       end
-      httpHandler.ok(exchange, json.encode(names), 'application/json')
+      httpHandlerBase.ok(exchange, json.encode(names), 'application/json')
     else
       local addon = extension.addons[name]
       if addon then
@@ -72,7 +73,7 @@ extension:subscribeEvent('startup', function()
         logger:fine('calling add-on "'..tostring(name)..'" handler')
         return handler(exchange)
       else
-        httpHandler.notFound(exchange)
+        httpHandlerBase.notFound(exchange)
       end
     end
   end)
