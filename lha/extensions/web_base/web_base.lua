@@ -1,11 +1,19 @@
 local extension = ...
 
 local logger = require('jls.lang.logger')
-local http = require('jls.net.http')
-local httpHandler = require('jls.net.http.handler')
-local httpHandlerBase = require('jls.net.http.handler.base')
 local File = require('jls.io.File')
 local json = require("jls.util.json")
+local FileHttpHandler = require('jls.net.http.handler.FileHttpHandler')
+local HttpHandler = require('jls.net.http.HttpHandler')
+local HttpExchange = require('jls.net.http.HttpExchange')
+
+local AddonFileHttpHandler = require('jls.lang.class').create(FileHttpHandler, function(fileHttpHandler)
+
+  function fileHttpHandler:getPath(httpExchange)
+    return select(2, httpExchange:getRequestArguments())
+  end
+
+end)
 
 extension.addons = {}
 
@@ -16,17 +24,13 @@ if type(configuration.active) ~= 'boolean' then
   configuration.active = true
 end
 
-function extension:registerAddon(name, handler, attributes, path)
-  if not path then
-    path = '(.*)'
-  end
-  self.addons[name] = http.Context:new(handler, '/addon/'..name..'/'..path, attributes)
-  --server:createContext('/addon/'..name..'/'..path, handler, attributes)
+function extension:registerAddon(name, handler)
+  self.addons[name] = handler
   logger:info('add-on '..name..' registered')
 end
 
-function extension:registerAddonExtension(extension)
-  self:registerAddon(extension:getId(), httpHandler.files, {rootFile = extension:getDir()})
+function extension:registerAddonExtension(ext)
+  self:registerAddon(ext:getId(), AddonFileHttpHandler:new(ext:getDir()))
 end
 
 function extension:unregisterAddon(name)
@@ -46,37 +50,30 @@ extension:subscribeEvent('startup', function()
   else
     logger:warn('Invalid assets directory "'..assetsDir:getPath()..'"')
   end
+  local wwwDir = File:new(extension:getDir(), 'www')
 
-  extension.appContext = server:createContext('/(.*)', httpHandler.file, {
-    defaultFile = 'app.html',
-    rootFile = File:new(extension:getDir(), 'www')
-  })
+  extension.appContext = server:createContext('/(.*)', FileHttpHandler:new(wwwDir, 'r', 'app.html'))
 
-  extension.baseContext = server:createContext('/static/(.*)', httpHandler.file, {
-    rootFile = assetsDir
-  })
+  extension.baseContext = server:createContext('/static/(.*)', FileHttpHandler:new(assetsDir))
 
-  extension.addonContext = server:createContext('/addon/([^/]*)/?(.*)', function(exchange)
+  extension.addonContext = server:createContext('/addon/([^/]*)/?(.*)', HttpHandler:new(function(self, exchange)
     local name, path = exchange:getRequestArguments()
     logger:fine('add-on handler "'..tostring(name)..'" / "'..tostring(path)..'"')
     if name == '' then
       local names = {}
-      for name, addon in pairs(extension.addons) do
-        table.insert(names, name)
+      for n in pairs(extension.addons) do
+        table.insert(names, n)
       end
-      httpHandlerBase.ok(exchange, json.encode(names), 'application/json')
+      HttpExchange.ok(exchange, json.encode(names), 'application/json')
     else
       local addon = extension.addons[name]
       if addon then
-        exchange:setContext(addon)
-        local handler = addon:getHandler()
         logger:fine('calling add-on "'..tostring(name)..'" handler')
-        return handler(exchange)
-      else
-        httpHandlerBase.notFound(exchange)
+        return addon:handle(exchange)
       end
+      HttpExchange.notFound(exchange)
     end
-  end)
+  end))
 
 end)
 

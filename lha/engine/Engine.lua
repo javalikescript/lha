@@ -3,8 +3,10 @@ local class = require('jls.lang.class')
 local File = require('jls.io.File')
 local json = require('jls.util.json')
 local http = require('jls.net.http')
-local httpHandler = require('jls.net.http.handler')
-local httpHandlerBase = require('jls.net.http.handler.base')
+local FileHttpHandler = require('jls.net.http.handler.FileHttpHandler')
+local RestHttpHandler = require('jls.net.http.handler.RestHttpHandler')
+local BasicAuthenticationHttpFilter = require('jls.net.http.filter.BasicAuthenticationHttpFilter')
+local HttpExchange = require('jls.net.http.HttpExchange')
 local Scheduler = require('jls.util.Scheduler')
 local runtime = require('jls.lang.runtime')
 local event = require('jls.lang.event')
@@ -58,7 +60,7 @@ local function readCertificate(certFile)
 end
 
 local function historicalDataHandler(exchange)
-  if httpHandlerBase.methodAllowed(exchange, 'GET') then
+  if HttpExchange.methodAllowed(exchange, 'GET') then
     local context = exchange:getContext()
     local engine = context:getAttribute('engine')
     local path = exchange:getRequestArguments()
@@ -76,7 +78,7 @@ local function historicalDataHandler(exchange)
       else
         t = engine.dataHistory:getLiveTable()
       end
-      httpHandler.replyJson(exchange:getResponse(), {
+      RestHttpHandler.replyJson(exchange, {
         value = tables.getPath(t, '/'..tp)
       })
       return
@@ -107,9 +109,9 @@ local function historicalDataHandler(exchange)
       else
         result = engine.dataHistory:loadValues(fromTime, toTime, period, path)
       end
-      httpHandler.replyJson(exchange:getResponse(), result)
+      RestHttpHandler.replyJson(exchange, result)
     else
-      httpHandlerBase.badRequest(exchange)
+      HttpExchange.badRequest(exchange)
     end
   end
 end
@@ -129,31 +131,29 @@ local function tableHandler(exchange)
   if method == http.CONST.METHOD_GET then
     local value = tables.getPath(engine.root, tp)
     if value then
-      httpHandlerBase.ok(exchange, json.encode({
+      HttpExchange.ok(exchange, json.encode({
         value = value
       }), 'application/json')
     else
-      httpHandlerBase.notFound(exchange)
+      HttpExchange.notFound(exchange)
     end
   elseif not context:getAttribute('editable') then
-    httpHandlerBase.methodNotAllowed(exchange)
+    HttpExchange.methodNotAllowed(exchange)
   elseif method == http.CONST.METHOD_PUT or method == http.CONST.METHOD_POST then
     if logger:isLoggable(logger.FINEST) then
       logger:finest('tableHandler(), request body: "'..request:getBody()..'"')
     end
-    if request:getBody() then
-      local rt = json.decode(request:getBody())
-      if type(rt) == 'table' and rt.value then
-        if method == http.CONST.METHOD_PUT then
-          engine:setRootValue(tp, rt.value, publish)
-        elseif method == http.CONST.METHOD_POST then
-          engine:setRootValues(tp, rt.value, publish)
-        end
+    local rt = json.decode(request:getBody())
+    if type(rt) == 'table' and rt.value then
+      if method == http.CONST.METHOD_PUT then
+        engine:setRootValue(tp, rt.value, publish)
+      elseif method == http.CONST.METHOD_POST then
+        engine:setRootValues(tp, rt.value, publish)
       end
     end
-    httpHandlerBase.ok(exchange)
+    HttpExchange.ok(exchange)
   else
-    httpHandlerBase.methodNotAllowed(exchange)
+    HttpExchange.methodNotAllowed(exchange)
   end
   if logger:isLoggable(logger.FINE) then
     logger:fine('tableHandler(), status: '..tostring(exchange:getResponse():getStatusCode()))
@@ -180,7 +180,7 @@ local EngineThing = class.create(Thing, function(engineThing, super)
   end
 
   function engineThing:setArchiveData(archiveData)
-    self.engine:setRootValues('configuration/things/'..self.thingId..'/archiveData', self.archiveData, true)
+    self.engine:setRootValues('configuration/things/'..self.thingId..'/archiveData', archiveData, true)
   end
 
   function engineThing:getArchiveData()
@@ -280,7 +280,7 @@ local REST_THING = {
             exchange.attributes.thing:setPropertyValue(name, value)
           end
         else
-          httpHandlerBase.methodNotAllowed(exchange)
+          HttpExchange.methodNotAllowed(exchange)
           return false
         end
       end,
@@ -297,11 +297,11 @@ local REST_THING = {
                   local value = rt[propertyName]
                   exchange.attributes.thing:setPropertyValue(propertyName, value)
               else
-                  httpHandlerBase.methodNotAllowed(exchange)
+                  HttpExchange.methodNotAllowed(exchange)
                   return false
               end
           else
-              httpHandlerBase.notFound(exchange)
+              HttpExchange.notFound(exchange)
               return false
           end
       end,
@@ -418,7 +418,7 @@ local REST_SCRIPTS = {
         logger:warn('Cannot create script')
       end
     else
-      httpHandlerBase.methodNotAllowed(exchange)
+      HttpExchange.methodNotAllowed(exchange)
       return false
     end
   end,
@@ -436,7 +436,7 @@ local REST_SCRIPTS = {
         engine:removeExtension(extension)
         extensionDir:deleteRecursive()
       else
-        httpHandlerBase.methodNotAllowed(exchange)
+        HttpExchange.methodNotAllowed(exchange)
         return false
       end
     end,
@@ -461,12 +461,12 @@ local REST_ADMIN = {
     end
   },
   reloadExtensions = function(exchange)
-    local mode = httpHandler.shiftPath(exchange:getAttribute('path'))
+    local mode = RestHttpHandler.shiftPath(exchange:getAttribute('path'))
     exchange.attributes.engine:reloadExtensions(mode == 'full', true)
     return 'Done'
   end,
   reloadScripts = function(exchange)
-    local mode = httpHandler.shiftPath(exchange:getAttribute('path'))
+    local mode = RestHttpHandler.shiftPath(exchange:getAttribute('path'))
     exchange.attributes.engine:reloadScripts(mode == 'full')
     return 'Done'
   end,
@@ -478,7 +478,7 @@ local REST_ADMIN = {
     return 'Bye'
   end,
   gc = function(exchange)
-    if not httpHandlerBase.methodAllowed(exchange, 'POST') then
+    if not HttpExchange.methodAllowed(exchange, 'POST') then
       return false
     end
     runtime.gc()
@@ -512,7 +512,7 @@ local REST_ENGINE_HANDLERS = {
     return descriptions
   end,
   poll = function(exchange)
-    if not httpHandlerBase.methodAllowed(exchange, 'POST') then
+    if not HttpExchange.methodAllowed(exchange, 'POST') then
       return false
     end
     local engine = exchange:getAttribute('engine')
@@ -542,17 +542,15 @@ local REST_ENGINE_HANDLERS = {
         return list
       elseif method == http.CONST.METHOD_PUT then
         -- curl -X PUT --data-binary "@work\tmp\discoveredThings2.json" http://localhost:8080/engine/things
-        if request:getBody() then
-          local discoveredThings = json.decode(request:getBody())
-          for _, discoveredThing in ipairs(discoveredThings) do
-            if discoveredThing.extensionId and discoveredThing.discoveryKey then
-              engine:addDiscoveredThing(discoveredThing.extensionId, discoveredThing.discoveryKey)
-            end
+        local discoveredThings = json.decode(request:getBody())
+        for _, discoveredThing in ipairs(discoveredThings) do
+          if discoveredThing.extensionId and discoveredThing.discoveryKey then
+            engine:addDiscoveredThing(discoveredThing.extensionId, discoveredThing.discoveryKey)
           end
-          engine:publishEvent('things')
         end
+        engine:publishEvent('things')
       else
-        httpHandlerBase.methodNotAllowed(exchange)
+        HttpExchange.methodNotAllowed(exchange)
         return false
       end
     end,
@@ -562,7 +560,7 @@ local REST_ENGINE_HANDLERS = {
         local engine = exchange:getAttribute('engine')
         local thing = engine.things[thingId]
         if not thing then
-          httpHandlerBase.notFound(exchange)
+          HttpExchange.notFound(exchange)
           return false
         end
         local request = exchange:getRequest()
@@ -573,7 +571,7 @@ local REST_ENGINE_HANDLERS = {
           engine:disableThing(thingId)
           engine:publishEvent('things')
         else
-          httpHandlerBase.methodNotAllowed(exchange)
+          HttpExchange.methodNotAllowed(exchange)
           return false
         end
       end
@@ -751,7 +749,7 @@ return class.create(function(engine)
     end)
     -- optional secure server
     if type(self.options.secure) == 'table' then
-      local certFile = self:getAbsoluteFile(certificate or 'cert.pem')
+      local certFile = self:getAbsoluteFile(self.options.secure.certificate or 'cert.pem')
       local pkeyFile = self:getAbsoluteFile(self.options.secure.key or 'pkey.pem')
       if not certFile:exists() or not pkeyFile:exists() then
         writeCertificateAndPrivateKey(certFile, pkeyFile, self.options.secure.commonName or self.options.hostname)
@@ -778,14 +776,9 @@ return class.create(function(engine)
           logger:warn('Cannot bind HTTP secure server to "'..tostring(self.options.address)..'" on port '..tostring(self.options.secure.port)..' due to '..tostring(err))
         end)
         -- share contexts
+        httpSecureServer:setParentContextHolder(httpServer)
         if type(self.options.secure.credentials) == 'table' then
-          local contextHolder = http.ContextHolder:new()
-          contextHolder.contexts = httpServer.contexts
-          httpSecureServer:createContext('.*', httpHandler.chain(httpHandler.basicAuthentication, contextHolder:toHandler()), {
-            credentials = self.options.secure.credentials
-          })
-        else
-          httpSecureServer.contexts = httpServer.contexts
+          httpSecureServer:addFilter(BasicAuthenticationHttpFilter:new(self.options.secure.credentials, 'LHA'))
         end
         self.secureServer = httpSecureServer
       else
@@ -793,18 +786,12 @@ return class.create(function(engine)
       end
     end
     -- register rest engine handler
-    httpServer:createContext('/engine/(.*)', httpHandler.rest, {
-      attributes = {
-        engine = self
-      },
-      handlers = REST_ENGINE_HANDLERS
-    })
-    httpServer:createContext('/things/?(.*)', httpHandler.rest, {
-      attributes = {
-        engine = self
-      },
-      handlers = REST_THINGS
-    })
+    httpServer:createContext('/engine/(.*)', RestHttpHandler:new(REST_ENGINE_HANDLERS, {
+      engine = self
+    }))
+    httpServer:createContext('/things/?(.*)', RestHttpHandler:new(REST_THINGS, {
+      engine = self
+    }))
     httpServer:createContext('/engine/configuration/(.*)', tableHandler, {
       path = 'configuration/',
       editable = true,
@@ -820,16 +807,8 @@ return class.create(function(engine)
     httpServer:createContext('/engine/historicalData/(.*)', historicalDataHandler, {
       engine = self
     })
-    httpServer:createContext('/engine/scriptFiles/(.*)', httpHandler.files, {
-      rootFile = self.scriptsDir,
-      allowCreate = true,
-      allowDelete = true
-    })
-    httpServer:createContext('/engine/tmp/(.*)', httpHandler.files, {
-      rootFile = self.tmpDir,
-      allowCreate = true,
-      allowDelete = true
-    })
+    httpServer:createContext('/engine/scriptFiles/(.*)', FileHttpHandler:new(self.scriptsDir, 'rcd'))
+    httpServer:createContext('/engine/tmp/(.*)', FileHttpHandler:new(self.tmpDir, 'rcd'))
     self.server = httpServer
   end
 
