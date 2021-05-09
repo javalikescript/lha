@@ -20,7 +20,7 @@ local FreeMobileSms = class.create(function(freeMobileSms)
   end
 
   function freeMobileSms:getUrl()
-    return apiUrl..'?user='..self.user..'&pass='..self.pass
+    return self.apiUrl..'?user='..self.user..'&pass='..self.pass
   end
 
   function freeMobileSms:getMessageUrl(msg)

@@ -168,10 +168,10 @@ extension:subscribePollEvent(function()
     -- cleaning data in case of polling failure
   end)
   owm:get('forecast'):next(function(data)
-    if f and f.list and f.cnt and f.cnt > 7 then
-      updateWeatherThing(thingByKey.nextHours, f.list[1])
-      updateWeatherThing(thingByKey.tomorrow, f.list[7])
-      updateWeatherThing(thingByKey.nextDays, f.list[f.cnt - 1])
+    if data and data.list and data.cnt and data.cnt > 7 then
+      updateWeatherThing(thingByKey.nextHours, data.list[1])
+      updateWeatherThing(thingByKey.tomorrow, data.list[7])
+      updateWeatherThing(thingByKey.nextDays, data.list[data.cnt - 1])
     end
   end):catch(function(err)
     logger:warn('fail to get OWM forecast, due to "'..tostring(err)..'"')

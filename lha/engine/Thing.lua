@@ -286,7 +286,6 @@ return require('jls.lang.class').create(function(thing)
 			properties = self:getPropertyDescriptions(),
 			events = self:getEventDescriptions(),
 			actions = {},
-			events = {},
 			links = {},
 			href = self.href
 		}
@@ -382,14 +381,14 @@ end, function(Thing)
 		return color.rgbToHsv(r, g, b)
 	end
 
-	function Thing.getDefaultValueForType(type)
-		if type == 'boolean' then
+	function Thing.getDefaultValueForType(valueType, value)
+		if valueType == 'boolean' then
 			return (type(value) == 'boolean') and value or false
-		elseif type == 'integer' then
+		elseif valueType == 'integer' then
 			return (type(value) == 'number') and math.floor(value) or 0
-		elseif type == 'number' then
+		elseif valueType == 'number' then
 			return (type(value) == 'number') and value or 0
-		elseif type == 'string' then
+		elseif valueType == 'string' then
 			return (type(value) == 'string') and value or ''
 		end
 	end
