@@ -156,6 +156,9 @@ return require('jls.lang.class').create(function(hueBridge)
       thing:updatePropertyValue('colorTemperature', math.floor(1000000 / state.ct))
       -- Hue has hue and sat properties
       thing:updatePropertyValue('color', Thing.hsvToRgbHex(state.hue / 65535, state.sat / 254, state.bri / 254))
+    elseif info.type == 'Dimmable light' then
+      thing:updatePropertyValue('on', state.on)
+      thing:updatePropertyValue('brightness', math.floor(state.bri * 100 / 255))
     elseif info.type == 'On/Off plug-in unit' then
       thing:updatePropertyValue('on', state.on)
     elseif (info.type == 'ZLLLightLevel' or info.type == 'ZHALightLevel') and state.lightlevel ~= json.null then
@@ -237,6 +240,9 @@ end, function(HueBridge)
     elseif info.type == 'Extended color light' then
       local t = Thing:new(info.name or 'Extended color light', 'Extended color light', {'Light', 'OnOffSwitch', 'ColorControl'})
       return t:addOnOffProperty():addBrightnessProperty():addColorTemperatureProperty():addColorProperty()
+    elseif info.type == 'Dimmable light' then
+      local t = Thing:new(info.name or 'Dimmable light', 'Dimmable light', {'Light', 'OnOffSwitch'})
+      return t:addOnOffProperty():addBrightnessProperty():addColorTemperatureProperty()
     elseif info.type == 'On/Off plug-in unit' then
       local t = Thing:new(info.name or 'On/Off outlet', 'On/Off outlet', {'Light', 'OnOffSwitch'})
       return t:addOnOffProperty()
