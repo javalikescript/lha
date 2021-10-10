@@ -159,7 +159,7 @@ return require('jls.lang.class').create(function(hueBridge)
     elseif info.type == 'Dimmable light' then
       thing:updatePropertyValue('on', state.on)
       thing:updatePropertyValue('brightness', math.floor(state.bri * 100 / 255))
-    elseif info.type == 'On/Off plug-in unit' then
+    elseif info.type == 'On/Off plug-in unit' or info.type == 'On/Off light' then
       thing:updatePropertyValue('on', state.on)
     elseif (info.type == 'ZLLLightLevel' or info.type == 'ZHALightLevel') and state.lightlevel ~= json.null then
       --[[
@@ -243,8 +243,8 @@ end, function(HueBridge)
     elseif info.type == 'Dimmable light' then
       local t = Thing:new(info.name or 'Dimmable light', 'Dimmable light', {'Light', 'OnOffSwitch'})
       return t:addOnOffProperty():addBrightnessProperty():addColorTemperatureProperty()
-    elseif info.type == 'On/Off plug-in unit' then
-      local t = Thing:new(info.name or 'On/Off outlet', 'On/Off outlet', {'Light', 'OnOffSwitch'})
+    elseif info.type == 'On/Off plug-in unit' or info.type == 'On/Off light' then
+      local t = Thing:new(info.name or 'On/Off light', 'On/Off light', {'Light', 'OnOffSwitch'})
       return t:addOnOffProperty()
     elseif info.type == 'ZLLLightLevel' or info.type == 'ZHALightLevel' then
       return Thing:new(info.name or 'Light Level', 'Light Level Sensor', {'MultiLevelSensor'}):addLightLevelProperty()
