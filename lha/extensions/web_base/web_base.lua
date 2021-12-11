@@ -1,11 +1,14 @@
 local extension = ...
 
 local logger = require('jls.lang.logger')
+local Path = require('jls.io.Path')
 local File = require('jls.io.File')
 local json = require("jls.util.json")
-local FileHttpHandler = require('jls.net.http.handler.FileHttpHandler')
-local HttpHandler = require('jls.net.http.HttpHandler')
 local HttpExchange = require('jls.net.http.HttpExchange')
+local HttpHandler = require('jls.net.http.HttpHandler')
+local FileHttpHandler = require('jls.net.http.handler.FileHttpHandler')
+local ZipFileHttpHandler = require('jls.net.http.handler.ZipFileHttpHandler')
+local HttpContext = require('jls.net.http.HttpContext')
 
 local AddonFileHttpHandler = require('jls.lang.class').create(FileHttpHandler, function(fileHttpHandler)
 
@@ -44,17 +47,23 @@ extension:subscribeEvent('startup', function()
 
   local engine = extension:getEngine()
   local server = engine:getHTTPServer()
-  local assetsDir = engine:getAbsoluteFile(configuration.assets or 'work')
-  if assetsDir:isDirectory() then
-    logger:info('Using assets directory "'..assetsDir:getPath()..'"')
+  local assets = engine:getAbsoluteFile(configuration.assets or 'work')
+  local assetsHandler
+  if assets:isDirectory() then
+    logger:info('Using assets directory "'..assets:getPath()..'"')
+    assetsHandler = FileHttpHandler:new(assets)
+  elseif assets:isFile() and Path.extractExtension(assets:getPathName()) == 'zip' then
+    logger:info('Using assets file "'..assets:getPath()..'"')
+    assetsHandler = ZipFileHttpHandler:new(assets)
   else
-    logger:warn('Invalid assets directory "'..assetsDir:getPath()..'"')
+    assetsHandler = HttpContext.notFoundHandler
+    logger:warn('Invalid assets directory "'..assets:getPath()..'" extension is "'..Path.extractExtension(assets:getPathName())..'"')
   end
   local wwwDir = File:new(extension:getDir(), 'www')
 
   extension.appContext = server:createContext('/(.*)', FileHttpHandler:new(wwwDir, 'r', 'app.html'))
 
-  extension.baseContext = server:createContext('/static/(.*)', FileHttpHandler:new(assetsDir))
+  extension.baseContext = server:createContext('/static/(.*)', assetsHandler)
 
   extension.addonContext = server:createContext('/addon/([^/]*)/?(.*)', HttpHandler:new(function(self, exchange)
     local name, path = exchange:getRequestArguments()
