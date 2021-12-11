@@ -502,13 +502,8 @@ return class.create(function(historicalTable, _, HistoricalTable)
       end
     end
     if withJson then
-      -- TODO format
       local jsonFile = self:getJsonFile()
-      if (kind & 1) == 1 then
-        jsonFile:write(data)
-      elseif size > 0 then
-        jsonFile:write(json.encode(tmp))
-      end
+      jsonFile:write(json.stringify(tmp, 2))
     end
     if size > 8 then
       local deflater = Deflater:new()
