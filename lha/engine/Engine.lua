@@ -19,6 +19,7 @@ local HistoricalTable = require('lha.engine.HistoricalTable')
 local IdGenerator = require('lha.engine.IdGenerator')
 local Extension = require('lha.engine.Extension')
 local Thing = require('lha.engine.Thing')
+local memprof = require('jls.util.memprof')
 
 local function createDirectoryOrExit(dir)
   if not dir:isDirectory() then
@@ -284,10 +285,9 @@ local REST_THING = {
           return false
         end
       end,
-      ['/any'] = function(exchange)
+      ['{propertyName}(propertyName)'] = function(exchange, propertyName)
           local request = exchange:getRequest()
           local method = string.upper(request:getMethod())
-          local propertyName = exchange.attributes.propertyName
           local property = exchange.attributes.thing:getProperty(propertyName)
           if property then
               if method == http.CONST.METHOD_GET then
@@ -305,7 +305,6 @@ local REST_THING = {
               return false
           end
       end,
-      name = 'propertyName'
   }
 }
 
@@ -330,12 +329,11 @@ local REST_THINGS = {
     ]]
     return descriptions
   end,
-  ['/any'] = REST_THING,
-  name = 'thing',
-  value = function(exchange, name)
+  ['{+}'] = function(exchange, name)
     local engine = exchange:getAttribute('engine')
-    return engine.things[name]
-  end
+    exchange:setAttribute('thing', engine.things[name])
+  end,
+  ['{thingId}'] = REST_THING,
 }
 
 local REST_EXTENSIONS = {
@@ -349,7 +347,11 @@ local REST_EXTENSIONS = {
     end
     return list
   end,
-  ['/any'] = {
+  ['{+}'] = function(exchange, name)
+    local engine = exchange:getAttribute('engine')
+    exchange:setAttribute('extension', engine:getExtensionById(name))
+  end,
+  ['{extensionId}'] = {
     [''] = function(exchange)
       local engine = exchange:getAttribute('engine')
       local extension = exchange.attributes.extension
@@ -374,11 +376,6 @@ local REST_EXTENSIONS = {
       reloadExtension(exchange.attributes.extension)
     end
   },
-  name = 'extension',
-  value = function(exchange, name)
-    local engine = exchange:getAttribute('engine')
-    return engine:getExtensionById(name)
-  end
 }
 
 local REST_SCRIPTS = {
@@ -422,7 +419,11 @@ local REST_SCRIPTS = {
       return false
     end
   end,
-  ['/any'] = {
+  ['{+}'] = function(exchange, name)
+    local engine = exchange:getAttribute('engine')
+    exchange:setAttribute('extension', engine:getExtensionById(name))
+  end,
+  ['{extensionId}'] = {
     [''] = function(exchange)
       local request = exchange:getRequest()
       local method = string.upper(request:getMethod())
@@ -444,11 +445,6 @@ local REST_SCRIPTS = {
       reloadExtension(exchange.attributes.extension)
     end
   },
-  name = 'extension',
-  value = function(exchange, name)
-    local engine = exchange:getAttribute('engine')
-    return engine:getExtensionById(name)
-  end
 }
 
 local REST_ADMIN = {
@@ -490,6 +486,13 @@ local REST_ADMIN = {
       memory = math.floor(collectgarbage('count') * 1024),
       time = Date.now() // 1000
     }
+  end,
+  mem = function(exchange)
+    local report = ''
+    memprof.printReport(function(data)
+      report = data
+    end, false, false, 'csv')
+    return report
   end
 }
 
@@ -554,7 +557,7 @@ local REST_ENGINE_HANDLERS = {
         return false
       end
     end,
-    ['/any'] = {
+    ['{thingId}'] = {
       [''] = function(exchange)
         local thingId = exchange:getAttribute('thingId')
         local engine = exchange:getAttribute('engine')
@@ -576,7 +579,6 @@ local REST_ENGINE_HANDLERS = {
         end
       end
     },
-    name = 'thingId'
   },
   schema = function(exchange)
     return {
@@ -672,7 +674,7 @@ return class.create(function(engine)
     end
     return File:new(self.rootDir, path)
   end
-  
+
   function engine:load()
     self.configHistory:loadLatest()
     self.dataHistory:loadLatest()
@@ -731,10 +733,20 @@ return class.create(function(engine)
       engine:publishEvent('refresh')
     end)
     -- clean schedule
+    local reportFile = File:new(self.tmpDir, 'memprof.csv')
+    if reportFile:exists() then
+      local ts = Date.timestamp(Date.now(), true)
+      local backupReportFile = File:new(self.tmpDir, 'memprof.'..ts..'.csv')
+      logger:info('Renaming memory report file "'..reportFile:getPath()..'" to "'..backupReportFile:getPath()..'"')
+      reportFile:renameTo(backupReportFile)
+    end
     scheduler:schedule(schedules.clean, function(t)
       logger:info('Cleaning')
       engine.configHistory:save(true, true)
       engine:publishEvent('clean')
+      memprof.printReport(function(data)
+        reportFile:write(data, true)
+      end, false, false, 'csv')
     end)
     self.scheduler = scheduler
   end
