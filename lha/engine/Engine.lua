@@ -19,7 +19,6 @@ local HistoricalTable = require('lha.engine.HistoricalTable')
 local IdGenerator = require('lha.engine.IdGenerator')
 local Extension = require('lha.engine.Extension')
 local Thing = require('lha.engine.Thing')
-local memprof = require('jls.util.memprof')
 
 local function createDirectoryOrExit(dir)
   if not dir:isDirectory() then
@@ -267,44 +266,44 @@ end
 
 local REST_THING = {
   [''] = function(exchange)
-      return exchange.attributes.thing:asThingDescription()
+    return exchange.attributes.thing:asThingDescription()
   end,
   properties = {
-      [''] = function(exchange)
+    [''] = function(exchange)
+      local request = exchange:getRequest()
+      local method = string.upper(request:getMethod())
+      if method == http.CONST.METHOD_GET then
+        return exchange.attributes.thing:getPropertyValues()
+      elseif method == http.CONST.METHOD_PUT then
+        local rt = json.decode(request:getBody())
+        for name, value in pairs(rt) do
+          exchange.attributes.thing:setPropertyValue(name, value)
+        end
+      else
+        HttpExchange.methodNotAllowed(exchange)
+        return false
+      end
+    end,
+    ['{propertyName}(propertyName)'] = function(exchange, propertyName)
         local request = exchange:getRequest()
         local method = string.upper(request:getMethod())
-        if method == http.CONST.METHOD_GET then
-          return exchange.attributes.thing:getPropertyValues()
-        elseif method == http.CONST.METHOD_PUT then
-          local rt = json.decode(request:getBody())
-          for name, value in pairs(rt) do
-            exchange.attributes.thing:setPropertyValue(name, value)
-          end
+        local property = exchange.attributes.thing:getProperty(propertyName)
+        if property then
+            if method == http.CONST.METHOD_GET then
+                return {[propertyName] = property:getValue()}
+            elseif method == http.CONST.METHOD_PUT then
+                local rt = json.decode(request:getBody())
+                local value = rt[propertyName]
+                exchange.attributes.thing:setPropertyValue(propertyName, value)
+            else
+                HttpExchange.methodNotAllowed(exchange)
+                return false
+            end
         else
-          HttpExchange.methodNotAllowed(exchange)
-          return false
+            HttpExchange.notFound(exchange)
+            return false
         end
-      end,
-      ['{propertyName}(propertyName)'] = function(exchange, propertyName)
-          local request = exchange:getRequest()
-          local method = string.upper(request:getMethod())
-          local property = exchange.attributes.thing:getProperty(propertyName)
-          if property then
-              if method == http.CONST.METHOD_GET then
-                  return {[propertyName] = property:getValue()}
-              elseif method == http.CONST.METHOD_PUT then
-                  local rt = json.decode(request:getBody())
-                  local value = rt[propertyName]
-                  exchange.attributes.thing:setPropertyValue(propertyName, value)
-              else
-                  HttpExchange.methodNotAllowed(exchange)
-                  return false
-              end
-          else
-              HttpExchange.notFound(exchange)
-              return false
-          end
-      end,
+    end,
   }
 }
 
@@ -489,7 +488,7 @@ local REST_ADMIN = {
   end,
   mem = function(exchange)
     local report = ''
-    memprof.printReport(function(data)
+    require('jls.util.memprof').printReport(function(data)
       report = data
     end, false, false, 'csv')
     return report
@@ -559,8 +558,8 @@ local REST_ENGINE_HANDLERS = {
     end,
     ['{thingId}'] = {
       [''] = function(exchange)
-        local thingId = exchange:getAttribute('thingId')
         local engine = exchange:getAttribute('engine')
+        local thingId = exchange:getAttribute('thingId')
         local thing = engine.things[thingId]
         if not thing then
           HttpExchange.notFound(exchange)
@@ -577,7 +576,18 @@ local REST_ENGINE_HANDLERS = {
           HttpExchange.methodNotAllowed(exchange)
           return false
         end
-      end
+      end,
+      refreshDescription = function(exchange)
+        local engine = exchange:getAttribute('engine')
+        local thingId = exchange:getAttribute('thingId')
+        local thing = engine.things[thingId]
+        if not thing then
+          HttpExchange.notFound(exchange)
+          return false
+        end
+        engine:refreshThingDescription(thingId)
+        return 'done'
+      end,
     },
   },
   schema = function(exchange)
@@ -675,6 +685,10 @@ return class.create(function(engine)
     return File:new(self.rootDir, path)
   end
 
+  function engine:getTemporaryDirectory()
+    return self.tmpDir
+  end
+
   function engine:load()
     self.configHistory:loadLatest()
     self.dataHistory:loadLatest()
@@ -733,20 +747,10 @@ return class.create(function(engine)
       engine:publishEvent('refresh')
     end)
     -- clean schedule
-    local reportFile = File:new(self.tmpDir, 'memprof.csv')
-    if reportFile:exists() then
-      local ts = Date.timestamp(Date.now(), true)
-      local backupReportFile = File:new(self.tmpDir, 'memprof.'..ts..'.csv')
-      logger:info('Renaming memory report file "'..reportFile:getPath()..'" to "'..backupReportFile:getPath()..'"')
-      reportFile:renameTo(backupReportFile)
-    end
     scheduler:schedule(schedules.clean, function(t)
       logger:info('Cleaning')
       engine.configHistory:save(true, true)
       engine:publishEvent('clean')
-      memprof.printReport(function(data)
-        reportFile:write(data, true)
-      end, false, false, 'csv')
     end)
     self.scheduler = scheduler
   end
@@ -1070,6 +1074,14 @@ return class.create(function(engine)
     end
   end
 
+  function engine:refreshThingDescription(thingId)
+    local thing = self.things[thingId]
+    local thingConfiguration = self.root.configuration.things[thingId]
+    if thing and thingConfiguration then
+      logger:info('refreshThingDescription("'..tostring(thingId)..'") not implemented')
+    end
+  end
+
   function engine:disableThing(thingId)
     local thingConfiguration = self.root.configuration.things[thingId]
     if thingConfiguration then
@@ -1082,14 +1094,30 @@ return class.create(function(engine)
   function engine:loadThing(thingId, thingConfiguration)
     local thing = EngineThing:new(self, thingConfiguration.extensionId, thingId, thingConfiguration.description)
     self.things[thingId] = thing
+    return thing
   end
 
   function engine:loadThings()
     -- Load the things available in the configuration
     self.things = {}
     for thingId, thingConfiguration in pairs(self.root.configuration.things) do
+      local extension = self:getExtensionById(thingConfiguration.extensionId)
+      local discoveredThing = extension and extension:getDiscoveredThingByKey(thingConfiguration.discoveryKey)
       if thingConfiguration.active then
-        self:loadThing(thingId, thingConfiguration)
+        local thing = self:loadThing(thingId, thingConfiguration)
+        if discoveredThing then
+          local updated = false
+          for name, property in pairs(discoveredThing:getProperties()) do
+            if not thing:getProperty(name) then
+              thing:addProperty(name, property)
+              updated = true
+            end
+          end
+          if updated then
+            thingConfiguration.description = thing:asThingDescription()
+            logger:info('thing "'..tostring(thingId)..'" updated ("'..tostring(thingConfiguration.extensionId)..'", "'..tostring(thingConfiguration.discoveryKey)..'")')
+          end
+        end
       end
     end
   end

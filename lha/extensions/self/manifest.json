@@ -2,5 +2,33 @@
   "name": "Lua Monitoring",
   "description": "Expose Lua engine informations",
   "version": "1.0",
-  "script": "self.lua"
+  "script": "self.lua",
+  "config": {
+    "memory": {
+      "enabled": true,
+      "format": "csv"
+    }
+  },
+  "schema": {
+    "type": "object",
+    "properties": {
+      "memory": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "title": "Generate Lua memory report",
+            "type": "boolean"
+          },
+          "format": {
+            "title": "Memory report format",
+            "type": "string",
+            "enum": [
+              "csv",
+              "json"
+            ]
+          }
+        }
+      }
+    }
+  }
 }

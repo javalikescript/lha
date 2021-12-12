@@ -92,6 +92,13 @@ new Vue({
         app.clearCache();
       });
     },
+    refreshThingDescription: function() {
+      fetch('/engine/things/' + this.thingId + '/refreshDescription', {method: 'POST'}).then(function() {
+        toaster.toast('Thing description refreshed');
+      }).then(function() {
+        app.clearCache();
+      });
+    },
     onEdit: function() {
       this.edit = !this.edit;
       if (this.edit) {

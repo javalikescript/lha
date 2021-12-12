@@ -276,7 +276,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
 
   function extension:listDiscoveredThings()
     local list
-    for discoveryKey, thing in pairs(self.discoveredThings) do
+    for _, thing in pairs(self.discoveredThings) do
       table.insert(list, thing)
     end
     return list
