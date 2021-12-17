@@ -117,7 +117,17 @@ luaThing:addProperty('used_memory', {
 }, 0)
 luaThing:addProperty('host_cpu_usage', {
   ['@type'] = 'LevelProperty',
-  title = 'CPU Usage',
+  title = 'Host CPU Usage',
+  type = 'number',
+  description = 'The CPU usage',
+  minimum = 0,
+  maximum = 100,
+  readOnly = true,
+  unit = 'percent'
+}, 0)
+luaThing:addProperty('process_cpu_usage', {
+  ['@type'] = 'LevelProperty',
+  title = 'Process CPU Usage',
   type = 'number',
   description = 'The CPU usage',
   minimum = 0,
@@ -148,22 +158,27 @@ extension:subscribeEvent('things', function()
 end)
 
 local lastClock = os.clock()
-local lastInfo
+local lastTime = os.time()
+local lastInfo = sumCpuInfo(luv.cpu_info())
 
 extension:subscribeEvent('poll', function()
   logger:info('polling self extension')
-  local clock = os.clock()
   luaThing:updatePropertyValue('memory', math.floor(collectgarbage('count') * 1024))
-  luaThing:updatePropertyValue('user', math.floor((clock - lastClock) * 1000) / 1000)
+  local time = os.time()
+  local clock = os.clock()
+  if clock >= 0 then
+    -- Win32: Given enough time, the value returned by clock can exceed the maximum positive value of clock_t.
+    -- When the process has run longer, the value returned by clock is always (clock_t)(-1), about 24.8 days.
+    luaThing:updatePropertyValue('user', math.floor((clock - lastClock) * 1000) / 1000)
+    luaThing:updatePropertyValue('process_cpu_usage', math.floor((clock - lastClock) * 1000 / (time - lastTime)) / 10)
+  end
   if luv then
     luaThing:updatePropertyValue('process_resident_memory', luv.resident_set_memory())
     local total_memory = luv.get_total_memory()
     luaThing:updatePropertyValue('total_memory', math.floor(total_memory))
     luaThing:updatePropertyValue('used_memory', math.floor(1000 - luv.get_free_memory() * 1000 / total_memory) / 10)
     local info = sumCpuInfo(luv.cpu_info())
-    if lastInfo then
-      luaThing:updatePropertyValue('host_cpu_usage', computeCpuUsage(lastInfo, info))
-    end
+    luaThing:updatePropertyValue('host_cpu_usage', computeCpuUsage(lastInfo, info))
     lastInfo = info
     --local rusage = getRUsage(luv.getrusage())
   end

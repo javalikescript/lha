@@ -1106,6 +1106,7 @@ return class.create(function(engine)
       if thingConfiguration.active then
         local thing = self:loadThing(thingId, thingConfiguration)
         if discoveredThing then
+          -- TODO provide a full update and check if the thing is still compatible
           local updated = false
           for name, property in pairs(discoveredThing:getProperties()) do
             if not thing:getProperty(name) then
@@ -1115,7 +1116,7 @@ return class.create(function(engine)
           end
           if updated then
             thingConfiguration.description = thing:asThingDescription()
-            logger:info('thing "'..tostring(thingId)..'" updated ("'..tostring(thingConfiguration.extensionId)..'", "'..tostring(thingConfiguration.discoveryKey)..'")')
+            logger:info('thing "'..tostring(thingId)..'" ('..tostring(thingConfiguration.extensionId)..'/'..tostring(thingConfiguration.discoveryKey)..') updated')
           end
         end
       end
