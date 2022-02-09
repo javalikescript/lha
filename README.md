@@ -1,5 +1,7 @@
 lha is a light home automation application
 
+> :warning: The project is still experimental.
+
 The application could be run on small computers such as the Raspberry Pi or the WD MyCloud.
 It is built around a scheduler and an HTTP server based on [luajls](https://github.com/javalikescript/luajls).
 The application allows [Lua](https://www.lua.org/) extensions and [Blockly](https://developers.google.com/blockly/) scripts.
@@ -8,10 +10,10 @@ It exposes a [Web of Things](https://iot.mozilla.org/wot/) API.
 Available extensions are:
 * [ConBee](https://phoscon.de/en/conbee), Dresden elektronik ConBee REST API
 * [Philips Hue](http://meethue.com/), Hue Bridge REST API
-* Monitoring, based on Lua and [SIGAR](https://github.com/hyperic/sigar)
+* Monitoring, based on Lua and [libuv](https://github.com/luvit/luv)
 * Ping, Test the reachability of a host on the network
 
-You could find the [luajls binaries here](http://javalikescript.free.fr/lua/download/).
+You could find the [luajls binaries here](https://github.com/javalikescript/luajls/releases/latest) or [here](http://javalikescript.free.fr/lua/download/).
 
 lha includes a web extension which requires the following libraries:
 * "vuejs" is licensed under the MIT License see https://vuejs.org/
@@ -24,5 +26,7 @@ lha includes a web extension which requires the following libraries:
   *Parse, validate, manipulate, and display dates and times in JavaScript*
 * "Font Awesome Free" is licensed under multiple licenses see https://fontawesome.com/license/free
   *The iconic font and CSS framework*
+* "fetch" is licensed under the MIT license see https://github.com/github/fetch/releases
+* "promise" is licensed under the MIT license see https://github.com/taylorhakes/promise-polyfill
 
-You could find the required libraries [here](https://javalikescript.github.io/lha/download/lha_assets.20200329.zip).
+You could find the required libraries [here](https://javalikescript.github.io/lha/download/lha_assets.20220209.zip).
