@@ -1,3 +1,7 @@
+function isInteger(value) {
+  return typeof value === 'number' && isFinite(value) && Math.floor(value) === value;
+};
+
 var createNumberChartDataSets = function(dataPointSet, datasets, prefix) {
   datasets = datasets || [];
   prefix = prefix || '';
@@ -6,7 +10,7 @@ var createNumberChartDataSets = function(dataPointSet, datasets, prefix) {
   var maxSerie = [];
   dataPointSet.forEach(function(item) {
     var avg = item.average;
-    if ((typeof avg === 'number') && !Number.isInteger(avg)) {
+    if ((typeof avg === 'number') && !isInteger(avg)) {
       avg = Math.floor(avg * 100) / 100;
     }
     avgSerie.push(avg);
@@ -272,7 +276,7 @@ new Vue({
             ticks: {
               beginAtZero: true,
               callback: function(value) {
-                if (Number.isInteger(value) && (value >= 1) && (value <= map.length)) {
+                if (isInteger(value) && (value >= 1) && (value <= map.length)) {
                   return map[value - 1];
                 }
                 return undefined;
