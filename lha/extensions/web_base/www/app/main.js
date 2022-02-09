@@ -275,10 +275,10 @@ Vue.component('json-item', {
       return [];
     },
     value: {
-      get () {
+      get: function() {
         return this.obj;
       },
-      set (val) {
+      set: function(val) {
         //console.log('value()', val, this.$vnode.key);
         this.pobj[this.$vnode.key] = parseJsonItemValue(this.schema.type, val);
       }
