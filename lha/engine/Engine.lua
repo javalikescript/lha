@@ -5,7 +5,6 @@ local json = require('jls.util.json')
 local http = require('jls.net.http')
 local FileHttpHandler = require('jls.net.http.handler.FileHttpHandler')
 local RestHttpHandler = require('jls.net.http.handler.RestHttpHandler')
-local BasicAuthenticationHttpFilter = require('jls.net.http.filter.BasicAuthenticationHttpFilter')
 local HttpExchange = require('jls.net.http.HttpExchange')
 local Scheduler = require('jls.util.Scheduler')
 local runtime = require('jls.lang.runtime')
@@ -19,6 +18,7 @@ local HistoricalTable = require('lha.engine.HistoricalTable')
 local IdGenerator = require('lha.engine.IdGenerator')
 local Extension = require('lha.engine.Extension')
 local Thing = require('lha.engine.Thing')
+local utils = require('lha.engine.utils')
 
 local function createDirectoryOrExit(dir)
   if not dir:isDirectory() then
@@ -36,27 +36,6 @@ local function checkDirectoryOrExit(dir)
     logger:warn('The directory "'..dir:getPath()..'" does not exist')
     runtime.exit(1)
   end
-end
-
-local function writeCertificateAndPrivateKey(certFile, pkeyFile, commonName)
-  local secure = require('jls.net.secure')
-  local cacert, pkey = secure.createCertificate({
-    --duration = (3600 * 24 * (365 + 31)),
-    commonName = commonName or 'localhost'
-  })
-  local cacertPem  = cacert:export('pem')
-  local pkeyPem  = pkey:export('pem')
-  certFile:write(cacertPem)
-  pkeyFile:write(pkeyPem)
-end
-
-local function readCertificate(certFile)
-  local secure = require('jls.net.secure')
-  -- Certificate must have cer extension to be imported in windows phone
-  -- openssl x509 -outform der -in cert.pem -out cert.cer
-  -- openssl x509 -inform der -in cert.cer -out cert.pem
-  local cert = secure.readCertificate(certFile:readAll())
-  return cert
 end
 
 local function historicalDataHandler(exchange)
@@ -622,26 +601,32 @@ local REST_ENGINE_HANDLERS = {
   admin = REST_ADMIN
 }
 
---- An Engine class.
--- @type Engine
 return class.create(function(engine)
 
-  --- Creates an Engine.
-  -- @function Engine:new
-  -- @param dir the engine base directory
-  -- @param rootDir the root directory, used to resolve relative paths
-  function engine:initialize(dir, rootDir, options)
-    self.dir = dir
-    self.rootDir = rootDir
+  function engine:initialize(options)
     self.options = options or {}
     self.things = {}
     self.extensions = {}
     self.idGenerator = IdGenerator:new()
 
+    local configDir = File:new(options.config):getAbsoluteFile():getParentFile()
+    checkDirectoryOrExit(configDir)
+    logger:debug('configDir is '..configDir:getPath())
+    self.configDir = configDir
+
+    local enginePath = assert(package.searchpath('lha.engine.Engine', package.path))
+    local engineFile = File:new(enginePath):getAbsoluteFile()
+    local lhaDir = engineFile:getParentFile():getParentFile()
+    local rootDir = lhaDir:getParentFile()
+    checkDirectoryOrExit(rootDir)
+    logger:debug('rootDir is '..rootDir:getPath())
+    self.rootDir = rootDir
+
     -- setup
-    local workDir = self:getAbsoluteFile(self.options.work or 'work')
+    local workDir = utils.getAbsoluteFile(options.work or 'work', configDir)
     checkDirectoryOrExit(workDir)
     logger:debug('workDir is '..workDir:getPath())
+    self.workDir = workDir
 
     local configurationDir = File:new(workDir, 'configuration')
     logger:debug('configurationDir is '..configurationDir:getPath())
@@ -658,8 +643,7 @@ return class.create(function(engine)
     createDirectoryOrExit(self.extensionsDir)
 
     self.lhaExtensionsDir = nil
-    local lhaDir = dir:getParentFile()
-    if lhaDir and lhaDir:getPath() ~= workDir:getPath() then
+    if lhaDir:getPath() ~= workDir:getPath() then
       self.lhaExtensionsDir = File:new(lhaDir, 'extensions')
       logger:debug('lhaExtensionsDir is '..self.lhaExtensionsDir:getPath())
     end
@@ -677,12 +661,12 @@ return class.create(function(engine)
     return self.idGenerator:generate()
   end
 
-  function engine:getAbsoluteFile(path)
-    local file = File:new(path)
-    if file:isAbsolute() then
-      return file
-    end
-    return File:new(self.rootDir, path)
+  function engine:getRootDirectory()
+    return self.rootDir
+  end
+
+  function engine:getWorkDirectory()
+    return self.workDir
   end
 
   function engine:getTemporaryDirectory()
@@ -757,50 +741,12 @@ return class.create(function(engine)
 
   function engine:startHTTPServer()
     local httpServer = http.Server:new()
-    httpServer:bind(self.options.address or '::', self.options.port or 8080):next(function()
+    httpServer:bind(self.options.address, self.options.port):next(function()
       logger:info('Server bound to "'..tostring(self.options.address)..'" on port '..tostring(self.options.port))
     end, function(err) -- could failed if address is in use or hostname cannot be resolved
       logger:warn('Cannot bind HTTP server to "'..tostring(self.options.address)..'" on port '..tostring(self.options.port)..' due to '..tostring(err))
       runtime.exit(98)
     end)
-    -- optional secure server
-    if type(self.options.secure) == 'table' then
-      local certFile = self:getAbsoluteFile(self.options.secure.certificate or 'cert.pem')
-      local pkeyFile = self:getAbsoluteFile(self.options.secure.key or 'pkey.pem')
-      if not certFile:exists() or not pkeyFile:exists() then
-        writeCertificateAndPrivateKey(certFile, pkeyFile, self.options.secure.commonName or self.options.hostname)
-        logger:info('Generate certificate '..certFile:getPath()..' and associated private key '..pkeyFile:getPath())
-      else
-        -- check and log certificate expiration
-        local cert = readCertificate(certFile)
-        local isValid, notbefore, notafter = cert:validat()
-        local notafterDate = Date:new(notafter:get() * 1000)
-        local notafterText = notafterDate:toISOString(true)
-        logger:info('Using certificate '..certFile:getPath()..' valid until '..notafterText)
-        if not isValid then
-          logger:warn('The certificate is no more valid since '..notafterText)
-        end
-      end
-      local httpSecureServer = http.Server.createSecure({
-        certificate = certFile:getPath(),
-        key = pkeyFile:getPath()
-      })
-      if httpSecureServer then
-        httpSecureServer:bind(self.options.address or '::', self.options.secure.port or 8443):next(function()
-          logger:info('Server secure bound to "'..tostring(self.options.address)..'" on port '..tostring(self.options.secure.port))
-        end, function(err) -- could fail if address is in use or hostname cannot be resolved
-          logger:warn('Cannot bind HTTP secure server to "'..tostring(self.options.address)..'" on port '..tostring(self.options.secure.port)..' due to '..tostring(err))
-        end)
-        -- share contexts
-        httpSecureServer:setParentContextHolder(httpServer)
-        if type(self.options.secure.credentials) == 'table' then
-          httpSecureServer:addFilter(BasicAuthenticationHttpFilter:new(self.options.secure.credentials, 'LHA'))
-        end
-        self.secureServer = httpSecureServer
-      else
-        logger:warn('Unable to create secure HTTP server, make sure that openssl is available')
-      end
-    end
     -- register rest engine handler
     httpServer:createContext('/engine/(.*)', RestHttpHandler:new(REST_ENGINE_HANDLERS, {
       engine = self
@@ -847,7 +793,7 @@ return class.create(function(engine)
     self.eventId = event:setInterval(function()
       self.scheduler:runTo()
       self:publishEvent('heartbeat')
-    end, self.options.heartbeat or 15000)
+    end, math.floor(self.options.heartbeat * 1000 + 0.5))
   end
 
   function engine:stopHeartbeat()

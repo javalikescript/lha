@@ -1,0 +1,19 @@
+{
+  "name": "Z-Wave JS",
+  "description": "Z-Wave JS integration via MQTT",
+  "version": "1.0",
+  "script": "zwave_js.lua",
+  "config": {
+    "default": "tcp://localhost:1883"
+  },
+  "schema": {
+    "type": "object",
+    "properties": {
+      "url": {
+        "title": "The MQTT broker URL",
+        "type": "string",
+        "default": "tcp://localhost:1883"
+      }
+    }
+  }
+}

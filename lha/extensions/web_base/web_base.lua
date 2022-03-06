@@ -9,6 +9,7 @@ local HttpHandler = require('jls.net.http.HttpHandler')
 local FileHttpHandler = require('jls.net.http.handler.FileHttpHandler')
 local ZipFileHttpHandler = require('jls.net.http.handler.ZipFileHttpHandler')
 local HttpContext = require('jls.net.http.HttpContext')
+local utils = require('lha.engine.utils')
 
 local AddonFileHttpHandler = require('jls.lang.class').create(FileHttpHandler, function(fileHttpHandler)
 
@@ -47,7 +48,7 @@ extension:subscribeEvent('startup', function()
 
   local engine = extension:getEngine()
   local server = engine:getHTTPServer()
-  local assets = engine:getAbsoluteFile(configuration.assets or 'work')
+  local assets = utils.getAbsoluteFile(configuration.assets or 'assets', engine:getRootDirectory())
   local assetsHandler
   if assets:isDirectory() then
     logger:info('Using assets directory "'..assets:getPath()..'"')
@@ -57,7 +58,7 @@ extension:subscribeEvent('startup', function()
     assetsHandler = ZipFileHttpHandler:new(assets)
   else
     assetsHandler = HttpContext.notFoundHandler
-    logger:warn('Invalid assets directory "'..assets:getPath()..'" extension is "'..Path.extractExtension(assets:getPathName())..'"')
+    logger:warn('Invalid assets directory "'..assets:getPath()..'" extension is '..tostring(Path.extractExtension(assets:getPathName())))
   end
   local wwwDir = File:new(extension:getDir(), 'www')
 

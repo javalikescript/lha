@@ -1,0 +1,46 @@
+{
+  "name": "HTTPS",
+  "description": "Provides HTTPS to LHA Server",
+  "version": "1.0",
+  "script": "https.lua",
+  "config": {
+    "address": "::",
+    "port": 8443,
+    "certificate": "cer.pem",
+    "key": "key.pem"
+  },
+  "schema": {
+    "type": "object",
+    "properties": {
+      "address": {
+        "title": "The binding address",
+        "type": "string",
+        "default": "::"
+      },
+      "port": {
+        "type": "integer",
+        "default": 8443,
+        "minimum": 0,
+        "maximum": 65535
+      },
+      "commonName": {
+        "title": "The server common name",
+        "type": "string"
+      },
+      "certificate": {
+        "title": "The certificate file",
+        "type": "string",
+        "default": "cer.pem"
+      },
+      "key": {
+        "title": "The key file",
+        "type": "string",
+        "default": "key.pem"
+      },
+      "credentials": {
+        "title": "The credentials as name/password pairs",
+        "type": "object"
+      }
+    }
+  }
+}
