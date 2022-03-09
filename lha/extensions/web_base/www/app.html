@@ -263,7 +263,7 @@
     <page-article>
       <p>{{ extension.info.name }}</p>
       <p>{{ extension.info.description }}</p>
-      <json v-if="extension.manifest.schema" :name="'Configuration'" :obj="extension.config" :schema="extension.manifest.schema"></json>
+      <json v-if="extension.manifest.schema && (Object.keys(extension.manifest.schema.properties).length > 0)" :name="'Configuration'" :obj="extension.config" :schema="extension.manifest.schema"></json>
     </page-article>
   </app-page>
   <app-page id="addExtensions" title="Add Extensions">

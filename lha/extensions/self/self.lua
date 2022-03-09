@@ -61,12 +61,6 @@ logger:info('self extension under '..extension:getDir():getPath())
 
 local configuration = extension:getConfiguration()
 
--- activate the extension by default
-if type(configuration.active) ~= 'boolean' then
-  configuration.active = true
-end
-
-
 -- always register the single thing
 local luaThing = Thing:new('Lua', 'Lua host engine', {'MultiLevelSensor'})
 luaThing:addProperty('memory', {
