@@ -1,0 +1,6 @@
+{
+  "name": "execute",
+  "description": "Execute System commands",
+  "version": "1.0",
+  "script": "execute.lua"
+}
