@@ -1,25 +1,34 @@
 {
   "name": "MQTT",
-  "description": "MQTT Broker",
+  "description": "Publishes events on MQTT",
   "version": "1.0",
-  "script": "mqtt.lua",
-  "config": {
-    "address": "::",
-    "port": 1883
-  },
+  "script": "mqtt_broker.lua",
   "schema": {
     "type": "object",
     "properties": {
-      "address": {
-        "title": "The binding address",
+      "url": {
+        "title": "The MQTT broker URL",
         "type": "string",
-        "default": "::"
+        "pattern": "^tcp://.+:%d+$",
+        "default": "tcp://localhost:1883"
       },
-      "port": {
+      "prefix": {
+        "title": "The topic prefix",
+        "type": "string",
+        "default": "zwave"
+      },
+      "subscribe": {
+        "title": "Enables message subscription",
+        "type": "boolean",
+        "default": false
+      },
+      "qos": {
+        "title": "The Quality of Service",
+        "description": "0: At most once delivery, 1: At least once delivery, 2: Exactly once delivery",
         "type": "integer",
-        "default": 1883,
         "minimum": 0,
-        "maximum": 65535
+        "maximum": 2,
+        "default": 0
       }
     }
   }

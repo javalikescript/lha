@@ -3,16 +3,32 @@
   "description": "Z-Wave JS integration via MQTT",
   "version": "1.0",
   "script": "zwave_js.lua",
-  "config": {
-    "default": "tcp://localhost:1883"
-  },
   "schema": {
     "type": "object",
     "properties": {
       "url": {
         "title": "The MQTT broker URL",
         "type": "string",
+        "pattern": "^tcp://.+:%d+$",
         "default": "tcp://localhost:1883"
+      },
+      "name": {
+        "title": "Unique name identifying the Z-Wave JS gateway",
+        "type": "string",
+        "default": "Zwavejs2Mqtt"
+      },
+      "prefix": {
+        "title": "The topic prefix",
+        "type": "string",
+        "default": "zwave"
+      },
+      "qos": {
+        "title": "The Quality of Service",
+        "description": "0: At most once delivery, 1: At least once delivery, 2: Exactly once delivery",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 2,
+        "default": 0
       }
     }
   }

@@ -2,26 +2,51 @@ local extension = ...
 
 local logger = require('jls.lang.logger')
 local mqtt = require('jls.net.mqtt')
+local Url = require('jls.net.Url')
+local json = require('jls.util.json')
 
-local mqttServer
+local mqttClient
 
-local function closeServer()
-  if mqttServer then
-    mqttServer:close(false)
-    mqttServer = nil
+local function cleanup()
+  if mqttClient then
+    mqttClient:close(false)
+    mqttClient = nil
   end
 end
 
+local configuration = extension:getConfiguration()
+
+local function publisher(value, previousValue, path)
+  if mqttClient then
+    local topic = configuration.prefix + path
+    mqttClient:publish(topic, json.encode({
+      value = value,
+      previousValue = previousValue
+    }), configuration)
+  end
+end
+
+extension:watchPattern('^.*', publisher)
+
 extension:subscribeEvent('startup', function()
-  local configuration = extension:getConfiguration()
-  closeServer()
-  mqttServer = mqtt.MqttServer:new()
-  mqttServer:bind(configuration.address, configuration.port):next(function()
-    logger:info('MQTT Broker bound on "'..configuration.port..'"')
+  cleanup()
+  local tUrl = Url.parse(configuration.url)
+  local engine = extension:getEngine()
+  local prefix = configuration.prefix
+  mqttClient = mqtt.MqttClient:new()
+  function mqttClient:onMessage(topicName, payload)
+    local path = string.sub(topicName, #prefix + 2)
+    local value = json.decode(payload)
+    engine:setRootValues(path, value, true)
+  end
+  mqttClient:connect(tUrl.host, tUrl.port):next(function()
+    logger:info('MQTT connected on "'..configuration.url..'"')
+    if configuration.subscribe then
+      mqttClient:subscribe(prefix + '/#', configuration.qos)
+    end
   end)
 end)
 
 extension:subscribeEvent('shutdown', function()
-  logger:info('shutdown MQTT Broker extension')
-  closeServer()
+  cleanup()
 end)

@@ -1,0 +1,22 @@
+{
+  "name": "MQTT Broker",
+  "description": "MQTT Message Broker",
+  "version": "1.0",
+  "script": "mqtt-broker.lua",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "address": {
+        "title": "The binding address",
+        "type": "string",
+        "default": "::"
+      },
+      "port": {
+        "type": "integer",
+        "default": 1883,
+        "minimum": 0,
+        "maximum": 65535
+      }
+    }
+  }
+}
