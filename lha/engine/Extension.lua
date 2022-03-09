@@ -5,6 +5,9 @@ local tables = require('jls.util.tables')
 local TableList = require('jls.util.TableList')
 local Scheduler = require('jls.util.Scheduler')
 local system = require('jls.lang.system')
+local utils = require('lha.engine.utils')
+
+local schema = utils.requireJson('lha.extensions.schema')
 
 --- A Extension class.
 -- @type Extension
@@ -103,17 +106,33 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
 
   function extension:getConfiguration()
     local rootTable = self.engine.root
-    local pp = 'configuration/extensions/'..self.id
-    local pc = tables.getPath(rootTable, pp)
-    if not pc then
-      pc = {}
-      tables.setPath(rootTable, pp, pc)
+    local path = 'configuration/extensions/'..self.id
+    local config = tables.getPath(rootTable, path)
+    if not config then
+      config = {}
+      tables.setPath(rootTable, path, config)
     end
+    return config
+  end
+
+  function extension:initConfiguration()
+    if logger:isLoggable(logger.FINEST) then
+      logger:finest('initializing configuration for extension '..self:getPrettyName())
+    end
+    local config = self:getConfiguration()
     if self.manifest.config then
-      tables.merge(pc, self.manifest.config, true)
+      -- we do not want to validate the config against the schema
+      tables.merge(config, self.manifest.config, true)
     end
-    -- TODO Cache
-    return pc
+    if self.manifest.schema then
+      local defaultValues, err = tables.getSchemaValue(self.manifest.schema, {}, true)
+      if defaultValues then
+        tables.merge(config, defaultValues, true)
+      elseif logger:isLoggable(logger.WARN) then
+        logger:warn('unable to get default values from schema, due to '..tostring(err))
+        logger:warn('schema :'..json.stringify(self.manifest.schema, 2))
+      end
+    end
   end
 
   --[[
@@ -321,7 +340,15 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
       if logger:isLoggable(logger.FINEST) then
         logger:finest('reading manifest for extension '..self:getPrettyName())
       end
-      return json.decode(manifestFile:readAll())
+      local manifest = json.decode(manifestFile:readAll())
+      local m, err = tables.getSchemaValue(schema, manifest, true)
+      if m then
+        return m
+      end
+      if logger:isLoggable(logger.WARN) then
+        logger:warn('Invalid extension manifest, '..tostring(err))
+      end
+      return manifest
     end
   end
 
@@ -358,6 +385,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     local lastModified = self:getLastModified()
     local scriptFn = self:loadScript()
     if scriptFn then
+      self:initConfiguration()
       local status, err = pcall(scriptFn, self)
       if status then
         self.lastModified = lastModified

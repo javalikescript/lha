@@ -20,6 +20,8 @@ local Extension = require('lha.engine.Extension')
 local Thing = require('lha.engine.Thing')
 local utils = require('lha.engine.utils')
 
+local schema = utils.requireJson('lha.engine.schema')
+
 local function createDirectoryOrExit(dir)
   if not dir:isDirectory() then
     if dir:mkdir() then
@@ -570,33 +572,7 @@ local REST_ENGINE_HANDLERS = {
     },
   },
   schema = function(exchange)
-    return {
-      type = "object",
-      properties = {
-        schedule = {
-          title = "Group for scheduling using cron like syntax",
-          type = "object",
-          properties = {
-            clean = {
-              title = "Schedule for cleaning",
-              type = "string"
-            },
-            configuration = {
-              title = "Schedule for archiving configuration",
-              type = "string"
-            },
-            data = {
-              title = "Schedule for archiving data",
-              type = "string"
-            },
-            poll = {
-              title = "Schedule for polling extension things",
-              type = "string"
-            }
-          }
-        }
-      }
-    }
+    return schema.properties.config.properties.engine
   end,
   admin = REST_ADMIN
 }
@@ -609,10 +585,9 @@ return class.create(function(engine)
     self.extensions = {}
     self.idGenerator = IdGenerator:new()
 
-    local configDir = File:new(options.config):getAbsoluteFile():getParentFile()
-    checkDirectoryOrExit(configDir)
-    logger:debug('configDir is '..configDir:getPath())
-    self.configDir = configDir
+    local optionsDir = File:new(options.file):getAbsoluteFile():getParentFile()
+    checkDirectoryOrExit(optionsDir)
+    logger:debug('optionsDir is '..optionsDir:getPath())
 
     local enginePath = assert(package.searchpath('lha.engine.Engine', package.path))
     local engineFile = File:new(enginePath):getAbsoluteFile()
@@ -623,7 +598,7 @@ return class.create(function(engine)
     self.rootDir = rootDir
 
     -- setup
-    local workDir = utils.getAbsoluteFile(options.work or 'work', configDir)
+    local workDir = utils.getAbsoluteFile(options.work or 'work', optionsDir)
     checkDirectoryOrExit(workDir)
     logger:debug('workDir is '..workDir:getPath())
     self.workDir = workDir
@@ -661,10 +636,6 @@ return class.create(function(engine)
     return self.idGenerator:generate()
   end
 
-  function engine:getRootDirectory()
-    return self.rootDir
-  end
-
   function engine:getWorkDirectory()
     return self.workDir
   end
@@ -680,21 +651,24 @@ return class.create(function(engine)
       configuration = self.configHistory:getLiveTable(),
       data = self.dataHistory:getLiveTable()
     }
+    -- TODO options config should override values
+    local config, err = tables.getSchemaValue(schema.properties.config, self.options.config or {}, true)
+    if config then
+      tables.merge(self.root.configuration, config)
+      if logger:isLoggable(logger.FINE) then
+        logger:fine('config: '..json.stringify(self.root.configuration, 2))
+      end
+    elseif logger:isLoggable(logger.WARN) then
+      logger:warn('unable to get engine configuration, due to '..tostring(err))
+    end
     --[[
-      Default schedules are:
+      The default schedules values defined in the schema are:
       poll every quarter of an hour then archive data 5 minutes after,
       configuration and refresh every day at midnight,
       clean the first day of every month.
     ]]
     tables.merge(self.root.configuration, {
-      engine = {
-        schedule = {
-          clean = '0 0 1 * *',
-          configuration = '0 0 * * *',
-          data = '5-55/15 * * * *',
-          poll = '*/15 * * * *'
-        }
-      },
+      engine = {},
       extensions = {},
       things = {}
     }, true)
@@ -1113,6 +1087,22 @@ return class.create(function(engine)
     -- save configuration if necessary
     self.configHistory:save(false, true)
     event:stop()
+  end
+
+end, function(Engine)
+
+  function Engine.launch(arguments)
+    local options = tables.createArgumentTable(arguments, {
+      configPath = 'file',
+      emptyPath = 'work',
+      helpPath = 'help',
+      schema = schema
+    })
+    logger:setLevel(options.loglevel)
+    local engine = Engine:new(options)
+    engine:start()
+    engine:publishEvent('poll')
+    return engine
   end
 
 end)

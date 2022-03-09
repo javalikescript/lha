@@ -1,0 +1,49 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "config": {
+      "title": "The extension default configuration",
+      "type": "object"
+    },
+    "dependencies": {
+      "items": {
+        "type": "string"
+      },
+      "title": "The dependent extension ids",
+      "type": "array"
+    },
+    "description": {
+      "title": "The description of the extension",
+      "type": "string"
+    },
+    "name": {
+      "title": "The name of the extension",
+      "type": "string"
+    },
+    "schema": {
+      "properties": {
+        "properties": {
+          "type": "object"
+        },
+        "type": {
+          "const": "object",
+          "type": "string"
+        }
+      },
+      "title": "The extension configuration schema",
+      "type": "object"
+    },
+    "script": {
+      "default": "main.lua",
+      "title": "The script to load the extension",
+      "type": "string"
+    },
+    "version": {
+      "default": "1.0",
+      "title": "The version of the extension",
+      "type": "string"
+    }
+  },
+  "title": "Extension Manifest",
+  "type": "object"
+}

@@ -1,0 +1,90 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "address": {
+      "default": "::",
+      "title": "The binding address",
+      "type": "string"
+    },
+    "config": {
+      "properties": {
+        "engine": {
+          "additionalProperties": false,
+          "properties": {
+            "schedule": {
+              "additionalProperties": false,
+              "properties": {
+                "clean": {
+                  "default": "0 0 1 * *",
+                  "title": "Schedule for cleaning",
+                  "type": "string"
+                },
+                "configuration": {
+                  "default": "0 0 * * *",
+                  "title": "Schedule for archiving configuration",
+                  "type": "string"
+                },
+                "data": {
+                  "default": "5-55/15 * * * *",
+                  "title": "Schedule for archiving data",
+                  "type": "string"
+                },
+                "poll": {
+                  "default": "*/15 * * * *",
+                  "title": "Schedule for polling extension things",
+                  "type": "string"
+                }
+              },
+              "title": "Group for scheduling using cron like syntax",
+              "type": "object"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "title": "Configuration",
+      "type": "object"
+    },
+    "engine": {
+      "default": "engine.json",
+      "title": "The engine configuration file",
+      "type": "string"
+    },
+    "heartbeat": {
+      "default": 15,
+      "maximum": 3600,
+      "minimum": 0.5,
+      "multipleOf": 0.1,
+      "type": "number"
+    },
+    "loglevel": {
+      "default": "WARN",
+      "enum": [
+        "ERROR",
+        "WARN",
+        "INFO",
+        "CONFIG",
+        "FINE",
+        "FINER",
+        "FINEST",
+        "DEBUG",
+        "ALL"
+      ],
+      "title": "The log level",
+      "type": "string"
+    },
+    "port": {
+      "default": 8080,
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "work": {
+      "default": "work",
+      "title": "The work directory",
+      "type": "string"
+    }
+  },
+  "title": "Light Home Automation",
+  "type": "object"
+}
