@@ -3,10 +3,6 @@
   "description": "Philips Hue Bridge REST API",
   "version": "1.0",
   "script": "hue.lua",
-  "-config": {
-    "url": "http://localhost/api/",
-    "user": "unknown"
-  },
   "schema": {
     "type": "object",
     "properties": {

@@ -4,14 +4,15 @@
   "version": "1.0",
   "script": "web_base.lua",
   "config": {
-    "assets": "lha/extensions/web_base/assets"
+    "active": true
   },
   "schema": {
     "type": "object",
     "properties": {
       "assets": {
         "title": "Static assets directory",
-        "type": "string"
+        "type": "string",
+        "default": "assets"
       },
       "theme": {
         "title": "User Interface Theme",
@@ -19,7 +20,8 @@
         "enumValues": [
           {"const": "light", "title": "Light"},
           {"const": "ms", "title": "Windows"}
-        ]
+        ],
+        "default": "light"
       }
     }
   }

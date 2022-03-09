@@ -3,17 +3,13 @@
   "description": "Open Weather Map",
   "version": "1.0",
   "script": "owm.lua",
-  "config": {
-    "apiUrl": "http://api.openweathermap.org/data/2.5/",
-    "apiKey": "",
-    "cityId": "11111"
-  },
   "schema": {
     "type": "object",
     "properties": {
       "apiUrl": {
         "title": "API URL",
-        "type": "string"
+        "type": "string",
+        "default": "http://api.openweathermap.org/data/2.5/"
       },
       "apiKey": {
         "title": "API key",

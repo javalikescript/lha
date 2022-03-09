@@ -4,10 +4,7 @@
   "version": "1.0",
   "script": "self.lua",
   "config": {
-    "memory": {
-      "enabled": true,
-      "format": "csv"
-    }
+    "active": true
   },
   "schema": {
     "type": "object",
@@ -17,7 +14,8 @@
         "properties": {
           "enabled": {
             "title": "Generate Lua memory report",
-            "type": "boolean"
+            "type": "boolean",
+            "default": true
           },
           "format": {
             "title": "Memory report format",
@@ -25,7 +23,8 @@
             "enum": [
               "csv",
               "json"
-            ]
+            ],
+            "default": "csv"
           }
         }
       }

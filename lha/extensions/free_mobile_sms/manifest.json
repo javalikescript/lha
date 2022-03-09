@@ -3,17 +3,13 @@
   "description": "Send SMS via Free Mobile",
   "version": "0.1",
   "script": "free_mobile_sms.lua",
-  "config": {
-    "apiUrl": "https://smsapi.free-mobile.fr/sendmsg",
-    "user": "me",
-    "pass": "changeit"
-  },
   "schema": {
     "type": "object",
     "properties": {
       "apiUrl": {
         "title": "API URL",
-        "type": "string"
+        "type": "string",
+        "default": "https://smsapi.free-mobile.fr/sendmsg"
       },
       "user": {
         "title": "User",

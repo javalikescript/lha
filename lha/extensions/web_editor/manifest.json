@@ -1,6 +1,7 @@
 {
   "name": "Web editor",
   "description": "Expose web editor add-on",
+  "dependencies": ["web_base"],
   "version": "1.0",
   "script": "web_editor.lua"
 }

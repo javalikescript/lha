@@ -1,6 +1,7 @@
 {
   "name": "Web scripts",
   "description": "Expose web scripts add-on",
+  "dependencies": ["web_base"],
   "version": "1.0",
   "script": "web_scripts.lua"
 }

@@ -3,12 +3,6 @@
   "description": "Provides HTTPS to LHA Server",
   "version": "1.0",
   "script": "https.lua",
-  "config": {
-    "address": "::",
-    "port": 8443,
-    "certificate": "cer.pem",
-    "key": "key.pem"
-  },
   "schema": {
     "type": "object",
     "properties": {
@@ -38,7 +32,7 @@
         "default": "key.pem"
       },
       "credentials": {
-        "title": "The credentials as name/password pairs",
+        "title": "The credentials as name/password pairs for basic authentication",
         "type": "object"
       }
     }
