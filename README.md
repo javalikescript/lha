@@ -13,7 +13,6 @@ Available extensions are:
 * [Z-Wave JS](https://github.com/zwave-js), Z-Wave JS API using Zwave to MQTT
 * [MQTT](https://mqtt.org/) Broker, provides a light message broker
 * HTTPS server, provides lha on a secure server
-* [Docker](https://www.docker.com/), allows to manage docker remotely
 * Monitoring, based on Lua and [libuv](https://github.com/luvit/luv)
 * Ping, Test the reachability of a host on the network
 
