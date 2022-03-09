@@ -3,6 +3,7 @@
   "description": "Test the reachability of a host on the network",
   "version": "1.0",
   "script": "ping.lua",
+  "dependencies": ["execute"],
   "schema": {
     "type": "object",
     "properties": {

@@ -47,23 +47,22 @@ extension:subscribeEvent('things', function()
   end
 end)
 
-local function pingThing(targetName, thing)
-  local command
+local function getPingCommand(targetName)
   if system.isWindows() then
-    command = 'ping -n '..tostring(PING_COUNT)..' '..targetName..' >nul 2>nul'
-  else
-    command = 'ping -c '..tostring(PING_COUNT)..' '..targetName..' 2>&1 >/dev/null'
+    return 'ping -n '..tostring(PING_COUNT)..' '..targetName..' >nul 2>nul'
   end
-  logger:debug('executing "'..command..'"')
-  runtime.execute(command, function(err)
-    thing:updatePropertyValue('reachable', err == nil)
-    logger:info('executed "'..command..'" => '..tostring(err and err.code or 0))
-  end)
+  return 'ping -c '..tostring(PING_COUNT)..' '..targetName..' 2>&1 >/dev/null'
 end
 
 extension:subscribeEvent('poll', function()
   logger:info('polling ping extension')
+  local engine = extension:getEngine()
+  local executor = engine:getExtensionById('execute')
   for targetName, thing in pairs(thingsByTarget) do
-    pingThing(targetName, thing)
+    local command = getPingCommand(targetName)
+    executor:execute(command, true):next(function(code)
+      thing:updatePropertyValue('reachable', code == 0)
+      logger:info('executed "'..command..'" => '..tostring(code))
+    end)
   end
 end)
