@@ -585,7 +585,7 @@ return class.create(function(engine)
     self.extensions = {}
     self.idGenerator = IdGenerator:new()
 
-    local optionsDir = File:new(options.file):getAbsoluteFile():getParentFile()
+    local optionsDir = File:new(options.engine):getAbsoluteFile():getParentFile()
     checkDirectoryOrExit(optionsDir)
     logger:debug('optionsDir is '..optionsDir:getPath())
 

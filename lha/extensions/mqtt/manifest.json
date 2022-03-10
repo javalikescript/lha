@@ -2,7 +2,7 @@
   "name": "MQTT",
   "description": "Publishes events on MQTT",
   "version": "1.0",
-  "script": "mqtt_broker.lua",
+  "script": "mqtt.lua",
   "schema": {
     "type": "object",
     "properties": {

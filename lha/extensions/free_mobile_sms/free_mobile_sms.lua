@@ -71,8 +71,12 @@ end)
 -- End Helper classes and functions
 
 local configuration = extension:getConfiguration()
-local fms = FreeMobileSms:new(configuration.apiUrl, configuration.user, configuration.pass)
-logger:info('FreeMobileSms user is "'..fms:getUser()..'"')
+
+local fms
+if configuration.apiUrl and configuration.user and configuration.pass then
+  fms = FreeMobileSms:new(configuration.apiUrl, configuration.user, configuration.pass)
+  logger:info('FreeMobileSms user is "'..fms:getUser()..'"')
+end
 
 function extension:sendSMS(msg)
   if fms then
@@ -81,8 +85,10 @@ function extension:sendSMS(msg)
   return Promise.reject('Extension not started')
 end
 
-extension:watchDataValue(extension:getPath('sms'), function(value, previousValue, path)
-  extension:sendSMS(value):catch(function(reason)
-    logger:warn('Unable to send SMS, due to '..tostring(reason))
+--[[
+  extension:watchDataValue(extension:getPath('sms'), function(value, previousValue, path)
+    extension:sendSMS(value):catch(function(reason)
+      logger:warn('Unable to send SMS, due to '..tostring(reason))
+    end)
   end)
-end)
+]]
