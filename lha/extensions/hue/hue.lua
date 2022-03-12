@@ -8,10 +8,6 @@ local HueBridge = require('lha.extensions.hue.HueBridge')
 
 
 local configuration = extension:getConfiguration()
-tables.merge(configuration, {
-  url = 'http://localhost/api/',
-  user = 'unknown'
-}, true)
 
 local hueBridge
 local thingsMap = {}
@@ -20,36 +16,51 @@ local lastLightPollTime
 
 extension:subscribeEvent('things', function()
   logger:info('Looking for '..extension:getPrettyName()..' things')
-  local things = extension:getThings()
-  thingsMap = {}
-  for discoveryKey, thing in pairs(things) do
-    thingsMap[discoveryKey] = thing
-  end
+  thingsMap = extension:getThingsByDiscoveryKey()
 end)
 
 local function onHueThing(id, info, time, lastTime)
   if info.state and info.uniqueid then
     local thing = thingsMap[info.uniqueid]
-    if thing then
-      if not thing:isConnected() then
-        hueBridge:connectThing(thing, id)
-      end
-    else
+    if thing == nil then
       thing = HueBridge.createThingForType(info)
       if thing then
         logger:info('New '..extension:getPrettyName()..' thing found with type "'..tostring(info.type)..'" id "'..tostring(id)..'" and uniqueid "'..tostring(info.uniqueid)..'"')
         extension:discoverThing(info.uniqueid, thing)
+      else
+        thing = false
       end
+      thingsMap[info.uniqueid] = thing
     end
     if thing then
+      if not thing.connected and thing.connect then
+        hueBridge:connectThing(thing, id)
+      end
       hueBridge:updateThing(thing, info, time, lastTime)
     end
   end
 end
 
+local json = require('jls.util.json')
+local function onHueEvent(info)
+  -- see https://dresden-elektronik.github.io/deconz-rest-doc/endpoints/websocket/
+
+  logger:info('Hue event received '..json.stringify(info, 2))
+
+  if info.e == 'changed' and (info.r == 'lights' or info.r == 'sensors') then
+    -- info.type is missing
+    local thing = thingsMap[info.uniqueid]
+    if thing then
+      --hueBridge:lazyUpdateThing(thing, info)
+    end
+  --elseif info.e == 'added' then
+  --elseif info.e == 'deleted' then
+  --elseif info.e == 'scene-called' then
+  end
+end
+
 extension:subscribeEvent('poll', function()
   logger:info('Polling '..extension:getPrettyName()..' extension')
-  extension:cleanDiscoveredThings()
   hueBridge:get(HueBridge.CONST.SENSORS):next(function(allSensors)
     local time = Date.now()
     if allSensors then
@@ -85,12 +96,16 @@ end)
 
 extension:subscribeEvent('startup', function()
   logger:info('startup '..extension:getPrettyName()..' extension')
-  hueBridge = HueBridge:new(configuration.url, configuration.user)
+  if hueBridge then
+    hueBridge:close()
+  end
+  hueBridge = HueBridge:new(configuration.url, configuration.user, configuration.useWebSocket and onHueEvent)
   logger:info('Bridge '..extension:getPrettyName()..': "'..configuration.url..'"')
   hueBridge:updateConfiguration()
-  --[[
-  extension:getEngine():onExtension('web_base', function(webSamplePlugin)
-    webSamplePlugin:registerAddonExtension(extension)
-  end)
-  ]]
+end)
+
+extension:subscribeEvent('shutdown', function()
+  if hueBridge then
+    hueBridge:close()
+  end
 end)

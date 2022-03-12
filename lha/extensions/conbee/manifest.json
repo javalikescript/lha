@@ -1,17 +1,24 @@
 {
   "name": "ConBee",
   "description": "Dresden elektronik ConBee REST API",
-  "dependencies": ["hue"],
   "version": "1.0",
   "script": "../hue/hue.lua",
   "schema": {
     "type": "object",
     "properties": {
       "url": {
+        "title": "Bridge API URL",
+        "pattern": "^https?://.+$",
         "type": "string"
       },
       "user": {
+        "title": "Bridge API username",
         "type": "string"
+      },
+      "useWebSocket": {
+        "title": "Enable WebSocket",
+        "type": "boolean",
+        "default": true
       }
     }
   }

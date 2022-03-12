@@ -8,6 +8,7 @@
     "properties": {
       "url": {
         "title": "Bridge API URL",
+        "pattern": "^https?://.+$",
         "type": "string"
       },
       "user": {
