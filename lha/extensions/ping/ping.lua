@@ -1,6 +1,5 @@
 local extension = ...
 
-local runtime = require('jls.lang.runtime')
 local system = require('jls.lang.system')
 local tables = require('jls.util.tables')
 local Thing = require('lha.engine.Thing')
@@ -9,9 +8,6 @@ local logger = require('jls.lang.logger')
 logger:info('ping extension under '..extension:getDir():getPath())
 
 local configuration = extension:getConfiguration()
-tables.merge(configuration, {
-  target_names = {'127.0.0.1'}
-}, true)
 
 local PING_COUNT = 1
 

@@ -1,5 +1,3 @@
-local extension = ...
-
 local logger = require('jls.lang.logger')
 local tables = require('jls.util.tables')
 local Thing = require('lha.engine.Thing')
@@ -48,13 +46,13 @@ local function formatKey(index, thingConfig)
   return '#'..tostring(index)
 end
 
-local function discoverThings(extension, connect)
+local function discoverThings(extension)
   local configuration = extension:getConfiguration()
   extension:cleanDiscoveredThings()
-  local things = connect and extension:getThings()
+  local things = extension:getThings()
   for index, thingConfig in ipairs(configuration.things) do
     local key = formatKey(index, thingConfig)
-    local thing = things and things[key]
+    local thing = things[key]
     if thing then
       thing:connect()
     else
@@ -66,12 +64,13 @@ local function discoverThings(extension, connect)
   end
 end
 
+local extension = ...
+
 extension:subscribeEvent('startup', function()
   logger:info('startup generic extension')
-  --discoverThings(extension)
 end)
 
 extension:subscribeEvent('things', function()
   logger:info('looking for generic things')
-  discoverThings(extension, true)
+  discoverThings(extension)
 end)
