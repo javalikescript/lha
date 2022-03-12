@@ -44,7 +44,7 @@ return require('jls.lang.class').create(function(hueBridge)
 
   function hueBridge:close()
     if self.ws then
-      self.ws:close()
+      self.ws:close(false)
       self.ws = nil
     end
   end
@@ -61,26 +61,37 @@ return require('jls.lang.class').create(function(hueBridge)
     end
     logger:info('Using bridge delta time: '..tostring(self.delta))
     if config.devicename then
-      logger:info('Hue device is: '..tostring(config.devicename))
+      logger:info('Hue device is '..tostring(config.devicename))
     end
     if config.websocketport then
       -- config.websocketnotifyall
       local tUrl = Url.parse(self.url)
       local wsUrl = Url:new('ws', tUrl.host, config.websocketport):toString()
       if self.onWebSocket and not self.ws then
-        logger:info('Connection WebSocket on '..tostring(wsUrl))
         local webSocket = WebSocket:new(wsUrl)
         self.ws = webSocket
         webSocket:open():next(function()
           webSocket:readStart()
+          logger:info('Hue WebSocket connect on '..tostring(wsUrl))
+        end, function(reason)
+          logger:warn('Cannot open Hue WebSocket on '..tostring(wsUrl)..' due to '..tostring(reason))
         end)
         webSocket.onTextMessage = function(_, payload)
           if logger:isLoggable(logger.FINER) then
             logger:finer('Hue WebSocket received '..tostring(payload))
           end
-          local info = json.decode(payload)
-          if type(info) == 'table' and info.t == 'event' then
-            self.onWebSocket(info)
+          local status, info = pcall(json.decode, payload)
+          if status then
+            if type(info) == 'table' and info.t == 'event' then
+              status, info = pcall(self.onWebSocket, info)
+              if not status then
+                logger:warn('Hue WebSocket callback error: '..tostring(info)..' with payload '..tostring(payload))
+                webSocket:close(false)
+              end
+            end
+          else
+            logger:warn('Hue WebSocket received invalid JSON payload '..tostring(payload))
+            webSocket:close(false)
           end
         end
       end
@@ -195,7 +206,7 @@ return require('jls.lang.class').create(function(hueBridge)
   end
 
   local function computeColor(state)
-    if state.hue and state.sat and state.bri then
+    if isValue(state.hue) and isValue(state.sat) and isValue(state.bri) then
       -- Hue has hue and sat properties
       return Thing.hsvToRgbHex(state.hue / 65535, state.sat / 254, state.bri / 254)
     end

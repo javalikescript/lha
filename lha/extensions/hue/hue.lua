@@ -44,14 +44,13 @@ end
 local json = require('jls.util.json')
 local function onHueEvent(info)
   -- see https://dresden-elektronik.github.io/deconz-rest-doc/endpoints/websocket/
-
-  logger:info('Hue event received '..json.stringify(info, 2))
-
   if info.e == 'changed' and (info.r == 'lights' or info.r == 'sensors') then
-    -- info.type is missing
     local thing = thingsMap[info.uniqueid]
+    if info.state and logger:isLoggable(logger.INFO) then
+      logger:info('Hue event received '..(thing and 'v' or 'x')..' '..json.stringify(info, 2))
+    end
     if thing then
-      --hueBridge:lazyUpdateThing(thing, info)
+      hueBridge:lazyUpdateThing(thing, info)
     end
   --elseif info.e == 'added' then
   --elseif info.e == 'deleted' then
