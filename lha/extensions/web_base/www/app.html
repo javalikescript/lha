@@ -10,6 +10,7 @@
   <script src="static/promise.min.js" type="text/javascript" charset="utf-8"></script>
   <script src="static/fetch.umd.js" type="text/javascript" charset="utf-8"></script>
   <script src="static/v/vue.min.js" type="text/javascript" charset="utf-8"></script>
+  <script src="app/utils.js" type="text/javascript" charset="utf-8"></script>
 </head>
 <body class="theme_boot">
 <div class="splash">
@@ -258,12 +259,14 @@
       <!-- fa fa-minus -->
       <button v-on:click="onDisable" title="Disable"><i class="fa fa-trash"></i></button>
       <button v-on:click="onReload" title="Reload"><i class="fas fa-redo"></i></button>
-      <button v-on:click="onSave" title="Save"><i class="far fa-save"></i></button>
     </template>
     <page-article>
       <p>{{ extension.info.name }}</p>
       <p>{{ extension.info.description }}</p>
-      <json v-if="extension.manifest.schema && (Object.keys(extension.manifest.schema.properties).length > 0)" :name="'Configuration'" :obj="extension.config" :schema="extension.manifest.schema"></json>
+      <json v-if="hasSchema(extension.manifest.schema)" :name="'Configuration'" :obj="extension.config" :schema="extension.manifest.schema"></json>
+      <section>
+        <button v-on:click="onSave()"><i class="far fa-save"></i>&nbsp;Save</button>
+      </section>
     </page-article>
   </app-page>
   <app-page id="addExtensions" title="Add Extensions">
@@ -275,12 +278,23 @@
         <div class="bar">
           <p>{{ extension.name }}</p>
           <div>
-            <button v-on:click="extension.active = true"><i class="fa fa-plus"></i>&nbsp;Add</button>
+            <button v-on:click="app.toPage('addExtension', extension.id)"><i class="fa fa-plus"></i>&nbsp;Add...</button>
           </div>
         </div>
         <p>{{ extension.description }}</p>
       </div>
     </article>
+  </app-page>
+  <app-page id="addExtension" title="Add Extension">
+    <page-article>
+      <p>{{ extension.info.name }}</p>
+      <p>{{ extension.info.description }}</p>
+      <json v-if="hasSchema(extension.manifest.schema)" :name="'Configuration'" :obj="extension.config" :schema="extension.manifest.schema"></json>
+      <section>
+        <button v-on:click="onAdd()"><i class="fa fa-plus"></i>&nbsp;Add</button>
+        <button v-on:click="app.back()">Cancel</button>
+      </section>
+    </page-article>
   </app-page>
   <!--
     ======================================================================
@@ -374,7 +388,7 @@
   }
 //-->
 </script>
-<script src="app/utils.js" type="text/javascript" charset="utf-8"></script>
+<script src="app/amd.js" type="text/javascript" charset="utf-8"></script>
 <script src="app/main.js" type="text/javascript" charset="utf-8"></script>
 <script src="app/charts.js" type="text/javascript" charset="utf-8"></script>
 <script src="app/extensions.js" type="text/javascript" charset="utf-8"></script>

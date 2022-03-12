@@ -106,3 +106,40 @@ new Vue({
     }
   }
 });
+
+new Vue({
+  el: '#addExtension',
+  data: {
+    extensionId: '',
+    extension: {config: {}, info: {}, manifest: {}}
+  },
+  methods: {
+    onAdd: function() {
+      if (this.extensionId && this.extension.config) {
+        this.extension.config.active = true;
+        fetch('/engine/configuration/extensions/' + this.extensionId, {
+          method: 'POST',
+          body: JSON.stringify({
+            value: this.extension.config
+          })
+        }).then(function() {
+          app.clearCache();
+          app.back();
+        });
+      }
+    },
+    onShow: function(extensionId) {
+      var self = this;
+      if (extensionId) {
+        this.extensionId = extensionId;
+      }
+      self.extension = {config: {}, info: {}, manifest: {}};
+      fetch('/engine/extensions/' + this.extensionId).then(function(response) {
+        return response.json();
+      }).then(function(extension) {
+        self.extension = extension;
+        //console.log('extension', self.extension);
+      });
+    }
+  }
+});
