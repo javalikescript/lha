@@ -472,10 +472,11 @@ return class.create(function(historicalTable, _, HistoricalTable)
     return self:getJsonFile():isFile()
   end
 
-  function historicalTable:saveJson()
-    local t = tables.deepCopy(self.liveTable)
+  function historicalTable:saveJson(t)
+    local tt = t or tables.deepCopy(self.liveTable)
     local jsonFile = self:getJsonFile()
-    jsonFile:write(json.encode(t))
+    jsonFile:write(json.stringify(tt, 2))
+    return tt
   end
 
   function historicalTable:save(isFull, withJson, time)
@@ -502,8 +503,7 @@ return class.create(function(historicalTable, _, HistoricalTable)
       end
     end
     if withJson then
-      local jsonFile = self:getJsonFile()
-      jsonFile:write(json.stringify(tmp, 2))
+      self:saveJson(tmp)
     end
     if size > 8 then
       local deflater = Deflater:new()
