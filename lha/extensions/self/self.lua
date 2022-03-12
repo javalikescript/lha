@@ -57,83 +57,82 @@ local function computeCpuUsage(lastInfo, info)
   return 100 - math.floor(1000 * s.idle / t) / 10
 end
 
+local function createLuaThing()
+  local luaThing = Thing:new('Lua', 'Lua host engine', {'MultiLevelSensor'})
+  luaThing:addProperty('memory', {
+    ['@type'] = 'LevelProperty',
+    title = 'Lua Memory',
+    type = 'integer',
+    description = 'The total memory in use by Lua in bytes',
+    minimum = 0,
+    readOnly = true,
+    unit = 'byte'
+  }, 0)
+  luaThing:addProperty('user', {
+    ['@type'] = 'LevelProperty',
+    title = 'Lua User Time',
+    type = 'number',
+    description = 'The amount in seconds of CPU time used by the program',
+    minimum = 0,
+    readOnly = true,
+    unit = 'second'
+  }, 0)
+  luaThing:addProperty('process_resident_memory', {
+    ['@type'] = 'LevelProperty',
+    title = 'Resident Set Size',
+    type = 'integer',
+    description = 'The resident set size (RSS) for the current process.',
+    minimum = 0,
+    readOnly = true,
+    unit = 'byte'
+  }, 0)
+  luaThing:addProperty('total_memory', {
+    ['@type'] = 'LevelProperty',
+    title = 'Total Memory',
+    type = 'integer',
+    description = 'The total memory available',
+    minimum = 0,
+    readOnly = true,
+    unit = 'byte'
+  }, 0)
+  luaThing:addProperty('used_memory', {
+    ['@type'] = 'LevelProperty',
+    title = 'Used Memory',
+    type = 'number',
+    description = 'The memory used',
+    minimum = 0,
+    maximum = 100,
+    readOnly = true,
+    unit = 'percent'
+  }, 0)
+  luaThing:addProperty('host_cpu_usage', {
+    ['@type'] = 'LevelProperty',
+    title = 'Host CPU Usage',
+    type = 'number',
+    description = 'The CPU usage',
+    minimum = 0,
+    maximum = 100,
+    readOnly = true,
+    unit = 'percent'
+  }, 0)
+  luaThing:addProperty('process_cpu_usage', {
+    ['@type'] = 'LevelProperty',
+    title = 'Process CPU Usage',
+    type = 'number',
+    description = 'The CPU usage',
+    minimum = 0,
+    maximum = 100,
+    readOnly = true,
+    unit = 'percent'
+  }, 0)
+  return luaThing
+end
+
 logger:info('self extension under '..extension:getDir():getPath())
 
 local configuration = extension:getConfiguration()
+local luaThing
 
--- always register the single thing
-local luaThing = Thing:new('Lua', 'Lua host engine', {'MultiLevelSensor'})
-luaThing:addProperty('memory', {
-  ['@type'] = 'LevelProperty',
-  title = 'Lua Memory',
-  type = 'integer',
-  description = 'The total memory in use by Lua in bytes',
-  minimum = 0,
-  readOnly = true,
-  unit = 'byte'
-}, 0)
-luaThing:addProperty('user', {
-  ['@type'] = 'LevelProperty',
-  title = 'Lua User Time',
-  type = 'number',
-  description = 'The amount in seconds of CPU time used by the program',
-  minimum = 0,
-  readOnly = true,
-  unit = 'second'
-}, 0)
-luaThing:addProperty('process_resident_memory', {
-  ['@type'] = 'LevelProperty',
-  title = 'Resident Set Size',
-  type = 'integer',
-  description = 'The resident set size (RSS) for the current process.',
-  minimum = 0,
-  readOnly = true,
-  unit = 'byte'
-}, 0)
-luaThing:addProperty('total_memory', {
-  ['@type'] = 'LevelProperty',
-  title = 'Total Memory',
-  type = 'integer',
-  description = 'The total memory available',
-  minimum = 0,
-  readOnly = true,
-  unit = 'byte'
-}, 0)
-luaThing:addProperty('used_memory', {
-  ['@type'] = 'LevelProperty',
-  title = 'Used Memory',
-  type = 'number',
-  description = 'The memory used',
-  minimum = 0,
-  maximum = 100,
-  readOnly = true,
-  unit = 'percent'
-}, 0)
-luaThing:addProperty('host_cpu_usage', {
-  ['@type'] = 'LevelProperty',
-  title = 'Host CPU Usage',
-  type = 'number',
-  description = 'The CPU usage',
-  minimum = 0,
-  maximum = 100,
-  readOnly = true,
-  unit = 'percent'
-}, 0)
-luaThing:addProperty('process_cpu_usage', {
-  ['@type'] = 'LevelProperty',
-  title = 'Process CPU Usage',
-  type = 'number',
-  description = 'The CPU usage',
-  minimum = 0,
-  maximum = 100,
-  readOnly = true,
-  unit = 'percent'
-}, 0)
-
-extension:cleanDiscoveredThings()
-extension:discoverThing('lua', luaThing)
-
---logger:info('luaThing '..require('jls.util.json').encode(luaThing:asThingDescription()))
 --[[
 curl http://localhost:8080/engine/admin/stop
 curl http://localhost:8080/things
@@ -142,13 +141,8 @@ curl http://localhost:8080/things
 
 extension:subscribeEvent('things', function()
   logger:info('looking for self things')
-  local things = extension:getThings()
-  local thing = things['lua']
-  if thing then
-    luaThing = thing
-    logger:info('lua self thing found')
-    extension:cleanDiscoveredThings()
-  end
+  luaThing = extension:syncDiscoveredThingByKey('lua', createLuaThing)
+  --logger:info('luaThing '..require('jls.util.json').encode(luaThing:asThingDescription()))
 end)
 
 local lastClock = os.clock()

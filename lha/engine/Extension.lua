@@ -15,10 +15,13 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
 
   --- Creates a Extension.
   -- Available events are:
-  --  refresh: called depending on the configuration schedule
   --  startup: called after all the extension have been loaded
-  --  shutdown: called prior to stop the engine
-  --  discover: look for available things for this extension
+  --  shutdown: called prior to stop the engine, or when reloading an extenstion
+  --  things: called when things change, added, removed, or extension loaded
+  --  poll: called depending on the configuration schedule, to collect things data
+  --  refresh: called depending on the configuration schedule
+  --  clean: called depending on the configuration
+  --  --discover: look for available things for this extension
   -- @function Extension:new
   -- @param engine the engine that holds this extension.
   -- @param dir the extension directory
@@ -150,22 +153,25 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     return self.loaded and tables.getPath(self.engine.root, 'configuration/extensions/'..self.id..'/'..'active', false)
   end
 
-  function extension:subscribePollEvent(fn, minIntervalSec)
-    if minIntervalSec > 0 then
-      local lastPoll = system.currentTime()
-      return self:subscribeEvent('poll', function(...)
-        local date = system.currentTime()
-        if date - lastPoll >= minIntervalSec then
-          lastPoll = date
-          fn(...)
-        else
-          if logger:isLoggable(logger.INFO) then
-            logger:info('minimum polling interval not reached ('..tostring(minIntervalSec + lastPoll - date)..'s)')
-          end
-        end
-      end)
+  function extension:subscribePollEvent(fn, minIntervalSec, lastPollSec)
+    if type(minIntervalSec) ~= 'number' or minIntervalSec <= 0 then
+      return self:subscribeEvent('poll', fn)
     end
-    return self:subscribeEvent('poll', fn)
+    if type(lastPollSec) ~= 'number' then
+      -- if the last poll instant is unknown then we must be sure to respect the interval
+      lastPollSec = system.currentTime()
+    end
+    return self:subscribeEvent('poll', function(...)
+      local pollSec = system.currentTime()
+      if pollSec - lastPollSec >= minIntervalSec then
+        lastPollSec = pollSec
+        fn(...)
+      else
+        if logger:isLoggable(logger.INFO) then
+          logger:info('minimum polling interval not reached ('..tostring(minIntervalSec + lastPollSec - pollSec)..'s)')
+        end
+      end
+    end)
   end
 
   function extension:fireExtensionEvent(...)
@@ -278,21 +284,36 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     return self:watchValue('data/'..path, fn)
   end
 
+  --- Removes all the discovered things.
   function extension:cleanDiscoveredThings()
     self.discoveredThings = {}
   end
 
-  -- Adds a discovered thing to this device.
-	-- @param key A uniq string identifying the thing in this extension.
-	-- @param thing A thing to add.
+  --- Adds a discovered thing to this extension.
+  -- @param key A uniq string identifying the thing in this extension.
+  -- @param thing A thing to add.
   function extension:discoverThing(key, thing)
+    if logger:isLoggable(logger.FINE) then
+      logger:fine('the thing "'..key..'" on extension '..self.id..' has been discovered')
+    end
     self.discoveredThings[key] = thing
   end
 
+  --- Returns the discovered thing associated to the discovery key.
   function extension:getDiscoveredThingByKey(key)
     return self.discoveredThings[key]
   end
 
+  --- Removes and returns the discovered thing associated to the discovery key.
+  function extension:removeDiscoveredThingByKey(key)
+    local discoveredThing = self.discoveredThings[key]
+    if discoveredThing ~= nil then
+      self.discoveredThings[key] = nil
+    end
+    return discoveredThing
+  end
+
+  --- Returns the list of discovered things.
   function extension:listDiscoveredThings()
     local list
     for _, thing in pairs(self.discoveredThings) do
@@ -301,16 +322,50 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     return list
   end
 
+  --- Returns the map of discovered things by their discovery key.
   function extension:getDiscoveredThings()
     return self.discoveredThings
   end
 
-  function extension:getThings()
+  --- Returns the map of things by their discovery key.
+  function extension:getThingsByDiscoveryKey()
+    -- We may cache this map and refresh on things event
     return self:getEngine():getThingsByExtensionId(self:getId())
   end
 
+  -- for compatibility
+  function extension:getThings()
+    return self:getThingsByDiscoveryKey()
+  end
+
+  --- Returns the thing associated to the discovery key.
   function extension:getThingByDiscoveryKey(discoveryKey)
     return self:getEngine():getThingByDiscoveryKey(self:getId(), discoveryKey)
+  end
+
+  --- Returns the thing associated to the discovery key.
+  -- The thing is removed from discovery, if managed by the engine.
+  -- The thing is created and discovered, if necessary.
+  -- @tparam string key The uniq string identifying the thing in this extension.
+  -- @tparam function create The function to call in order to create the thing.
+  function extension:syncDiscoveredThingByKey(key, create, ...)
+    local discoveredThing = self.discoveredThings[key]
+    local thing = self:getThingByDiscoveryKey(key)
+    if discoveredThing then
+      if thing then
+        if logger:isLoggable(logger.FINE) then
+          logger:fine('the thing "'..key..'" on extension '..self.id..' is now managed by the engine')
+        end
+        self.discoveredThings[key] = nil
+      else
+        return discoveredThing
+      end
+    elseif not thing and create then
+      local createdThing = create(...)
+      self:discoverThing(key, createdThing)
+      return createdThing
+    end
+    return thing
   end
 
   function extension:refresh()
