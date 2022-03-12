@@ -2,6 +2,7 @@ local extension = ...
 
 local logger = require('jls.lang.logger')
 local class = require('jls.lang.class')
+local Promise = require('jls.lang.Promise')
 local http = require('jls.net.http')
 local json = require('jls.util.json')
 local Thing = require('lha.engine.Thing')
@@ -36,6 +37,10 @@ local OpenWeatherMap = class.create(function(openWeatherMap)
       return client:sendReceive()
     end):next(function(response)
       client:close()
+      local status, reason = response:getStatusCode()
+      if status ~= 200 then
+        return Promise.reject(tostring(status)..': '..tostring(reason))
+      end
       return response:getBody()
     end)
     --return http.request(self.url..self.user..'/'..path)
@@ -43,11 +48,11 @@ local OpenWeatherMap = class.create(function(openWeatherMap)
 
   function openWeatherMap:get(path)
     return self:httpRequest(path):next(function(body)
-      if logger:isLoggable(logger.DEBUG) then
+      if logger:isLoggable(logger.FINER) then
         if logger:isLoggable(logger.FINEST) then
           logger:finest('openWeatherMap:get() => '..tostring(body))
         else
-          logger:debug('openWeatherMap:get() => #'..tostring(#body))
+          logger:finer('openWeatherMap:get() => #'..tostring(#body))
         end
       end
       return json.decode(body)
@@ -128,10 +133,10 @@ end
 -- End Helper classes and functions
 
 local THINGS_BY_KEY = {
-  current = createWeatherThing("Weather"),
-  nextHours = createWeatherThing("Next Hours"),
-  tomorrow = createWeatherThing("Tomorrow"),
-  nextDays = createWeatherThing("Next Days")
+  current = createWeatherThing("Weather Now"),
+  nextHours = createWeatherThing("Weather Next Hours"),
+  tomorrow = createWeatherThing("Weather Tomorrow"),
+  nextDays = createWeatherThing("Weather Next Days")
 }
 local thingByKey = {}
 local configuration = extension:getConfiguration()
@@ -177,5 +182,4 @@ extension:subscribePollEvent(function()
     logger:warn('fail to get OWM forecast, due to "'..tostring(err)..'"')
     -- cleaning data in case of polling failure
   end)
-end, 600)
-
+end, configuration.maxPollingDelay)

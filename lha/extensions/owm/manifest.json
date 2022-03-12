@@ -18,6 +18,12 @@
       "cityId": {
         "title": "City ID",
         "type": "string"
+      },
+      "maxPollingDelay": {
+        "type": "integer",
+        "default": 600,
+        "minimum": 0,
+        "maximum": 86400
       }
     }
   }
