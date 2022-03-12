@@ -60,15 +60,15 @@
     "loglevel": {
       "default": "WARN",
       "enum": [
-        "ERROR",
-        "WARN",
-        "INFO",
-        "CONFIG",
-        "FINE",
-        "FINER",
-        "FINEST",
-        "DEBUG",
-        "ALL"
+        "error",
+        "warn",
+        "info",
+        "config",
+        "fine",
+        "finer",
+        "finest",
+        "debug",
+        "all"
       ],
       "title": "The log level",
       "type": "string"
