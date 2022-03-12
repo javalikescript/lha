@@ -169,7 +169,7 @@ local EngineThing = class.create(Thing, function(engineThing, super)
   end
 
   function engineThing:setPropertyValue(name, value)
-		local property = self:getProperty(name)
+    local property = self:getProperty(name)
     if property and property:isReadOnly() then
       return
     end
@@ -189,7 +189,7 @@ local EngineThing = class.create(Thing, function(engineThing, super)
     else
       super.setPropertyValue(self, name, value)
     end
-	end
+  end
 
   function engineThing:updatePropertyValue(name, value)
     self.lastupdated = getUpdateTime()
@@ -197,30 +197,30 @@ local EngineThing = class.create(Thing, function(engineThing, super)
       self.engine:setRootValues('data/'..self.thingId..'/'..name, value, true)
     end
     return super.updatePropertyValue(self, name, value)
-	end
+  end
 
   function engineThing:connect(setterFn)
     self.connected = true
     self.setterFn = (type(setterFn) == 'function') and setterFn or false
     return self
-	end
+  end
 
   function engineThing:disconnect()
     local setterFn = self.setterFn
     self.connected = false
     self.setterFn = false
     return setterFn
-	end
+  end
 
   function engineThing:isConnected()
     return self.connected
-	end
+  end
 
   function engineThing:isReachable(since, time)
     since = since or 3600000
     time = time or Date.now()
     return (time - self.lastupdated) < since
-	end
+  end
 
   function engineThing:asEngineThingDescription()
     local description = self:asThingDescription()
@@ -230,7 +230,7 @@ local EngineThing = class.create(Thing, function(engineThing, super)
     description.extensionId = self.extensionId
     description.thingId = self.thingId
     return description
-	end
+  end
 
 end)
 
