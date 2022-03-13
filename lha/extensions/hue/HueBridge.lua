@@ -4,6 +4,7 @@ local http = require('jls.net.http')
 local Url = require('jls.net.Url')
 local json = require('jls.util.json')
 local Date = require('jls.util.Date')
+local protectedCall = require('jls.lang.protectedCall')
 local WebSocket = require('jls.net.http.ws').WebSocket
 
 local Thing = require('lha.engine.Thing')
@@ -80,12 +81,12 @@ return require('jls.lang.class').create(function(hueBridge)
           if logger:isLoggable(logger.FINER) then
             logger:finer('Hue WebSocket received '..tostring(payload))
           end
-          local status, info = pcall(json.decode, payload)
+          local status, info = protectedCall(json.decode, payload)
           if status then
             if type(info) == 'table' and info.t == 'event' then
-              status, info = pcall(self.onWebSocket, info)
+              status, info = protectedCall(self.onWebSocket, info)
               if not status then
-                logger:warn('Hue WebSocket callback error: '..tostring(info)..' with payload '..tostring(payload))
+                logger:warn('Hue WebSocket callback error "'..tostring(info)..'" with payload '..tostring(payload))
                 webSocket:close(false)
               end
             end

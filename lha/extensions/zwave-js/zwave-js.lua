@@ -4,6 +4,7 @@ local logger = require('jls.lang.logger')
 local mqtt = require('jls.net.mqtt')
 local Url = require('jls.net.Url')
 local strings = require('jls.util.strings')
+local json = require('jls.util.json')
 
 local mqttClient
 
@@ -27,27 +28,42 @@ extension:subscribeEvent('startup', function()
     logger:info('Invalid scheme')
     return
   end
-  local topicPattern = strings.escape('^'..configuration.prefix..'/')..'([^/]+)'..strings.escape('/ZWAVE_GATEWAY-'..configuration.name..'/')..'(.+)$'
+  local topicPattern = '^'..strings.escape(configuration.prefix..'/')..'([^/]+)'..strings.escape('/ZWAVE_GATEWAY-'..configuration.name..'/')..'(.+)$'
+  logger:info('Z-Wave JS topicPattern "'..topicPattern..'"')
   mqttClient = mqtt.MqttClient:new()
-  function mqttClient:onPublish(topicName, payload)
-    logger:fine('Received on topic "'..topicName..'": '..payload)
+  function mqttClient:onMessage(topicName, payload)
+    if logger:isLoggable(logger.FINER) then
+      logger:finer('Received on topic "'..topicName..'": '..payload)
+    end
     local channel, path = string.match(topicName, topicPattern)
+    logger:info('Z-Wave JS message "'..topicName..'": "'..tostring(channel)..'", "'..tostring(path)..'"')
     if channel == '_EVENTS_' then
-      logger:info('Z-Wave JS Event "'..path..'": '..payload)
-
+      if logger:isLoggable(logger.FINE) then
+        logger:fine('Z-Wave JS Event "'..path..'": '..payload)
+      end
+      local t = json.decode(payload)
+      if t and t.success then
+        logger:info('Z-Wave JS Event "'..path..'": '..json.stringify(t, 2))
+      end
     elseif channel == '_CLIENTS' then
-      local apiName = string.match(path, '/api/([^/]+)/set')
+      local apiName = string.match(path, 'api/([^/]+)')
       if apiName then
-        logger:info('Z-Wave JS API "'..apiName..'": '..payload)
-        
+        if logger:isLoggable(logger.FINE) then
+          logger:fine('Z-Wave JS API "'..apiName..'": '..payload)
+        end
+        local t = json.decode(payload)
+        if t and t.success then
+          logger:fine('Z-Wave JS API "'..apiName..'": '..json.stringify(t, 2))
+        end
       end
     end
   end
   mqttClient:connect(tUrl.host, tUrl.port):next(function()
     logger:info('Z-Wave JS connected to Broker "'..configuration.url..'"')
     local topicName = configuration.prefix..'/+/ZWAVE_GATEWAY-'..configuration.name..'/#'
-    logger:info('Z-Wave JS subscribe to topic "'..topicName..'"')
-    mqttClient:subscribe(topicName, configuration.qos)
+    mqttClient:subscribe(topicName, configuration.qos):next(function()
+      logger:info('Z-Wave JS subscribed to topic "'..topicName..'"')
+    end)
   end)
 end)
 

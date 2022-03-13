@@ -170,7 +170,7 @@ local EngineThing = class.create(Thing, function(engineThing, super)
 
   function engineThing:setPropertyValue(name, value)
     local property = self:getProperty(name)
-    if property and property:isReadOnly() then
+    if not property or property:isReadOnly() then
       return
     end
     if self.setterFn then
@@ -460,7 +460,9 @@ local REST_ADMIN = {
     runtime.gc()
     return 'Done'
   end,
-  info = function()
+  info = function(exchange)
+    --local engine = exchange:getAttribute('engine')
+    --local ip, port = engine:getHTTPServer():getAddress()
     return {
       clock = os.clock(),
       memory = math.floor(collectgarbage('count') * 1024),

@@ -45,8 +45,8 @@ local function onHueEvent(info)
   -- see https://dresden-elektronik.github.io/deconz-rest-doc/endpoints/websocket/
   if info.e == 'changed' and (info.r == 'lights' or info.r == 'sensors') then
     local thing = thingsMap[info.uniqueid]
-    if info.state and logger:isLoggable(logger.INFO) then
-      logger:info('Hue event received '..(thing and 'v' or 'x')..' '..json.stringify(info, 2))
+    if info.state and logger:isLoggable(logger.FINE) then
+      logger:fine('Hue event received '..(thing and 'v' or 'x')..' '..json.stringify(info, 2))
     end
     if thing then
       hueBridge:lazyUpdateThing(thing, info)
