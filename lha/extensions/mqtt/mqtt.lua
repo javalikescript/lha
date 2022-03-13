@@ -26,7 +26,7 @@ local function publisher(value, previousValue, path)
   end
 end
 
-extension:watchPattern('^.*', publisher)
+extension:watchPattern('^data/.*', publisher)
 
 extension:subscribeEvent('startup', function()
   cleanup()
