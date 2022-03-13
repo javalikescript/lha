@@ -3,6 +3,7 @@ local extension = ...
 local logger = require('jls.lang.logger')
 local mqtt = require('jls.net.mqtt')
 local Url = require('jls.net.Url')
+local strings = require('jls.util.strings')
 
 local mqttClient
 
@@ -26,9 +27,21 @@ extension:subscribeEvent('startup', function()
     logger:info('Invalid scheme')
     return
   end
+  local topicPattern = strings.escape('^'..configuration.prefix..'/')..'([^/]+)'..strings.escape('/ZWAVE_GATEWAY-'..configuration.name..'/')..'(.+)$'
   mqttClient = mqtt.MqttClient:new()
   function mqttClient:onPublish(topicName, payload)
-    logger:info('Received on topic "'..topicName..'": '..payload)
+    logger:fine('Received on topic "'..topicName..'": '..payload)
+    local channel, path = string.match(topicName, topicPattern)
+    if channel == '_EVENTS_' then
+      logger:info('Z-Wave JS Event "'..path..'": '..payload)
+
+    elseif channel == '_CLIENTS' then
+      local apiName = string.match(path, '/api/([^/]+)/set')
+      if apiName then
+        logger:info('Z-Wave JS API "'..apiName..'": '..payload)
+        
+      end
+    end
   end
   mqttClient:connect(tUrl.host, tUrl.port):next(function()
     logger:info('Z-Wave JS connected to Broker "'..configuration.url..'"')

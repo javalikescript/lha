@@ -1,6 +1,6 @@
 local extension = ...
 
--- -config.extensions.web_base.assets ../../../assets/www_static/
+-- -config.extensions.web-base.assets ../../../assets/www_static/
 
 local logger = require('jls.lang.logger')
 local File = require('jls.io.File')

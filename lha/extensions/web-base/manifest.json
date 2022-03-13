@@ -2,7 +2,7 @@
   "name": "Web Base",
   "description": "Expose web base content",
   "version": "1.0",
-  "script": "web_base.lua",
+  "script": "web-base.lua",
   "config": {
     "active": true
   },

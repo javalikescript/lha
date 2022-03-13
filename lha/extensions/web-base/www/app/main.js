@@ -599,7 +599,7 @@ var countDownStart = function() {
 };
 
 startCountDown++;
-fetch('/engine/configuration/extensions/web_base').then(function(response) {
+fetch('/engine/configuration/extensions/web-base').then(function(response) {
   return response.json();
 }).then(function(response) {
   webBaseConfig = response.value || {};
