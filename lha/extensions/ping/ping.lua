@@ -1,17 +1,8 @@
 local extension = ...
 
-local system = require('jls.lang.system')
-local tables = require('jls.util.tables')
-local Thing = require('lha.engine.Thing')
 local logger = require('jls.lang.logger')
-
-logger:info('ping extension under '..extension:getDir():getPath())
-
-local configuration = extension:getConfiguration()
-
-local PING_COUNT = 1
-
-local thingsByTarget = {}
+local system = require('jls.lang.system')
+local Thing = require('lha.engine.Thing')
 
 local function createThing(targetName)
   return Thing:new('Host '..targetName, 'Host Reachability', {'BinarySensor'}):addProperty('reachable', {
@@ -23,17 +14,18 @@ local function createThing(targetName)
   }, false)
 end
 
-extension:cleanDiscoveredThings()
-for _, targetName in ipairs(configuration.target_names) do
-  extension:discoverThing(targetName, createThing(targetName))
-end
+local isWindows = system.isWindows()
+local PING_COUNT = 1
+local thingsByTarget = {}
 
 extension:subscribeEvent('things', function()
   logger:info('looking for ping things')
+  local configuration = extension:getConfiguration()
   extension:cleanDiscoveredThings()
   thingsByTarget = {}
   local things = extension:getThings()
-  for _, targetName in ipairs(configuration.target_names) do
+  local targetNames = configuration.targetNames or {}
+  for _, targetName in ipairs(targetNames) do
     local thing = things[targetName]
     if thing then
       thingsByTarget[targetName] = thing
@@ -44,7 +36,7 @@ extension:subscribeEvent('things', function()
 end)
 
 local function getPingCommand(targetName)
-  if system.isWindows() then
+  if isWindows then
     return 'ping -n '..tostring(PING_COUNT)..' '..targetName..' >nul 2>nul'
   end
   return 'ping -c '..tostring(PING_COUNT)..' '..targetName..' 2>&1 >/dev/null'
@@ -54,6 +46,10 @@ extension:subscribeEvent('poll', function()
   logger:info('polling ping extension')
   local engine = extension:getEngine()
   local executor = engine:getExtensionById('execute')
+  if not executor then
+    logger:info('execute extension not available')
+    return
+  end
   for targetName, thing in pairs(thingsByTarget) do
     local command = getPingCommand(targetName)
     executor:execute(command, true):next(function(code)

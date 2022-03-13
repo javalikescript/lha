@@ -7,7 +7,7 @@
   "schema": {
     "type": "object",
     "properties": {
-      "target_names": {
+      "targetNames": {
         "title": "Target IP address or host name",
         "type": "array",
         "items": {
