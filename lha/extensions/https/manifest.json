@@ -19,7 +19,8 @@
       },
       "commonName": {
         "title": "The server common name",
-        "type": "string"
+        "type": "string",
+        "default": "localhost"
       },
       "certificate": {
         "title": "The certificate file",

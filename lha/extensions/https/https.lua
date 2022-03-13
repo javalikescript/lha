@@ -10,7 +10,7 @@ local utils = require('lha.engine.utils')
 local function writeCertificateAndPrivateKey(certFile, pkeyFile, commonName)
   local cacert, pkey = secure.createCertificate({
     --duration = (3600 * 24 * (365 + 31)),
-    commonName = commonName or 'localhost'
+    commonName = commonName
   })
   local cacertPem  = cacert:export('pem')
   local pkeyPem  = pkey:export('pem')
