@@ -1,7 +1,6 @@
 local extension = ...
 
 local logger = require('jls.lang.logger')
-local tables = require('jls.util.tables')
 local Date = require('jls.util.Date')
 
 local HueBridge = require('lha.extensions.hue.HueBridge')
@@ -59,6 +58,9 @@ local function onHueEvent(info)
 end
 
 extension:subscribeEvent('poll', function()
+  if not hueBridge then
+    return
+  end
   logger:info('Polling '..extension:getPrettyName()..' extension')
   hueBridge:get(HueBridge.CONST.SENSORS):next(function(allSensors)
     local time = Date.now()
