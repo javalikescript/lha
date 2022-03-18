@@ -1,4 +1,3 @@
-local logger = require('jls.lang.logger')
 local File = require('jls.io.File')
 local Date = require("jls.util.Date")
 local tables = require("jls.util.tables")
@@ -15,7 +14,7 @@ local function usage(msg)
   runtime.exit(22)
 end
 
-local tArg = tables.createArgumentTable(arg)
+local tArg = tables.createArgumentTable(arg, {keepComma = true})
 
 if tables.getArgument(tArg, '-h') or tables.getArgument(tArg, '--help') then
   usage()

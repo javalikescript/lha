@@ -1,4 +1,3 @@
-local logger = require('jls.lang.logger')
 local File = require('jls.io.File')
 local Date = require("jls.util.Date")
 local tables = require("jls.util.tables")
@@ -14,12 +13,17 @@ local function usage(msg)
   runtime.exit(22)
 end
 
+local function stringify(t)
+  return json.stringify(t, 2)
+end
+
 local HOUR_SEC = 3600
 local DAY_SEC = 24 * HOUR_SEC
 local WEEK_SEC = 7 * DAY_SEC
 local time = Date.now()
 
-local tArg = tables.createArgumentTable(arg)
+local tArg = tables.createArgumentTable(arg, {keepComma = true})
+--print(json.stringify(tArg, 2))
 
 if tables.getArgument(tArg, '-h') or tables.getArgument(tArg, '--help') then
   usage()
@@ -60,11 +64,11 @@ end
 print('from '..Date:new(fromTime):toISOString()..' to '..Date:new(toTime):toISOString())
 print('fileMin:', fileMin, 'periodSeconds:', periodSeconds)
 
-local htSource = HistoricalTable:new(sourceDir, htName, fileMin)
+local htSource = HistoricalTable:new(sourceDir, htName, {fileMin = fileMin})
 
 local htDest
 if destDir and destDir:isDirectory() then
-  htDest = HistoricalTable:new(destDir, destName, fileMin)
+  htDest = HistoricalTable:new(destDir, destName, {fileMin = fileMin})
 end
 
 local mapping
@@ -93,7 +97,7 @@ if mappingFile and mappingFile:isFile() then
     end
     mapping[srcPath] = mt
   end
-  print('mapping', json.encode(rawMap))
+  print('mapping', stringify(rawMap))
 end
 
 --[[
@@ -122,7 +126,7 @@ htSource:forEachTable(fromTime, toTime, function(t, tTime, isFull)
     print(date:toISOString(), isFull, #keys)
   end
   if showTables then
-    print(json.encode(t))
+    print(stringify(t))
   end
   if showMapping then
     values = tables.merge(values, tables.mapValuesByPath(t))
@@ -140,7 +144,7 @@ htSource:forEachTable(fromTime, toTime, function(t, tTime, isFull)
       end
     end
     if showTables then
-      print('after mapping', json.encode(dt))
+      print('after mapping', stringify(dt))
     end
   end
   if htDest then
@@ -152,7 +156,7 @@ end)
 
 if lastTable and not showTables then
   print('last table:')
-  print(json.encode(lastTable))
+  print(stringify(lastTable))
 end
 
 if showMapping then
@@ -173,5 +177,5 @@ if showMapping then
     end
   end
   print('identity mapping:')
-  print(json.encode(identityMapping))
+  print(stringify(identityMapping))
 end
