@@ -386,8 +386,11 @@ end, function(HueBridge)
     elseif infoType == 'Dimmable light' then
       local t = Thing:new(info.name or 'Dimmable light', 'Dimmable light', {'Light', 'OnOffSwitch'})
       return t:addOnOffProperty():addBrightnessProperty():addColorTemperatureProperty()
-    elseif infoType == 'On/Off plug-in unit' or infoType == 'On/Off light' then
+    elseif infoType == 'On/Off light' then
       local t = Thing:new(info.name or 'On/Off light', 'On/Off light', {'Light', 'OnOffSwitch'})
+      return t:addOnOffProperty()
+    elseif infoType == 'On/Off plug-in unit' then
+      local t = Thing:new(info.name or 'On/Off plug-in unit', 'On/Off plug-in unit', {'OnOffSwitch'})
       return t:addOnOffProperty()
     elseif infoType == 'ZLLLightLevel' or infoType == 'ZHALightLevel' then
       return Thing:new(info.name or 'Light Level', 'Light Level Sensor', {'MultiLevelSensor'}):addLightLevelProperty()
@@ -404,9 +407,9 @@ end, function(HueBridge)
         readOnly = true
       }, false)
     elseif infoType == 'ZHAHumidity' then
-      return Thing:new(info.name or 'Relative Humidity', 'Humidity Sensor', {'MultiLevelSensor'}):addRelativeHumidityProperty()
+      return Thing:new(info.name or 'Relative Humidity', 'Humidity Sensor', {'HumiditySensor'}):addRelativeHumidityProperty()
     elseif infoType == 'ZHAPressure' then
-      return Thing:new(info.name or 'Atmospheric Pressure', 'Pressure Sensor', {'MultiLevelSensor'}):addAtmosphericPressureProperty()
+      return Thing:new(info.name or 'Atmospheric Pressure', 'Pressure Sensor', {'BarometricPressureSensor'}):addAtmosphericPressureProperty()
     elseif infoType == 'ZHASwitch' then
       return Thing:new(info.name or 'Switch', 'Switch Button', {'PushButton'}):addProperty('on', {
         ['@type'] = 'PushedProperty',

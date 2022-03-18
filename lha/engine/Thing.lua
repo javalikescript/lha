@@ -54,7 +54,7 @@ local PROPERTIES = {
     readOnly = true
   },
   RELATIVE_HUMIDITY = {
-    ['@type'] = 'LevelProperty',
+    ['@type'] = 'HumidityProperty',
     type = 'number',
     title = 'Relative Humidity',
     description = 'The relative humidity in percent',
@@ -62,7 +62,7 @@ local PROPERTIES = {
     unit = 'percent'
   },
   ATMOSPHERIC_PRESSURE = {
-    ['@type'] = 'LevelProperty',
+    ['@type'] = 'BarometricPressureProperty',
     type = 'number',
     title = 'Atmospheric Pressure',
     description = 'The atmospheric pressure in hectopascal',
