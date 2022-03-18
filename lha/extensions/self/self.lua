@@ -54,7 +54,10 @@ local function computeCpuUsage(lastInfo, info)
     s[k] = d
     t = t + d
   end
-  return 100 - math.floor(1000 * s.idle / t) / 10
+  if t > 0 then
+    return 100 - math.floor(1000 * s.idle / t) / 10
+  end
+  return 0
 end
 
 local function createLuaThing()
@@ -157,14 +160,20 @@ extension:subscribeEvent('poll', function()
   if clock >= 0 then
     -- Win32: Given enough time, the value returned by clock can exceed the maximum positive value of clock_t.
     -- When the process has run longer, the value returned by clock is always (clock_t)(-1), about 24.8 days.
-    luaThing:updatePropertyValue('user', math.floor((clock - lastClock) * 1000) / 1000)
-    luaThing:updatePropertyValue('process_cpu_usage', math.floor((clock - lastClock) * 1000 / (time - lastTime)) / 10)
+    local deltaClock = clock - lastClock
+    luaThing:updatePropertyValue('user', math.floor(deltaClock * 1000) / 1000)
+    local deltaTime = time - lastTime
+    if deltaTime > 0 then
+      luaThing:updatePropertyValue('process_cpu_usage', math.floor(deltaClock * 1000 / deltaTime) / 10)
+    end
   end
   if luv then
     luaThing:updatePropertyValue('process_resident_memory', luv.resident_set_memory())
     local total_memory = luv.get_total_memory()
-    luaThing:updatePropertyValue('total_memory', math.floor(total_memory))
-    luaThing:updatePropertyValue('used_memory', math.floor(1000 - luv.get_free_memory() * 1000 / total_memory) / 10)
+    if total_memory > 0 then
+      luaThing:updatePropertyValue('total_memory', math.floor(total_memory))
+      luaThing:updatePropertyValue('used_memory', math.floor(1000 - luv.get_free_memory() * 1000 / total_memory) / 10)
+    end
     local info = sumCpuInfo(luv.cpu_info())
     luaThing:updatePropertyValue('host_cpu_usage', computeCpuUsage(lastInfo, info))
     lastInfo = info
