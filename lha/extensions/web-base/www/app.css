@@ -51,7 +51,7 @@ section.settings {
 }
 div.toaster {
   position: fixed;
-  transition: all 0.25s ease;
+  transition: opacity 0.25s ease;
   bottom: 4rem;
   width: 60rem;
   left: calc(50% - 30rem);
@@ -70,7 +70,9 @@ div.toaster {
   white-space: nowrap;
 }
 div.toaster.hide {
+  /*display: none;*/
   opacity: 0;
+  z-index: -900;
 }
 .theme_boot > div.pages,
 .theme_boot > div.toaster {
