@@ -50,15 +50,17 @@ local function discoverThings(extension)
   local configuration = extension:getConfiguration()
   extension:cleanDiscoveredThings()
   local things = extension:getThings()
-  for index, thingConfig in ipairs(configuration.things) do
-    local key = formatKey(index, thingConfig)
-    local thing = things[key]
-    if thing then
-      thing:connect()
-    else
-      local discoveredThing = createThing(thingConfig)
-      if discoveredThing then
-        extension:discoverThing(key, discoveredThing)
+  if configuration.things then
+    for index, thingConfig in ipairs(configuration.things) do
+      local key = formatKey(index, thingConfig)
+      local thing = things[key]
+      if thing then
+        thing:connect()
+      else
+        local discoveredThing = createThing(thingConfig)
+        if discoveredThing then
+          extension:discoverThing(key, discoveredThing)
+        end
       end
     end
   end
