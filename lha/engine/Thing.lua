@@ -5,7 +5,7 @@ local hex = require('jls.util.hex')
 local ThingProperty = require('lha.engine.ThingProperty')
 local ThingEvent = require('lha.engine.ThingEvent')
 
--- Standard properties
+-- Standard properties, see https://webthings.io/schemas/
 
 local PROPERTIES = {
   ON_OFF = {
@@ -94,6 +94,13 @@ local PROPERTIES = {
     title = 'Push Button',
     description = 'Whether the button is pushed',
     readOnly = true
+  },
+  SMOKE = {
+    ['@type'] = 'SmokeProperty',
+    type = 'boolean',
+    title = 'Smoke',
+    description = 'Whether smoke is detected',
+    readOnly = true
   }
 }
 
@@ -155,6 +162,12 @@ return require('jls.lang.class').create(function(thing)
   function thing:setTitle(title)
     self.title = title
     return self
+  end
+
+  --- Returns the description of this thing.
+  -- @return the description of this thing.
+  function thing:getDescription()
+    return self.description
   end
 
   function thing:setDescription(description)
@@ -313,6 +326,7 @@ return require('jls.lang.class').create(function(thing)
   end
 
   -- Standard properties with default names
+  -- TODO move to static functions
 
   function thing:addOnOffProperty(title, description, initialValue)
     return self:addPropertyFrom('on', PROPERTIES.ON_OFF, title, description, initialValue)
@@ -356,6 +370,10 @@ return require('jls.lang.class').create(function(thing)
 
   function thing:addPushedProperty(title, description, initialValue)
     return self:addPropertyFrom('pushed', PROPERTIES.PUSHED, title, description, initialValue)
+  end
+
+  function thing:addSmokeProperty(title, description, initialValue)
+    return self:addPropertyFrom('smoke', PROPERTIES.SMOKE, title, description, initialValue)
   end
 
 end, function(Thing)
