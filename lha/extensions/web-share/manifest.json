@@ -1,0 +1,27 @@
+{
+  "name": "Web share",
+  "description": "Expose a server folder on the web app",
+  "version": "1.0",
+  "script": "web-share.lua",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "title": "The URL path",
+        "type": "string",
+        "pattern": "^[%a%d_%-]+$",
+        "default": "share"
+      },
+      "dir": {
+        "title": "The directory to share",
+        "type": "string",
+        "default": "share"
+      },
+      "permissions": {
+        "title": "The permissions",
+        "type": "string",
+        "default": "rwl"
+      }
+    }
+  }
+}
