@@ -6,7 +6,7 @@ new Vue({
   methods: {
     pollExtension: function(extension) {
       fetch('/engine/extensions/' + extension.id + '/poll', {method: 'POST'}).then(function() {
-        toaster.toast('extension polled');
+        toaster.toast('Extension polled');
       });
     },
     onShow: function() {
@@ -26,19 +26,13 @@ new Vue({
   },
   methods: {
     onDisable: function() {
-      if (this.extensionId) {
-        if (this.extension.config) {
-          this.extension.config.active = false;
-        }
-        fetch('/engine/configuration/extensions/' + this.extensionId, {
-          method: 'POST',
-          body: JSON.stringify({
-            value: {active: false}
-          })
-        }).then(function() {
-          app.clearCache();
-        });
+      if (!this.extensionId) {
+        return Promise.reject();
       }
+      return fetch('/engine/extensions/' + this.extensionId + '/disable', {method: 'POST'}).then(function() {
+        app.clearCache();
+        toaster.toast('Extension disabled');
+      });
     },
     onReload: function() {
       if (this.extensionId) {
@@ -56,6 +50,7 @@ new Vue({
           })
         }).then(function() {
           app.clearCache();
+          toaster.toast('Extension configuration saved');
         });
       }
     },
@@ -86,23 +81,6 @@ new Vue({
       app.getExtensions().then(function(extensions) {
         self.extensions = extensions;
       });
-    },
-    onSave: function() {
-      var config = {extensions: {}};
-      // archiveData
-      for (var i = 0; i < this.extensions.length; i++) {
-        var item = this.extensions[i];
-        config.extensions[item.id] = {active: item.active};
-      }
-      console.log('config', config);
-      fetch('/engine/configuration/', {
-        method: 'POST',
-        body: JSON.stringify({
-          value: config
-        })
-      }).then(function() {
-        app.clearCache();
-      });
     }
   }
 });
@@ -115,25 +93,29 @@ new Vue({
   },
   methods: {
     onAdd: function() {
-      if (this.extensionId && this.extension.config) {
-        this.extension.config.active = true;
-        fetch('/engine/configuration/extensions/' + this.extensionId, {
-          method: 'POST',
-          body: JSON.stringify({
-            value: this.extension.config
-          })
-        }).then(function() {
-          app.clearCache();
-          app.back();
-        });
+      console.log('onAdd()', this);
+      var extensionId = this.extensionId;
+      if (!extensionId || !this.extension.config) {
+        return Promise.reject();
       }
+      return fetch('/engine/configuration/extensions/' + extensionId, {
+        method: 'POST',
+        body: JSON.stringify({
+          value: this.extension.config
+        })
+      }).then(function() {
+        return fetch('/engine/extensions/' + extensionId + '/enable', {method: 'POST'});
+      }).then(function() {
+        app.clearCache();
+        toaster.toast('Extension added');
+      });
     },
     onShow: function(extensionId) {
-      var self = this;
       if (extensionId) {
         this.extensionId = extensionId;
       }
-      self.extension = {config: {}, info: {}, manifest: {}};
+      this.extension = {config: {}, info: {}, manifest: {}};
+      var self = this;
       fetch('/engine/extensions/' + this.extensionId).then(function(response) {
         return response.json();
       }).then(function(extension) {

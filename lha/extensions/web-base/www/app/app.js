@@ -17,6 +17,9 @@ var app = new Vue({
     toPage: function(id, path) {
       this.navigateTo(formatNavigationPath(id, path));
     },
+    replacePage: function(id, path) {
+      this.navigateTo(formatNavigationPath(id, path), true);
+    },
     navigateTo: function(path, noHistory) {
       if (this.path === path) {
         return;
@@ -64,6 +67,10 @@ var app = new Vue({
       this.settings = '';
       this.page = id;
       this.$emit('page-selected', id, path);
+    },
+    showBack: function() {
+      var l = this.pageHistory.length
+      return l > 0 && this.pageHistory[l - 1] !== 'main';
     },
     back: function() {
       var path = this.pageHistory.pop();
@@ -142,21 +149,11 @@ var app = new Vue({
     }
   }
 });
+
 /************************************************************
  * Registering components
  ************************************************************/
-// TODO Find a way to remove app
-Vue.component('app-root-page', {
-  data: function() {
-      return {app: app};
-  },
-  props: ['id', 'title'],
-  template: '<section v-bind:id="id" class="page" v-bind:class="{ hideLeft: app.page !== id, hideBottom: app.settings !== \'\' }"><header>' +
-    '<button v-on:click="app.menu = \'menu\'"><i class="fa fa-bars"></i></button>' +
-    '<h1>{{ title }}</h1>' +
-    '<button v-on:click="app.settings = \'settings\'; app.menu = \'\'"><i class="fa fa-cog"></i></button>' +
-    '</header><slot>Article</slot></section>'
-});
+
 Vue.component('app-menu', {
   data: function() {
       return {app: app};
@@ -166,6 +163,7 @@ Vue.component('app-menu', {
     '<button v-on:click="app.menu = \'\'"><i class="fa fa-window-close"></i></button>' +
     '<h1>{{ title }}</h1><div /></header><slot>Article</slot></section>'
 });
+
 Vue.component('app-dialog', {
   data: function() {
       return {app: app};
@@ -176,25 +174,24 @@ Vue.component('app-dialog', {
     '<button v-on:click="app.dialog = \'\'"><i class="fa fa-window-close"></i></button>' +
     '</slot></div></header><slot>Article</slot></section>'
 });
-Vue.component('app-settings', {
-  data: function() {
-      return {app: app};
-  },
-  props: ['id', 'title'],
-  template: '<section v-bind:id="id" class="page settings" v-bind:class="{ hideTop: app.settings !== id }">' +
-    '<header><div /><h1>{{ title }}</h1><div><slot name="bar-right">' +
-    '<button v-on:click="app.settings = \'\'"><i class="fa fa-window-close"></i></button>' +
-    '</slot></div></header><slot>Article</slot></section>'
-});
+
 Vue.component('app-page', {
   data: function() {
       return {app: app};
   },
-  props: ['id', 'title'],
-  template: '<section v-bind:id="id" class="page" v-bind:class="{ hideRight: app.page !== id }">' +
+  props: {
+    id: String,
+    title: String,
+    hideNav: Boolean,
+    hideClass: {
+      type: String,
+      default: 'hideRight'
+    }
+  },
+  template: '<section v-bind:id="id" v-bind:class="[{page: true}, app.page === id ? \'\' : hideClass]">' +
     '<header><div><button v-on:click="app.menu = \'menu\'"><i class="fa fa-bars"></i></button>' +
-    '<button v-on:click="app.back()"><i class="fa fa-chevron-left"></i></button>' +
-    '<button v-on:click="app.toPage(\'main\')"><i class="fas fa-home"></i></button></div>' +
+    '<button v-on:click="app.back()" v-if="!hideNav"><i class="fa fa-chevron-left"></i></button>' +
+    '<button v-on:click="app.toPage(\'main\')" v-if="!hideNav"><i class="fas fa-home"></i></button></div>' +
     '<h1>{{ title }}</h1><div><slot name="bar-right"></slot></div>' +
     '</header><slot>Article</slot></section>',
   created: function() {
@@ -209,14 +206,11 @@ Vue.component('app-page', {
     })
   }
 });
+
 Vue.component('page-article', {
   template: '<article class="content"><section><slot>Content</slot></section></article>'
 });
-/*
-Vue.component('switch', {
-  template: '<label class="switch"><slot><input type="checkbox" /></slot><span class="slider"></span></label>'
-});
-*/
+
 Vue.component('json-item', {
   props: ['name', 'obj', 'pobj', 'schema', 'root'],
   data: function() {
@@ -426,26 +420,7 @@ var main = new Vue({
  ************************************************************/
 var settings = new Vue({
   el: '#settings',
-  data: {
-    clock: '...',
-    memory: '...',
-    time: '...'
-  },
   methods: {
-    refreshInfo: function() {
-      var page = this;
-      fetch('/engine/admin/info').then(function(response) {
-        return response.json();
-      }).then(function(data) {
-        //console.log('fetch(admin/info)', data);
-        page.clock = data.clock;
-        page.memory = data.memory;
-        var clientTime = Math.round(Date.now() / 1000);
-        var delta = clientTime - data.time;
-        page.time = '' + data.time + ' (' + delta + ')';
-        toaster.toast('Refreshed');
-      });
-    },
     clearCache: function() {
       app.clearCache();
     },
@@ -490,7 +465,33 @@ new Vue({
           value: this.config
         })
       }).then(function() {
+        toaster.toast('Engine configuration saved');
         app.clearCache();
+      });
+    }
+  }
+});
+
+new Vue({
+  el: '#settingsInfo',
+  data: {
+    clock: '...',
+    memory: '...',
+    time: '...'
+  },
+  methods: {
+    onShow: function() {
+      var page = this;
+      fetch('/engine/admin/info').then(function(response) {
+        return response.json();
+      }).then(function(data) {
+        //console.log('fetch(admin/info)', data);
+        page.clock = data.clock;
+        page.memory = data.memory;
+        var clientTime = Math.round(Date.now() / 1000);
+        var delta = clientTime - data.time;
+        page.time = '' + data.time + ' (' + delta + ')';
+        toaster.toast('Refreshed');
       });
     }
   }
@@ -501,16 +502,19 @@ new Vue({
   methods: {
     saveConfig: function() {
       fetch('/engine/admin/configuration/save', {method: 'POST'}).then(function() {
+        toaster.toast('Configuration saved');
         app.clearCache();
       });
     },
     reloadExtensions: function() {
       fetch('/engine/admin/reloadExtensions/all', {method: 'POST'}).then(function() {
+        toaster.toast('Extensions reloaded');
         app.clearCache();
       });
     },
     reloadScripts: function() {
       fetch('/engine/admin/reloadScripts/all', {method: 'POST'}).then(function() {
+        toaster.toast('Scripts reloaded');
         app.clearCache();
       });
     },
@@ -539,15 +543,6 @@ new Vue({
       }
       var file = input.files[0];
       console.log('uploadFile', file);
-      /*
-      var reader = new FileReader();
-      reader.onload = function() {
-        console.log('reader.result ' + reader.result.length);
-      };
-      reader.readAsText(file);
-      //reader.readAsArrayBuffer(file);
-      //reader.readAsBinaryString(file);
-      */
       fetch('/engine/tmp/' + file.name, {
         method: 'PUT',
         headers: {
@@ -616,11 +611,6 @@ fetch('addon/').then(function(response) {
   console.log('loading addons', addons);
   if (Array.isArray(addons)) {
     addons.forEach(function(addon) {
-      /*fetch('addon/' + addon + '/').then(function(response) {
-        return response.json();
-      }).then(function(response) {
-        console.log('addon ' + addon, response);
-      });*/
       console.log('loading addon ' + addon);
       startCountDown++;
       require(['addon/' + addon + '/main.js'], countDownStart);

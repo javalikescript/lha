@@ -20,11 +20,25 @@ local AddonFileHttpHandler = require('jls.lang.class').create(FileHttpHandler, f
 
 end)
 
-extension.addons = {}
+local addons = {}
+local contexts = {}
+
+local function cleanup(server)
+  for _, context in ipairs(contexts) do
+    server:removeContext(context)
+  end
+  contexts = {}
+  addons = {}
+end
+
+local function addContext(server, ...)
+  local context = server:createContext(...)
+  table.insert(contexts, context)
+end
 
 function extension:registerAddon(name, handler)
-  self.addons[name] = handler
-  logger:info('add-on '..name..' registered')
+  addons[name] = handler
+  logger:info('Web base add-on "'..name..'" registered')
 end
 
 function extension:registerAddonExtension(ext)
@@ -32,16 +46,15 @@ function extension:registerAddonExtension(ext)
 end
 
 function extension:unregisterAddon(name)
-  self.addons[name] = nil
-  --server:removeContext(self.addons[name])
-  logger:info('add-on '..name..' unregistered')
+  addons[name] = nil
+  logger:info('Web base add-on "'..name..'" unregistered')
 end
 
 extension:subscribeEvent('startup', function()
-  logger:info('startup web extension')
-
   local engine = extension:getEngine()
   local configuration = extension:getConfiguration()
+  local server = engine:getHTTPServer()
+
   local assets = utils.getAbsoluteFile(configuration.assets or 'assets', extension:getDir())
   local assetsHandler
   if assets:isDirectory() then
@@ -56,20 +69,20 @@ extension:subscribeEvent('startup', function()
   end
   local wwwDir = File:new(extension:getDir(), 'www')
 
-  local server = engine:getHTTPServer()
-  extension.appContext = server:createContext('/(.*)', FileHttpHandler:new(wwwDir, 'r', 'app.html'))
-  extension.baseContext = server:createContext('/static/(.*)', assetsHandler)
-  extension.addonContext = server:createContext('/addon/([^/]*)/?(.*)', HttpHandler:new(function(self, exchange)
+  cleanup(server)
+  addContext(server, '/(.*)', FileHttpHandler:new(wwwDir, 'r', 'app.html'))
+  addContext(server, '/static/(.*)', assetsHandler)
+  addContext(server, '/addon/([^/]*)/?(.*)', HttpHandler:new(function(self, exchange)
     local name, path = exchange:getRequestArguments()
     logger:fine('add-on handler "'..tostring(name)..'" / "'..tostring(path)..'"')
     if name == '' then
       local names = {}
-      for n in pairs(extension.addons) do
+      for n in pairs(addons) do
         table.insert(names, n)
       end
       HttpExchange.ok(exchange, json.encode(names), 'application/json')
     else
-      local addon = extension.addons[name]
+      local addon = addons[name]
       if addon then
         logger:fine('calling add-on "'..tostring(name)..'" handler')
         return addon:handle(exchange)
@@ -81,10 +94,6 @@ extension:subscribeEvent('startup', function()
 end)
 
 extension:subscribeEvent('shutdown', function()
-  logger:info('shutdown web base extension')
   local server = extension:getEngine():getHTTPServer()
-  server:removeContext(extension.appContext)
-  server:removeContext(extension.baseContext)
-  server:removeContext(extension.addonContext)
-  extension.addons = {}
+  cleanup(server)
 end)

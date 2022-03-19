@@ -1,6 +1,7 @@
 new Vue({
   el: '#things',
   data: {
+    edit: false,
     extensionsById: {},
     propertiesById: {},
     things: []
@@ -66,6 +67,7 @@ new Vue({
           value: config
         })
       }).then(function() {
+        toaster.toast('Things saved');
         app.clearCache();
       });
     }
@@ -88,14 +90,12 @@ new Vue({
     disableThing: function() {
       fetch('/engine/things/' + this.thingId, {method: 'DELETE'}).then(function() {
         toaster.toast('Thing disabled');
-      }).then(function() {
         app.clearCache();
       });
     },
     refreshThingDescription: function() {
       fetch('/engine/things/' + this.thingId + '/refreshDescription', {method: 'POST'}).then(function() {
         toaster.toast('Thing description refreshed');
-      }).then(function() {
         app.clearCache();
       });
     },
