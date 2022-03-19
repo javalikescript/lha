@@ -144,7 +144,7 @@
   -->
   <app-page id="things" title="Things">
     <template slot="bar-right">
-      <button v-if="edit" v-on:click="app.toPage('addThings')"><i class="fa fa-plus"></i></button>
+      <button v-on:click="app.toPage('addThings')"><i class="fa fa-plus"></i></button>
       <button v-if="edit" v-on:click="onSave" title="Save"><i class="far fa-save"></i></button>
       <button v-on:click="onShow" title="Refresh"><i class="fas fa-sync"></i></button>
       <button v-on:click="edit = !edit" title="Edit"><i :class="['fas', edit ? 'fa-eye' : 'fa-edit']"></i></button>
@@ -305,6 +305,18 @@
       <button v-on:click="app.toPage('engineConfig')"><i class="fas fa-sliders-h"></i>&nbsp;Configuration...</button>
       <button v-on:click="app.toPage('settingsInfo')"><i class="fas fa-tools"></i>&nbsp;Info...</button>
       <button v-on:click="app.toPage('moreSettings')"><i class="fas fa-tools"></i>&nbsp;More...</button>
+      <p>Log Level</p>
+      <select v-model="logLevel" v-on:change="applyLogLevel">
+        <option value="error">Error</option>
+        <option value="warn">Warning</option>
+        <option value="info">Information</option>
+        <option value="config">Configuration</option>
+        <option value="fine">fine</option>
+        <option value="finer">finer</option>
+        <option value="finest">finest</option>
+        <option value="debug">debug</option>
+        <option value="all">all</option>
+      </select>
       <p>Actions</p>
       <button v-on:click="gc()"><i class="fa fa-trash"></i>&nbsp;Collect Garbage</button>
       <button v-on:click="pollThings()"><i class="far fa-bell"></i>&nbsp;Poll Things</button>

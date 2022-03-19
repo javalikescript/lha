@@ -53,6 +53,7 @@ new Vue({
       });
     },
     onSave: function() {
+      var self = this;
       var config = {things: {}};
       for (var i = 0; i < this.things.length; i++) {
         var thing = this.things[i];
@@ -69,6 +70,7 @@ new Vue({
       }).then(function() {
         toaster.toast('Things saved');
         app.clearCache();
+        self.edit = false;
       });
     }
   }

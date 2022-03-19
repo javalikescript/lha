@@ -537,6 +537,10 @@ local REST_ADMIN = {
       report = data
     end, false, false, 'csv')
     return report
+  end,
+  ['setLogLevel?method=POST'] = function(exchange)
+    local request = exchange:getRequest()
+    logger:setLevel(request:getBody())
   end
 }
 

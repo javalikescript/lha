@@ -420,6 +420,9 @@ var main = new Vue({
  ************************************************************/
 var settings = new Vue({
   el: '#settings',
+  data: {
+    logLevel: ''
+  },
   methods: {
     clearCache: function() {
       app.clearCache();
@@ -434,6 +437,14 @@ var settings = new Vue({
       fetch('/engine/poll', {method: 'POST'}).then(function() {
         toaster.toast('Polling triggered');
       });
+    },
+    applyLogLevel: function() {
+      var logLevel = this.logLevel;
+      if (logLevel) {
+        fetch('/engine/admin/setLogLevel', {method: 'POST', body: logLevel}).then(function() {
+          toaster.toast('Log Level updated to ' + logLevel);
+        });
+      }
     }
   }
 });
