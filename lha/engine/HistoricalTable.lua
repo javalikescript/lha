@@ -8,44 +8,56 @@ local Date = require('jls.util.Date')
 local Deflater = require('jls.util.zip.Deflater')
 local Inflater = require('jls.util.zip.Inflater')
 
-local NO_VALUE = {}
+local SUFFIX_SEPARATOR = '&'
+local CHANGES_SUFFIX = SUFFIX_SEPARATOR..'changes'
+local MIN_SUFFIX = SUFFIX_SEPARATOR..'min'
+local MAX_SUFFIX = SUFFIX_SEPARATOR..'max'
 
 -- The value aggregator enables to aggregate values,
 -- slice aggregated values on specified time then
 -- finish the aggregation by enriching the first value
 local ValueAggregator = class.create(function(valueAggregator)
 
-  function valueAggregator:initialize()
+  function valueAggregator:initialize(t, k)
     self:clear()
-    self.lastValue = NO_VALUE
   end
+
+  local NO_VALUE = {}
 
   function valueAggregator:clear()
     self.changes = 0
     self.count = 0
+    self.lastValue = NO_VALUE
   end
 
+  -- Copies the specified aggregation into this aggregation
   function valueAggregator:copy(va)
     self.changes = va.changes
     self.count = va.count
+    self.lastValue = va.lastValue
     return self
   end
 
-  function valueAggregator:aggregate(value)
+  -- Aggregates the value
+  function valueAggregator:aggregate(value, t, k)
     if value ~= nil then
       self.count = self.count + 1
     end
-    if self.lastValue ~= value then
+    local changes = t[k..CHANGES_SUFFIX]
+    if changes then
+      self.changes = self.changes + changes
+    elseif self.lastValue ~= value then
       self.changes = self.changes + 1
     end
     self.lastValue = value
   end
 
+  -- Computes the aggregated value into the specified map
   function valueAggregator:compute(t)
     t.count = self.count
   end
 
-  -- Insert the computed aggregated value in the specified table
+  -- Inserts the computed aggregated value at the specified time as a map in the specified list
   function valueAggregator:slice(values, time)
     local t = {
       time = time // 1000
@@ -54,9 +66,17 @@ local ValueAggregator = class.create(function(valueAggregator)
     table.insert(values, t)
     self:clear()
   end
-  
+
+  -- Ends the aggregation and enriches the specified value
   function valueAggregator:finish(value)
     value.type = 'none'
+  end
+
+  -- Ends the aggregation and enriches the specified values
+  function valueAggregator:finishAll(values)
+    if #values > 0 then
+      self:finish(values[1])
+    end
   end
 
 end)
@@ -66,27 +86,31 @@ local NumberAggregator = class.create(ValueAggregator, function(numberAggregator
   function numberAggregator:clear()
     super.clear(self)
     self.total = 0
+    self.totalCount = 0
     self.min = nil
     self.max = nil
   end
 
-  function numberAggregator:aggregate(value)
-    super.aggregate(self, value)
+  function numberAggregator:aggregate(value, t, k)
+    super.aggregate(self, value, t, k)
     if type(value) == 'number' then
+      local min = t[k..MIN_SUFFIX] or value
+      local max = t[k..MAX_SUFFIX] or value
       self.total = self.total + value
-      if not self.min or value < self.min then
-        self.min = value
+      self.totalCount = self.totalCount + 1
+      if not self.min or min < self.min then
+        self.min = min
       end
-      if not self.max or value > self.max then
-        self.max = value
+      if not self.max or max > self.max then
+        self.max = max
       end
     end
   end
 
   function numberAggregator:compute(t)
     super.compute(self, t)
-    if self.count > 0 then
-      t.average = self.total / self.count
+    if self.totalCount > 0 then
+      t.average = self.total / self.totalCount
     end
     t.min = self.min
     t.max = self.max
@@ -104,12 +128,11 @@ local BooleanAggregator = class.create(ValueAggregator, function(booleanAggregat
     [false] = 1,
     [true] = 2
   }
-  
+
   function booleanAggregator:compute(t)
     super.compute(self, t)
     t.changes = self.changes
     t.index = BOOLEAN_VALUE_MAP[self.lastValue]
-    --t.value = self.lastValue
   end
 
   function booleanAggregator:finish(value)
@@ -126,9 +149,9 @@ local StringAggregator = class.create(ValueAggregator, function(stringAggregator
     self.map = {}
     self.mapCount = 0
   end
-  
-  function stringAggregator:aggregate(value)
-    super.aggregate(self, value)
+
+  function stringAggregator:aggregate(value, t, k)
+    super.aggregate(self, value, t, k)
     if type(value) == 'string' then
       if not self.map[value] and self.mapCount < 100 then
         self.mapCount = self.mapCount + 1
@@ -141,15 +164,11 @@ local StringAggregator = class.create(ValueAggregator, function(stringAggregator
     super.compute(self, t)
     t.changes = self.changes
     t.index = self.map[self.lastValue]
-    --t.value = self.lastValue
   end
 
   function stringAggregator:finish(value)
     value.type = 'string'
     value.map = {}
-    --for i = 1, self.mapCount do
-    --  value.map[i]
-    --end
     for k, v in pairs(self.map) do
       value.map[v] = k
     end
@@ -157,43 +176,40 @@ local StringAggregator = class.create(ValueAggregator, function(stringAggregator
 
 end)
 
-local function guessAggregatorClass(value)
-  local tv = type(value)
-  if tv == 'number' then
+local function guessAggregatorClass(valueType, default)
+  if valueType == 'number' then
     return NumberAggregator
-  elseif tv == 'boolean' then
+  elseif valueType == 'boolean' then
     return BooleanAggregator
-  elseif tv == 'string' then
+  elseif valueType == 'string' then
     return StringAggregator
+  elseif valueType == 'integer' then
+    return NumberAggregator
   end
-  return ValueAggregator
+  return default or ValueAggregator
 end
 
 local AnyValueAggregator = class.create(function(anyValueAggregator)
-
-  local copy = ValueAggregator.prototype.copy
 
   function anyValueAggregator:initialize()
     self.va = ValueAggregator:new()
     self.vac = nil
   end
 
-  function anyValueAggregator:aggregate(value)
+  function anyValueAggregator:aggregate(value, t, k)
     if value ~=nil and not self.vac then
-      self.vac = guessAggregatorClass(value)
-      self.va = copy(self.vac:new(), self.va)
+      self.vac = guessAggregatorClass(type(value), ValueAggregator)
+      self.va = self.vac:new():copy(self.va)
     end
-    self.va:aggregate(value)
+    self.va:aggregate(value, t, k)
   end
 
   function anyValueAggregator:slice(values, time)
     self.va:slice(values, time)
   end
-  
+
   function anyValueAggregator:finishAll(values)
-    if #values > 0 then
-      self.va:finish(values[1])
-    end
+    self.va:finishAll(values)
   end
 
 end)
@@ -203,17 +219,39 @@ return class.create(function(historicalTable, _, HistoricalTable)
 
   HistoricalTable.DEFAULT_FILE_MINUTES = 10080 -- one week
 
+  HistoricalTable.CHANGES_SUFFIX = CHANGES_SUFFIX
+  HistoricalTable.MIN_SUFFIX = MIN_SUFFIX
+  HistoricalTable.MAX_SUFFIX = MAX_SUFFIX
+
   local HEADER_FORMAT = '>BI4I4' -- c3
 
-  function historicalTable:initialize(dir, name, fileMin, t)
+  function historicalTable:initialize(dir, name, options)
+    options = options or {}
     self.dir = dir
     self.name = name
-    self.liveTable = t or {}
+    self.liveTable = options.table or {}
     self.previousTable = tables.deepCopy(self.liveTable)
-    self.utc = true
-    self:setFileMinutes(fileMin)
-    --self.file = nil
-    --self.time = nil
+    self:setUtc(options.utc)
+    self:setKeepTable(options.keepTable)
+    self:setFileMinutes(options.fileMin)
+    self.file = nil
+    self.time = nil
+  end
+
+  function historicalTable:isUtc()
+    return self.utc
+  end
+
+  function historicalTable:setUtc(value)
+    self.utc = value == true
+  end
+
+  function historicalTable:isKeepTable()
+    return self.keepTable
+  end
+
+  function historicalTable:setKeepTable(value)
+    self.keepTable = value == true
   end
 
   function historicalTable:getFileMinutes()
@@ -274,7 +312,7 @@ return class.create(function(historicalTable, _, HistoricalTable)
     -- file format is: kind, time, data size, data content
     local fd = FileDescriptor.openSync(file)
     local offset = 0
-    local t, err
+    local t, time, err
     while true do
       local header = fd:readSync(12, offset)
       if not header or #header == 0 then
@@ -285,7 +323,8 @@ return class.create(function(historicalTable, _, HistoricalTable)
         break
       end
       offset = offset + 12
-      local kind, time, size = string.unpack(HEADER_FORMAT, header, 4)
+      local kind, size
+      kind, time, size = string.unpack(HEADER_FORMAT, header, 4)
       local isFull = (kind & 1) == 1
       local isDeflated = (kind & 2) == 2
       time = time * 1000
@@ -319,22 +358,28 @@ return class.create(function(historicalTable, _, HistoricalTable)
       logger:warn('historicalTable:forEachTableInFile('..file:getPath()..') '..err)
       return nil, err
     end
-    return t
+    return t, time
+  end
+
+  function historicalTable:loadJson(remove)
+    local jsonFile = self:getJsonFile()
+    if jsonFile:isFile() then
+      self.liveTable = json.decode(jsonFile:readAll())
+      if remove then
+        jsonFile:delete()
+      end
+    end
   end
 
   function historicalTable:loadLatest()
-    local t
     self:selectLatestFile()
-    local jsonFile = self:getJsonFile()
-    if jsonFile:isFile() then
-      t = json.decode(jsonFile:readAll())
-    else
-      if self.file and self.file:isFile() then
-        t = self:forEachTableInFile(self.file, 0, Date.now())
-      end
+    local t
+    if self.file and self.file:isFile() then
+      t = self:forEachTableInFile(self.file, 0, Date.now())
     end
     self.liveTable = t or {}
-    self.previousTable = tables.deepCopy(self.liveTable)
+    self:rollover()
+    self:loadJson(true)
   end
 
   function historicalTable:forEachFile(fromTime, toTime, fn)
@@ -412,32 +457,35 @@ return class.create(function(historicalTable, _, HistoricalTable)
     end
   end
 
-  function historicalTable:loadValues(fromTime, toTime, period, path)
+  function historicalTable:loadValues(fromTime, toTime, period, path, valueType)
     if logger:isLoggable(logger.FINE) then
       logger:fine('historicalTable:loadValues('..tostring(fromTime)..', '..tostring(toTime)..', '..tostring(period)..', "'..tostring(path)..'")')
     end
     local values = {}
-    local periodAggregator = AnyValueAggregator:new()
+    local AggregatorClass = guessAggregatorClass(valueType, AnyValueAggregator)
+    local periodAggregator = AggregatorClass:new()
     self:forEachPeriod(fromTime, toTime, period, function(time)
       periodAggregator:slice(values, time)
     end, function(t)
-      local value = tables.getPath(t, path)
-      periodAggregator:aggregate(value)
+      local value, tk, pk = tables.getPath(t, path)
+      periodAggregator:aggregate(value, tk, pk)
     end)
     periodAggregator:finishAll(values)
     return values
   end
 
-  function historicalTable:loadMultiValues(fromTime, toTime, period, paths)
+  function historicalTable:loadMultiValues(fromTime, toTime, period, paths, types)
     if logger:isLoggable(logger.FINE) then
       logger:fine('historicalTable:loadMultiValues('..tostring(fromTime)..', '..tostring(toTime)..', '..tostring(period)..', "'..tostring(#paths)..'")')
     end
+    types = types or {}
     local count = #paths
     local pathsValues = {}
     local pathsAggregator = {}
     for i = 1, count do
       pathsValues[i] = {}
-      pathsAggregator[i] = AnyValueAggregator:new()
+      local AggregatorClass = guessAggregatorClass(types[i], AnyValueAggregator)
+      pathsAggregator[i] = AggregatorClass:new()
     end
     self:forEachPeriod(fromTime, toTime, period, function(time)
       for i = 1, count do
@@ -445,8 +493,8 @@ return class.create(function(historicalTable, _, HistoricalTable)
       end
     end, function(t)
       for i = 1, count do
-        local value = tables.getPath(t, paths[i])
-        pathsAggregator[i]:aggregate(value)
+        local value, tk, pk = tables.getPath(t, paths[i])
+        pathsAggregator[i]:aggregate(value, tk, pk)
       end
     end)
     for i = 1, count do
@@ -479,6 +527,19 @@ return class.create(function(historicalTable, _, HistoricalTable)
     return tt
   end
 
+  function historicalTable:rollover()
+    local currentTable, previousTable
+    previousTable = self.previousTable
+    if self.keepTable then
+      currentTable = tables.deepCopy(self.liveTable)
+    else
+      currentTable = self.liveTable
+      self.liveTable = {}
+    end
+    self.previousTable = currentTable
+    return currentTable, previousTable
+  end
+
   function historicalTable:save(isFull, withJson, time)
     if logger:isLoggable(logger.FINE) then
       logger:fine('historicalTable:save() '..self.name)
@@ -487,15 +548,15 @@ return class.create(function(historicalTable, _, HistoricalTable)
       time = Date.now()
     end
     local file, isNew = self:getFileAt(time)
-    local tmp = tables.deepCopy(self.liveTable)
+    local currentTable, previousTable = self:rollover()
     local kind, size, data
     if isFull or isNew then
       kind = 1
-      data = json.encode(tmp)
+      data = json.encode(currentTable)
       size = #data
     else
       kind = 0
-      local dt = tables.compare(self.previousTable, tmp)
+      local dt = tables.compare(previousTable, currentTable)
       size = 0
       if dt then
         data = json.encode(dt)
@@ -503,7 +564,7 @@ return class.create(function(historicalTable, _, HistoricalTable)
       end
     end
     if withJson then
-      self:saveJson(tmp)
+      self:saveJson(currentTable)
     end
     if size > 8 then
       local deflater = Deflater:new()
@@ -521,7 +582,6 @@ return class.create(function(historicalTable, _, HistoricalTable)
         fd:writeSync(data)
       end
       fd:closeSync()
-      self.previousTable = tmp
     else
       logger:warn('historicalTable:save() Cannot append file '..file:getPath()..' due to '..tostring(err))
     end

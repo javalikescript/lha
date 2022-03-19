@@ -1,19 +1,20 @@
 local logger = require('jls.lang.logger')
 local class = require('jls.lang.class')
+local runtime = require('jls.lang.runtime')
+local event = require('jls.lang.event')
+local Promise = require('jls.lang.Promise')
 local File = require('jls.io.File')
-local json = require('jls.util.json')
 local http = require('jls.net.http')
 local FileHttpHandler = require('jls.net.http.handler.FileHttpHandler')
 local RestHttpHandler = require('jls.net.http.handler.RestHttpHandler')
 local HttpExchange = require('jls.net.http.HttpExchange')
+local json = require('jls.util.json')
 local Scheduler = require('jls.util.Scheduler')
-local runtime = require('jls.lang.runtime')
-local event = require('jls.lang.event')
-local Promise = require('jls.lang.Promise')
 local strings = require('jls.util.strings')
 local tables = require('jls.util.tables')
 local TableList = require('jls.util.TableList')
 local Date = require('jls.util.Date')
+
 local HistoricalTable = require('lha.engine.HistoricalTable')
 local IdGenerator = require('lha.engine.IdGenerator')
 local Extension = require('lha.engine.Extension')
@@ -158,14 +159,19 @@ local EngineThing = class.create(Thing, function(engineThing, super)
     self.connected = false
     self.setterFn = false
     self.lastupdated = 0
+    self:refreshConfiguration()
+  end
+
+  function engineThing:refreshConfiguration()
+    self.configuration = tables.getPath(self.engine.root, 'configuration/things/'..self.thingId) or {}
   end
 
   function engineThing:setArchiveData(archiveData)
-    self.engine:setRootValues('configuration/things/'..self.thingId..'/archiveData', archiveData, true)
+    self.configuration.archiveData = archiveData
   end
 
-  function engineThing:getArchiveData()
-    return tables.getPath(self.engine.root, 'configuration/things/'..self.thingId..'/archiveData', false)
+  function engineThing:isArchiveData()
+    return self.configuration.archiveData
   end
 
   function engineThing:setPropertyValue(name, value)
@@ -191,12 +197,54 @@ local EngineThing = class.create(Thing, function(engineThing, super)
     end
   end
 
-  function engineThing:updatePropertyValue(name, value)
-    self.lastupdated = getUpdateTime()
-    if self:getArchiveData() then
-      self.engine:setRootValues('data/'..self.thingId..'/'..name, value, true)
+  local function computeChanges(t, key)
+    local fullKey = key..HistoricalTable.CHANGES_SUFFIX
+    local previousValue = t[fullKey]
+    if previousValue then
+      t[fullKey] = previousValue + 1
+    else
+      t[fullKey] = 2
     end
-    return super.updatePropertyValue(self, name, value)
+  end
+  local function computeMin(t, key, value)
+    local fullKey = key..HistoricalTable.MIN_SUFFIX
+    local previousValue = t[fullKey]
+    if not previousValue or value < previousValue then
+      t[fullKey] = value
+    end
+  end
+  local function computeMax(t, key, value)
+    local fullKey = key..HistoricalTable.MAX_SUFFIX
+    local previousValue = t[fullKey]
+    if not previousValue or value > previousValue then
+      t[fullKey] = value
+    end
+  end
+
+  function engineThing:updatePropertyValue(name, value)
+    local property = self.properties[name]
+    if property then
+      -- check numbers are valid, not nan nor +/-inf
+      if type(value) == 'number' and (value ~= value or value == math.huge or value == -math.huge) then
+        logger:warn('Invalid number value on update property "'..name..'"')
+        return
+      end
+      self.lastupdated = getUpdateTime()
+      if self:isArchiveData() then
+        local path = 'data/'..self.thingId..'/'..name
+        local previousValue, t, key = self.engine:setRootValue(path, value, true)
+        if previousValue ~= nil and previousValue ~= value then
+          local mt = property:getMetadata('type') -- type(value)
+          if mt == 'number' or mt == 'integer' then
+            computeMin(t, key, math.min(value, previousValue))
+            computeMax(t, key, math.max(value, previousValue))
+          elseif mt == 'boolean' or mt == 'string' then
+            computeChanges(t, key)
+          end
+        end
+      end
+      super.updatePropertyValue(self, name, value)
+    end
   end
 
   function engineThing:connect(setterFn)
@@ -224,7 +272,7 @@ local EngineThing = class.create(Thing, function(engineThing, super)
 
   function engineThing:asEngineThingDescription()
     local description = self:asThingDescription()
-    description.archiveData = self:getArchiveData()
+    description.archiveData = self:isArchiveData()
     --description.connected = self:isConnected()
     --description.reachable = self:isReachable()
     description.extensionId = self.extensionId
@@ -333,10 +381,9 @@ local REST_EXTENSIONS = {
   end,
   ['{extensionId}'] = {
     [''] = function(exchange)
-      local engine = exchange:getAttribute('engine')
       local extension = exchange.attributes.extension
       return {
-        config = engine.root.configuration.extensions[extension.id] or {},
+        config = extension:getConfiguration(),
         info = extension:toJSON(),
         manifest = extension:getManifest()
       }
@@ -347,13 +394,28 @@ local REST_EXTENSIONS = {
     manifest = function(exchange)
       return exchange.attributes.extension:getManifest()
     end,
-    poll = function(exchange)
-      if exchange.attributes.extension:isActive() then
-        exchange.attributes.extension:publishEvent('poll')
+    ['poll(extension)?method=POST'] = function(exchange, extension)
+      if extension:isActive() then
+        extension:publishEvent('poll')
       end
     end,
-    reload = function(exchange)
-      reloadExtension(exchange.attributes.extension)
+    ['reload(extension)?method=POST'] = function(exchange, extension)
+      reloadExtension(extension)
+    end,
+    ['enable(extension)?method=POST'] = function(exchange, extension)
+      if not extension:isActive() then
+        extension:setActive(true)
+        if extension:isActive() then
+          extension:publishEvent('startup')
+          extension:publishEvent('things')
+        end
+      end
+    end,
+    ['disable(extension)?method=POST'] = function(exchange, extension)
+      if extension:isActive() then
+        extension:publishEvent('shutdown')
+        extension:setActive(false)
+      end
     end
   },
 }
@@ -608,7 +670,7 @@ return class.create(function(engine)
     local configurationDir = File:new(workDir, 'configuration')
     logger:debug('configurationDir is '..configurationDir:getPath())
     createDirectoryOrExit(configurationDir)
-    self.configHistory = HistoricalTable:new(configurationDir, 'config')
+    self.configHistory = HistoricalTable:new(configurationDir, 'config', {keepTable = true})
 
     local dataDir = File:new(workDir, 'data')
     logger:debug('dataDir is '..dataDir:getPath())
@@ -646,71 +708,37 @@ return class.create(function(engine)
     return self.tmpDir
   end
 
-  function engine:load()
-    self.configHistory:loadLatest()
-    self.dataHistory:loadLatest()
-    self.root = {
-      configuration = self.configHistory:getLiveTable(),
-      data = self.dataHistory:getLiveTable()
-    }
-    -- TODO options config should override values
-    local config, err = tables.getSchemaValue(schema.properties.config, self.options.config or {}, true)
-    if config then
-      tables.merge(self.root.configuration, config)
-      if logger:isLoggable(logger.FINE) then
-        logger:fine('config: '..json.stringify(self.root.configuration, 2))
-      end
-    elseif logger:isLoggable(logger.WARN) then
-      logger:warn('unable to get engine configuration, due to '..tostring(err))
-    end
-    --[[
-      The default schedules values defined in the schema are:
-      poll every quarter of an hour then archive data 5 minutes after,
-      configuration and refresh every day at midnight,
-      clean the first day of every month.
-    ]]
-    tables.merge(self.root.configuration, {
-      engine = {},
-      extensions = {},
-      things = {}
-    }, true)
-    -- save configuration if missing
-    if not self.configHistory:hasJsonFile() then
-      logger:info('Saving configuration')
-      self.configHistory:saveJson()
-    end
+  function engine:archiveData(isFull)
+    self.dataHistory:save(isFull)
+    self.root.data = self.dataHistory:getLiveTable()
   end
 
   function engine:createScheduler()
-    local engine = self
     local scheduler = Scheduler:new()
     local schedules = self.root.configuration.engine.schedule
     -- poll things schedule
-    scheduler:schedule(schedules.poll, function(t)
+    scheduler:schedule(schedules.poll, function()
       logger:info('Polling things')
       -- TODO Clean data
-      engine:publishEvent('poll')
+      self:publishEvent('poll')
     end)
     -- data schedule
-    scheduler:schedule(schedules.data, function(t)
+    scheduler:schedule(schedules.data, function()
       logger:info('Archiving data')
-      -- archive data
-      engine.dataHistory:save()
-      -- clean live data
-      -- TODO
+      self:archiveData(false)
     end)
     -- configuration schedule
-    scheduler:schedule(schedules.configuration, function(t)
+    scheduler:schedule(schedules.configuration, function()
       logger:info('Archiving configuration')
-      engine.configHistory:save(false, true)
-      engine.dataHistory:save(true)
-      engine:publishEvent('refresh')
+      self.configHistory:save(false, true)
+      self:archiveData(true)
+      self:publishEvent('refresh')
     end)
     -- clean schedule
-    scheduler:schedule(schedules.clean, function(t)
+    scheduler:schedule(schedules.clean, function()
       logger:info('Cleaning')
-      engine.configHistory:save(true, true)
-      engine:publishEvent('clean')
+      self.configHistory:save(true, true)
+      self:publishEvent('clean')
     end)
     self.scheduler = scheduler
   end
@@ -736,6 +764,7 @@ return class.create(function(engine)
       engine = self,
       publish = true
     })
+    -- TODO Remove as things have the data
     httpServer:createContext('/engine/data/(.*)', tableHandler, {
       path = 'data/',
       editable = false,
@@ -799,11 +828,12 @@ return class.create(function(engine)
 
   function engine:setRootValue(path, value, publish)
     --logger:info('engine:setRootValue('..path..', '..tostring(value)..')')
-    local previousValue = tables.setPath(self.root, path, value)
+    local previousValue, t, key = tables.setPath(self.root, path, value)
     if publish and previousValue ~= value then
       logger:info('engine:setRootValue() change('..path..', '..tostring(value)..', '..tostring(previousValue)..')')
       self:publishRootChange(path, value, previousValue)
     end
+    return previousValue, t, key
   end
 
   function engine:setRootValues(path, value, publish)
@@ -823,7 +853,7 @@ return class.create(function(engine)
 
   function engine:publishExtensionsEvent(source, ...)
     local name = ...
-    logger:fine('Publishing Extensions Event '..tostring(name))
+    logger:finer('Publishing Extensions Event '..tostring(name))
     for _, extension in ipairs(self.extensions) do
       if extension ~= source and extension:isActive() then
         extension:publishEvent(...)
@@ -1071,8 +1101,32 @@ return class.create(function(engine)
     return self.things[thingId]
   end
 
-  function engine:start()
-    self:load()
+  function engine:start(defaultConfig, customConfig)
+    self.configHistory:loadLatest()
+    self.dataHistory:loadLatest()
+    self.root = {
+      configuration = self.configHistory:getLiveTable(),
+      data = self.dataHistory:getLiveTable()
+    }
+    if customConfig then
+      tables.merge(self.root.configuration, customConfig)
+    end
+    if defaultConfig then
+      tables.merge(self.root.configuration, defaultConfig, true)
+    end
+    if logger:isLoggable(logger.FINER) then
+      logger:finer('config: '..json.stringify(self.root.configuration, 2))
+    end
+    tables.merge(self.root.configuration, {
+      engine = {},
+      extensions = {},
+      things = {}
+    }, true)
+    -- save configuration if missing
+    if not self.configHistory:hasJsonFile() then
+      logger:info('Saving configuration')
+      self.configHistory:saveJson()
+    end
     self:createScheduler()
     self:startHTTPServer()
     self:startHeartbeat()
@@ -1086,23 +1140,26 @@ return class.create(function(engine)
     self:stopHeartbeat()
     self:stopHTTPServer()
     self:publishEvent('shutdown')
-    -- save configuration if necessary
-    self.configHistory:save(false, true)
+    self.configHistory:saveJson()
+    self.dataHistory:saveJson()
     event:stop()
   end
 
 end, function(Engine)
 
   function Engine.launch(arguments)
-    local options = tables.createArgumentTable(arguments, {
+    local options, customOptions = tables.createArgumentTable(arguments, {
       configPath = 'file',
       emptyPath = 'work',
       helpPath = 'help',
+      disableSchemaDefaults = true,
       schema = schema
     })
+    local defaultConfig = options.config
+    options.config = nil
     logger:setLevel(options.loglevel)
     local engine = Engine:new(options)
-    engine:start()
+    engine:start(defaultConfig, customOptions.config)
     engine:publishEvent('poll')
     return engine
   end

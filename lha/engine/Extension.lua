@@ -1,4 +1,5 @@
 local logger = require('jls.lang.logger')
+local protectedCall = require('jls.lang.protectedCall')
 local File = require('jls.io.File')
 local json = require('jls.util.json')
 local tables = require('jls.util.tables')
@@ -53,6 +54,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
         end
       end
     end
+    self:refreshConfiguration()
   end
 
   function extension:getEngine()
@@ -79,7 +81,10 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     return self.loaded
   end
 
-  function extension:getManifest()
+  function extension:getManifest(key)
+    if key then
+      return self.manifest[key]
+    end
     return self.manifest
   end
 
@@ -95,6 +100,16 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     return self.manifest.version or '1.0'
   end
 
+  function extension:isActive()
+    return self.loaded and self.configuration.active
+  end
+
+  function extension:setActive(value)
+    if self.loaded then
+      self.configuration.active = value == true
+    end
+  end
+
   function extension:toJSON()
     return {
       id = self:getId(),
@@ -107,50 +122,31 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     }
   end
 
+  function extension:refreshConfiguration()
+    self.configuration = tables.mergePath(self.engine.root, 'configuration/extensions/'..self.id, {active = false}, true)
+  end
+
   function extension:getConfiguration()
-    local rootTable = self.engine.root
-    local path = 'configuration/extensions/'..self.id
-    local config = tables.getPath(rootTable, path)
-    if not config then
-      config = {}
-      tables.setPath(rootTable, path, config)
-    end
-    return config
+    return self.configuration
   end
 
   function extension:initConfiguration()
     if logger:isLoggable(logger.FINEST) then
       logger:finest('initializing configuration for extension '..self:getPrettyName())
     end
-    local config = self:getConfiguration()
     if self.manifest.config then
       -- we do not want to validate the config against the schema
-      tables.merge(config, self.manifest.config, true)
+      tables.merge(self.configuration, self.manifest.config, true)
     end
     if self.manifest.schema then
       local defaultValues, err = tables.getSchemaValue(self.manifest.schema, {}, true)
       if defaultValues then
-        tables.merge(config, defaultValues, true)
+        tables.merge(self.configuration, defaultValues, true)
       elseif logger:isLoggable(logger.WARN) then
         logger:warn('unable to get default values from schema, due to '..tostring(err))
         logger:warn('schema :'..json.stringify(self.manifest.schema, 2))
       end
     end
-  end
-
-  --[[
-  function extension:applyExtensionConfiguration(value)
-    self.engine:setConfigurationValues(self, self:getPath(), value)
-  end
-
-  function extension:setExtensionConfiguration(value)
-    self.engine:setConfigurationValue(self, self:getPath(), value)
-  end
-  ]]
-
-  function extension:isActive()
-    -- TODO Use cache
-    return self.loaded and tables.getPath(self.engine.root, 'configuration/extensions/'..self.id..'/'..'active', false)
   end
 
   function extension:subscribePollEvent(fn, minIntervalSec, lastPollSec)
@@ -441,7 +437,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     local scriptFn = self:loadScript()
     if scriptFn then
       self:initConfiguration()
-      local status, err = pcall(scriptFn, self)
+      local status, err = protectedCall(scriptFn, self)
       if status then
         self.lastModified = lastModified
         self.loaded = true

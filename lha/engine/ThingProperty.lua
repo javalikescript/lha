@@ -42,8 +42,12 @@ return require('jls.lang.class').create(function(thingProperty)
   end
 
   --- Returns the metadata of this property.
+  -- @param[opt] key the metadata key to return.
   -- @return the metadata of this property.
-  function thingProperty:getMetadata()
+  function thingProperty:getMetadata(key)
+    if key then
+      return self.metadata[key]
+    end
     return self.metadata
   end
 
