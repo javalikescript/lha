@@ -43,13 +43,6 @@ return require('jls.lang.class').create(function(hueBridge)
     self.onWebSocket = onWebSocket
   end
 
-  function hueBridge:close()
-    if self.ws then
-      self.ws:close(false)
-      self.ws = nil
-    end
-  end
-
   function hueBridge:configure(config)
     if config.UTC then
       local bridgeTime = Date.fromISOString(config.UTC, true)
@@ -67,36 +60,56 @@ return require('jls.lang.class').create(function(hueBridge)
     if config.websocketport then
       -- config.websocketnotifyall
       local tUrl = Url.parse(self.url)
-      local wsUrl = Url:new('ws', tUrl.host, config.websocketport):toString()
+      self.wsUrl = Url:new('ws', tUrl.host, config.websocketport):toString()
       if self.onWebSocket and not self.ws then
-        local webSocket = WebSocket:new(wsUrl)
-        self.ws = webSocket
-        webSocket:open():next(function()
-          webSocket:readStart()
-          logger:info('Hue WebSocket connect on '..tostring(wsUrl))
-        end, function(reason)
-          logger:warn('Cannot open Hue WebSocket on '..tostring(wsUrl)..' due to '..tostring(reason))
-        end)
-        webSocket.onTextMessage = function(_, payload)
-          if logger:isLoggable(logger.FINER) then
-            logger:finer('Hue WebSocket received '..tostring(payload))
-          end
-          local status, info = protectedCall(json.decode, payload)
-          if status then
-            if type(info) == 'table' and info.t == 'event' then
-              status, info = protectedCall(self.onWebSocket, info)
-              if not status then
-                logger:warn('Hue WebSocket callback error "'..tostring(info)..'" with payload '..tostring(payload))
-                webSocket:close(false)
-              end
-            end
-          else
-            logger:warn('Hue WebSocket received invalid JSON payload '..tostring(payload))
+        self:startWebSocket()
+      end
+    end
+  end
+
+  function hueBridge:close()
+    self:closeWebSocket()
+  end
+
+  function hueBridge:closeWebSocket()
+    if self.ws then
+      self.ws:close(false)
+      self.ws = nil
+    end
+  end
+
+  function hueBridge:startWebSocket()
+    self:closeWebSocket()
+    local webSocket = WebSocket:new(self.wsUrl)
+    webSocket:open():next(function()
+      webSocket:readStart()
+      logger:info('Hue WebSocket connect on '..tostring(self.wsUrl))
+    end, function(reason)
+      logger:warn('Cannot open Hue WebSocket on '..tostring(self.wsUrl)..' due to '..tostring(reason))
+    end)
+    webSocket.onClose = function()
+      logger:info('Hue WebSocket closed')
+      self.ws = nil
+    end
+    webSocket.onTextMessage = function(_, payload)
+      if logger:isLoggable(logger.FINER) then
+        logger:finer('Hue WebSocket received '..tostring(payload))
+      end
+      local status, info = protectedCall(json.decode, payload)
+      if status then
+        if type(info) == 'table' and info.t == 'event' then
+          status, info = protectedCall(self.onWebSocket, info)
+          if not status then
+            logger:warn('Hue WebSocket callback error "'..tostring(info)..'" with payload '..tostring(payload))
             webSocket:close(false)
           end
         end
+      else
+        logger:warn('Hue WebSocket received invalid JSON payload '..tostring(payload))
+        webSocket:close(false)
       end
     end
+    self.ws = webSocket
   end
 
   function hueBridge:parseDateTime(dt)

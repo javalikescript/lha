@@ -19,7 +19,7 @@ extension:subscribeEvent('things', function()
 end)
 
 local function onHueThing(id, info, time, lastTime)
-  if info.state and info.uniqueid then
+  if info and info.state and info.uniqueid then
     local thing = thingsMap[info.uniqueid]
     if thing == nil then
       thing = HueBridge.createThingForType(info)
