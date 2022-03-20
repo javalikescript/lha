@@ -1,6 +1,6 @@
 {
-  "name": "Web Base",
-  "description": "Expose web base content",
+  "name": "Web base",
+  "description": "Exposes web base content for LHA",
   "version": "1.0",
   "script": "web-base.lua",
   "config": {

@@ -182,14 +182,15 @@ Vue.component('app-page', {
   props: {
     id: String,
     title: String,
-    hideNav: Boolean,
     hideClass: {
       type: String,
       default: 'hideRight'
-    }
+    },
+    hideNav: Boolean,
+    showMenu: Boolean
   },
   template: '<section v-bind:id="id" v-bind:class="[{page: true}, app.page === id ? \'\' : hideClass]">' +
-    '<header><div><button v-on:click="app.menu = \'menu\'"><i class="fa fa-bars"></i></button>' +
+    '<header><div><button v-on:click="app.menu = \'menu\'" v-if="showMenu"><i class="fa fa-bars"></i></button>' +
     '<button v-on:click="app.back()" v-if="!hideNav"><i class="fa fa-chevron-left"></i></button>' +
     '<button v-on:click="app.toPage(\'main\')" v-if="!hideNav"><i class="fas fa-home"></i></button></div>' +
     '<h1>{{ title }}</h1><div><slot name="bar-right"></slot></div>' +
