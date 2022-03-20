@@ -831,10 +831,9 @@ return class.create(function(engine)
   end
 
   function engine:setRootValue(path, value, publish)
-    --logger:info('engine:setRootValue('..path..', '..tostring(value)..')')
     local previousValue, t, key = tables.setPath(self.root, path, value)
     if publish and previousValue ~= value then
-      logger:info('engine:setRootValue() change('..path..', '..tostring(value)..', '..tostring(previousValue)..')')
+      logger:fine('engine:setRootValue() change('..path..', '..tostring(value)..', '..tostring(previousValue)..')')
       self:publishRootChange(path, value, previousValue)
     end
     return previousValue, t, key
