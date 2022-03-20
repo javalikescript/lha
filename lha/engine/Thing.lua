@@ -7,7 +7,33 @@ local ThingEvent = require('lha.engine.ThingEvent')
 
 -- Standard properties, see https://webthings.io/schemas/
 
-local PROPERTIES = {
+local CAPABILITIES = {
+  ALARM = 'Alarm',
+  AIR_QUALITY_SENSOR = 'AirQualitySensor',
+  BAROMETRIC_PRESSURE_SENSOR = 'BarometricPressureSensor',
+  BINARY_SENSOR = 'BinarySensor',
+  CAMERA = 'Camera',
+  COLOR_CONTROL = 'ColorControl',
+  COLOR_SENSOR = 'ColorSensor',
+  DOOR_SENSOR = 'DoorSensor',
+  ENERGY_MONITOR = 'EnergyMonitor',
+  HUMIDITY_SENSOR = 'HumiditySensor',
+  LEAK_SENSOR = 'LeakSensor',
+  LIGHT = 'Light',
+  LOCK = 'Lock',
+  MOTION_SENSOR = 'MotionSensor',
+  MULTI_LEVEL_SENSOR = 'MultiLevelSensor',
+  MULTI_LEVEL_SWITCH = 'MultiLevelSwitch',
+  ON_OFF_SWITCH = 'OnOffSwitch',
+  PUSH_BUTTON = 'PushButton',
+  SMART_PLUG = 'SmartPlug',
+  SMOKE_SENSOR = 'SmokeSensor',
+  TEMPERATURE_SENSOR = 'TemperatureSensor',
+  THERMOSTAT = 'Thermostat',
+  VIDEO_CAMERA = 'VideoCamera',
+}
+
+local PROPERTY_METADATA = {
   ON_OFF = {
     ['@type'] = 'OnOffProperty',
     type = 'boolean',
@@ -103,6 +129,26 @@ local PROPERTIES = {
     readOnly = true
   }
 }
+
+local PROPERTY_METADATA_BY_NAME = {
+  on = PROPERTY_METADATA.ON_OFF,
+  brightness = PROPERTY_METADATA.BRIGHTNESS,
+  colorTemperature = PROPERTY_METADATA.COLOR_TEMPERATURE,
+  color = PROPERTY_METADATA.COLOR,
+  temperature = PROPERTY_METADATA.TEMPERATURE,
+  presence = PROPERTY_METADATA.MOTION,
+  humidity = PROPERTY_METADATA.RELATIVE_HUMIDITY,
+  pressure = PROPERTY_METADATA.ATMOSPHERIC_PRESSURE,
+  lightlevel = PROPERTY_METADATA.LIGHT_LEVEL,
+  illuminance = PROPERTY_METADATA.ILLUMINANCE,
+  pushed = PROPERTY_METADATA.PUSHED,
+  smoke = PROPERTY_METADATA.SMOKE,
+}
+
+local PROPERTY_NAME_BY_METADATA = {}
+for name, md in pairs(PROPERTY_METADATA_BY_NAME) do
+  PROPERTY_NAME_BY_METADATA[md] = name
+end
 
 
 --- The Thing class represents a device.
@@ -321,59 +367,80 @@ return require('jls.lang.class').create(function(thing)
   end
 
   function thing:addPropertyFrom(name, fromMetadata, title, description, initialValue)
-    --return self:addProperty(name, ThingProperty:new(copyPropertyMetadata(fromMetadata, title, description), initialValue))
     return self:addProperty(name, copyPropertyMetadata(fromMetadata, title, description), initialValue)
   end
 
   -- Standard properties with default names
-  -- TODO move to static functions
 
+  function thing:addPropertyFromName(name, title, description, initialValue)
+    local md = PROPERTY_METADATA_BY_NAME[name]
+    if md then
+      return self:addProperty(name, copyPropertyMetadata(md, title, description), initialValue)
+    end
+    error('No metadata for property "'..tostring(name)..'"')
+  end
+
+  function thing:addPropertiesFromNames(names)
+    for _, name in ipairs(names) do
+      self:addPropertyFromName(name)
+    end
+    return self
+  end
+
+  --[[for name, md in pairs(PROPERTY_METADATA_BY_NAME) do
+    local method = 'add'..['@type']
+    thing[method] = function(self, title, description, initialValue)
+      return self:addProperty(name, copyPropertyMetadata(md, title, description), initialValue)
+    end
+  end]]
+
+  -- TODO remove or move to static
   function thing:addOnOffProperty(title, description, initialValue)
-    return self:addPropertyFrom('on', PROPERTIES.ON_OFF, title, description, initialValue)
+    return self:addPropertyFromName('on', title, description, initialValue)
   end
 
   function thing:addBrightnessProperty(title, description, initialValue)
-    return self:addPropertyFrom('brightness', PROPERTIES.BRIGHTNESS, title, description, initialValue)
+    return self:addPropertyFromName('brightness', title, description, initialValue)
   end
 
   function thing:addColorTemperatureProperty(title, description, initialValue)
-    return self:addPropertyFrom('colorTemperature', PROPERTIES.COLOR_TEMPERATURE, title, description, initialValue)
+    return self:addPropertyFromName('colorTemperature', title, description, initialValue)
   end
 
   function thing:addColorProperty(title, description, initialValue)
-    return self:addPropertyFrom('color', PROPERTIES.COLOR, title, description, initialValue)
+    return self:addPropertyFromName('color', title, description, initialValue)
   end
 
   function thing:addTemperatureProperty(title, description, initialValue)
-    return self:addPropertyFrom('temperature', PROPERTIES.TEMPERATURE, title, description, initialValue)
+    return self:addPropertyFromName('temperature', title, description, initialValue)
   end
 
   function thing:addPresenceProperty(title, description, initialValue)
-    return self:addPropertyFrom('presence', PROPERTIES.MOTION, title, description, initialValue)
+    return self:addPropertyFromName('presence', title, description, initialValue)
   end
 
   function thing:addRelativeHumidityProperty(title, description, initialValue)
-    return self:addPropertyFrom('humidity', PROPERTIES.RELATIVE_HUMIDITY, title, description, initialValue)
-  end
-
-  function thing:addAtmosphericPressureProperty(title, description, initialValue)
-    return self:addPropertyFrom('pressure', PROPERTIES.ATMOSPHERIC_PRESSURE, title, description, initialValue)
-  end
-
-  function thing:addLightLevelProperty(title, description, initialValue)
-    return self:addPropertyFrom('lightlevel', PROPERTIES.LIGHT_LEVEL, title, description, initialValue)
-  end
-
-  function thing:addIlluminanceProperty(title, description, initialValue)
-    return self:addPropertyFrom('illuminance', PROPERTIES.ILLUMINANCE, title, description, initialValue)
+    return self:addPropertyFromName('humidity', title, description, initialValue)
   end
 
   function thing:addPushedProperty(title, description, initialValue)
-    return self:addPropertyFrom('pushed', PROPERTIES.PUSHED, title, description, initialValue)
+    return self:addPropertyFromName('pushed', title, description, initialValue)
   end
 
   function thing:addSmokeProperty(title, description, initialValue)
-    return self:addPropertyFrom('smoke', PROPERTIES.SMOKE, title, description, initialValue)
+    return self:addPropertyFromName('smoke', title, description, initialValue)
+  end
+
+  function thing:addAtmosphericPressureProperty(title, description, initialValue)
+    return self:addPropertyFromName('pressure', title, description, initialValue)
+  end
+
+  function thing:addLightLevelProperty(title, description, initialValue)
+    return self:addPropertyFromName('lightlevel', title, description, initialValue)
+  end
+
+  function thing:addIlluminanceProperty(title, description, initialValue)
+    return self:addPropertyFromName('illuminance', title, description, initialValue)
   end
 
 end, function(Thing)
@@ -416,6 +483,7 @@ end, function(Thing)
     end
   end
 
-  Thing.PROPERTIES = PROPERTIES
-  
+  Thing.CAPABILITIES = CAPABILITIES
+  Thing.PROPERTIES = PROPERTY_METADATA
+
 end)
