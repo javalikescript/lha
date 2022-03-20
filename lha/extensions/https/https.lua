@@ -71,7 +71,11 @@ extension:subscribeEvent('startup', function()
   -- share contexts
   httpSecureServer:setParentContextHolder(httpServer)
   if type(configuration.credentials) == 'table' and next(configuration.credentials) then
-    httpSecureServer:addFilter(BasicAuthenticationHttpFilter:new(configuration.credentials, 'LHA'))
+    local namePasswordMap = {}
+    for _, credential in ipairs(configuration.credentials) do
+      namePasswordMap[credential.name] = credential.password
+    end
+    httpSecureServer:addFilter(BasicAuthenticationHttpFilter:new(namePasswordMap, 'LHA'))
   end
 end)
 

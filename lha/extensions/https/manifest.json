@@ -1,6 +1,6 @@
 {
   "name": "HTTPS",
-  "description": "Provides HTTPS to LHA Server",
+  "description": "Exposes LHA Server over HTTPS",
   "version": "1.0",
   "script": "https.lua",
   "schema": {
@@ -34,7 +34,20 @@
       },
       "credentials": {
         "title": "The credentials as name/password pairs for basic authentication",
-        "type": "object"
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "title": "The user name",
+              "type": "string"
+            },
+            "password": {
+              "title": "The user password",
+              "type": "string"
+            }
+          }
+        }
       }
     }
   }
