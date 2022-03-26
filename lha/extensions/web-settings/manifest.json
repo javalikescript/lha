@@ -1,0 +1,7 @@
+{
+  "name": "Web Settings",
+  "description": "Expose web settings",
+  "dependencies": ["web-base"],
+  "version": "1.0",
+  "script": "../web-base/web-ext.lua"
+}
