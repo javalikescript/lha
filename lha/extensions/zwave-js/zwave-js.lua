@@ -41,9 +41,7 @@ local function getNodeDeviceId(node)
 end
 
 local function getNodeDiscoveryId(node)
-  -- id the ID this node has been assigned by the controller. This is a number between 1 and 232.
-  -- deviceId, manufacturerId, productId and productType: identify the actual device this node is.
-  -- name, location: user defined
+  -- TODO use node id
   local nodeId = node.nodeId or node.id
   local deviceId = getNodeDeviceId(node)
   if nodeId and deviceId then
@@ -58,21 +56,26 @@ local function createThingFromNode(node)
   end
 end
 
+local function updateThingFromNodeInfo(thing, info)
+  local cc = info.commandClass
+  local property = info.property
+  local value = info.value or info.newValue
+  if cc == CC.MULTILEVEL then
+    if property == 'Air temperature' then
+      thing:updatePropertyValue('temperature', value)
+    end
+  elseif cc == CC.ALARM then
+    if property == 'Smoke Alarm' then
+      thing:updatePropertyValue('smoke', value ~= 0)
+    end
+  end
+end
+
 local function updateThingFromNode(thing, node)
   if node.values then
     -- key is cc-?endpoint-property: '49-0-Air temperature'
     for _, value in pairs(node.values) do
-      local cc = value.commandClass
-      local property = value.property
-      if cc == CC.MULTILEVEL then
-        if property == 'Air temperature' then
-          thing:updatePropertyValue('temperature', value.value)
-        end
-      elseif cc == CC.ALARM then
-        if property == 'Smoke Alarm' then
-          thing:updatePropertyValue('smoke', value.value ~= 0)
-        end
-      end
+      updateThingFromNodeInfo(thing, value)
     end
   end
 end
@@ -98,6 +101,17 @@ local function onZWaveNode(node)
     end
     if thing then
       updateThingFromNode(thing, node)
+    end
+  end
+end
+
+local function onZWaveNodeEvent(event)
+  -- see https://zwave-js.github.io/node-zwave-js/#/api/node?id=zwavenode-events
+  if event.source == 'node' and event.event == 'value updated' then
+    local nodeId = event.nodeId
+    local thing = thingsMap[nodeId]
+    if thing then
+      updateThingFromNodeInfo(thing, event.args)
     end
   end
 end
@@ -220,8 +234,10 @@ local function startWebSocket(wsConfig)
     local status, message = protectedCall(json.decode, payload)
     if status and message and message.type then
       if message.type == 'event' and message.event then
-        -- source event
-        logger:info('Z-Wave JS event: '..json.stringify(message.event, 2))
+        if logger:isLoggable(logger.FINER) then
+          logger:finer('Z-Wave JS event: '..json.stringify(message.event, 2))
+        end
+        onZWaveNodeEvent(message.event)
       elseif message.type == 'result' then
         local cb = webSocket.zwMsgCb[message.messageId]
         if cb then
@@ -260,6 +276,8 @@ extension:subscribeEvent('things', function()
 end)
 
 extension:subscribeEvent('poll', function()
+  -- TODO poll nodes
+  --onZWaveNode(node)
 end)
 
 extension:subscribeEvent('startup', function()
