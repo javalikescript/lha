@@ -59,10 +59,12 @@ show:
 	@echo UNAME_M: $(UNAME_M)
 
 dist-copy-linux:
+	cp -u $(LUACLIBS_DIST)/linux.$(SO) $(LHA_DIST)/bin/
 	cp -u lha.sh $(LHA_DIST)/
 
 dist-copy-windows:
 	cp -u $(LUACLIBS_DIST)/lua*.$(SO) $(LHA_DIST)/bin/
+	-cp -u $(LUACLIBS_DIST)/win32.$(SO) $(FCUT_DIST_CLUA)/
 	cp -u lha.bat $(LHA_DIST)/
 
 dist-copy: dist-copy-$(PLAT)
@@ -75,6 +77,7 @@ dist-copy: dist-copy-$(PLAT)
 	cp -ru $(LUACLIBS_DIST)/sha1/ $(LHA_DIST)/lua/
 	cp -u $(LUACLIBS_DIST)/XmlParser.lua $(LHA_DIST)/lua/
 	cp -u $(LUACLIBS_DIST)/sha1.lua $(LHA_DIST)/lua/
+	-cp -u $(LUACLIBS_DIST)/lpeg.$(SO) $(LHA_DIST)/bin/
 	cp -ru $(LUAJLS)/jls/ $(LHA_DIST)/lua/
 	cp -ru lha/ $(LHA_DIST)/lua/
 	cp -u *.lua $(LHA_DIST)/
