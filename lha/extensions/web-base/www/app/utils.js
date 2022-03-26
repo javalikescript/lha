@@ -1,27 +1,54 @@
-var strcasecmp = function(a, b) {
+
+function strcasecmp(a, b) {
   var al = ('' + a).toLowerCase();
   var bl = ('' + b).toLowerCase();
   return al === bl ? 0 : (al > bl ? 1 : -1);
-};
+}
 
-var compareByName = function(a, b) {
+function compareByName(a, b) {
   return strcasecmp(a.name, b.name);
-};
+}
 
-var compareByTitle = function(a, b) {
+function compareByTitle(a, b) {
   return strcasecmp(a.title, b.title);
-};
+}
 
-var setTheme = function(name) {
+function apply(to, fn) {
+  return function(args) {
+    return fn.apply(to, args);
+  };
+}
+
+function swapMap(m) {
+  var r = {};
+  for (var k in m) {
+    r[m[k]] = k;
+  }
+  return r;
+}
+
+function toMap(l, k) {
+  if (Array.isArray(l)) {
+    var m = {};
+    for (var i = 0; i < l.length; i++) {
+      var e = l[i];
+      m[e[k]] = e;
+    }
+    return m;
+  }
+  return l;
+}
+
+function setTheme(name) {
   var body = document.getElementsByTagName('body')[0];
   body.setAttribute('class', 'theme_' + name);
-};
+}
 
-var formatNavigationPath = function(pageId, path) {
+function formatNavigationPath(pageId, path) {
   return '/' + pageId + '/' + (path ? path : '');
-};
+}
 
-var hsvToRgb = function(h, s, v) {
+function hsvToRgb(h, s, v) {
   var r, g, b;
   var i = Math.floor(h * 6);
   var f = h * 6 - i;
@@ -37,9 +64,9 @@ var hsvToRgb = function(h, s, v) {
   case 5: r = v, g = p, b = q; break;
   }
   return 'rgb(' + Math.floor(r * 255) + ',' + Math.floor(g * 255) + ',' + Math.floor(b * 255) + ')';
-};
+}
 
-var hashString = function(value) {
+function hashString(value) {
   var hash = 0;
   if (typeof value === 'string') {
     for (var i = 0; i < value.length; i++) {
@@ -48,16 +75,16 @@ var hashString = function(value) {
     }
   }
   return hash;
-};
+}
 
 var SEC_IN_HOUR = 60 * 60;
 var SEC_IN_DAY = SEC_IN_HOUR * 24;
 
-var dateToSec = function(date) {
+function dateToSec(date) {
   return Math.floor(date.getTime() / 1000);
-};
+}
 
-var parseBoolean = function(value) {
+function parseBoolean(value) {
   switch (typeof value) {
   case 'boolean':
     return value;
@@ -65,64 +92,4 @@ var parseBoolean = function(value) {
     return value.toLowerCase() === 'true';
   }
   return false;
-};
-
-var hasSchema = function(schema) {
-  return schema && (Object.keys(schema.properties).length > 0)
-};
-
-var newJsonItem = function(type) {
-  switch(type) {
-    case 'string':
-      return '';
-    case 'integer':
-    case 'number':
-      return 0;
-    case 'boolean':
-      return false;
-    case 'array':
-      return [];
-    case 'object':
-      return {};
-    }
-    return undefined;
-};
-
-var parseJsonItemValue = function(type, value) {
-  if ((value === null) || (value === undefined)) {
-    return value;
-  }
-  var valueType = typeof value;
-  if ((valueType !== 'string') && (valueType !== 'number') && (valueType !== 'boolean')) {
-    throw new Error('Invalid value type ' + valueType);
-  }
-  switch(type) {
-  case 'string':
-    if (valueType !== 'string') {
-      value = '' + value;
-    }
-    break;
-  case 'integer':
-  case 'number':
-    if (valueType === 'string') {
-      value = parseFloat(value);
-      if (isNaN(value)) {
-        return 0;
-      }
-    } else if (valueType === 'boolean') {
-      value = value ? 1 : 0;
-    }
-    break;
-  case 'boolean':
-    if (valueType === 'string') {
-      value = value.trim().toLowerCase();
-      value = value === 'true';
-    } else if (valueType === 'number') {
-      value = value !== 0;
-    }
-    break;
-  default:
-    throw new Error('Invalid type ' + type);
-  }
-  return value;
-};
+}

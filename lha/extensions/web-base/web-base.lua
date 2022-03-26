@@ -3,13 +3,19 @@ local extension = ...
 -- -config.extensions.web-base.assets ../../../assets/www_static/
 
 local logger = require('jls.lang.logger')
+local event = require('jls.lang.event')
 local File = require('jls.io.File')
-local json = require("jls.util.json")
 local HttpExchange = require('jls.net.http.HttpExchange')
 local HttpHandler = require('jls.net.http.HttpHandler')
 local FileHttpHandler = require('jls.net.http.handler.FileHttpHandler')
 local ZipFileHttpHandler = require('jls.net.http.handler.ZipFileHttpHandler')
 local HttpContext = require('jls.net.http.HttpContext')
+local WebSocketUpgradeHandler = require('jls.net.http.ws').WebSocketUpgradeHandler
+local json = require("jls.util.json")
+local Map = require("jls.util.Map")
+local List = require("jls.util.List")
+local tables = require("jls.util.tables")
+
 local utils = require('lha.engine.utils')
 
 local AddonFileHttpHandler = require('jls.lang.class').create(FileHttpHandler, function(fileHttpHandler)
@@ -22,13 +28,15 @@ end)
 
 local addons = {}
 local contexts = {}
+local websockets = {}
 
 local function cleanup(server)
   for _, context in ipairs(contexts) do
     server:removeContext(context)
   end
-  contexts = {}
   addons = {}
+  contexts = {}
+  websockets = {}
 end
 
 local function addContext(server, ...)
@@ -36,19 +44,73 @@ local function addContext(server, ...)
   table.insert(contexts, context)
 end
 
-function extension:registerAddon(name, handler)
-  addons[name] = handler
-  logger:info('Web base add-on "'..name..'" registered')
+local function onWebSocketClose(self)
+  List.removeFirst(websockets, self)
 end
 
-function extension:registerAddonExtension(ext)
-  self:registerAddon(ext:getId(), AddonFileHttpHandler:new(ext:getDir()))
+local batchDataChange = true
+local dataChangeEvent = nil
+
+local function onDataChange(value, previousValue, path)
+  if batchDataChange then
+    if dataChangeEvent then
+      event:setTimeout(function()
+        local message = json.encode(dataChangeEvent)
+        dataChangeEvent = nil
+        for _, websocket in ipairs(websockets) do
+          websocket:sendTextMessage(message)
+        end
+      end)
+    else
+      dataChangeEvent = {event = 'data-change'}
+    end
+    tables.setPath(dataChangeEvent, path, value)
+  else
+    local thingId, propertyName = string.match(path, '^data/([^/]+)/([^/]+)$')
+    if thingId then
+      local message = json.encode({
+        event = 'data-change',
+        data = {
+          [thingId] = {
+            [propertyName] = {
+              value = value,
+              previousValue = previousValue
+            }
+          }
+        }
+      })
+      for _, websocket in ipairs(websockets) do
+        websocket:sendTextMessage(message)
+      end
+    end
+  end
+end
+
+function extension:registerAddon(id, addon)
+  addons[id] = addon
+  logger:info('Web base add-on "'..id..'" registered')
 end
 
 function extension:unregisterAddon(name)
   addons[name] = nil
   logger:info('Web base add-on "'..name..'" unregistered')
 end
+
+function extension:registerAddonExtension(ext, script)
+  if script == true then
+    script = ext:getId()..'.js'
+  end
+  self:registerAddon(ext:getId(), {
+    handler = AddonFileHttpHandler:new(ext:getDir()),
+    script = script or 'main.js' -- TODO change to init
+  })
+end
+
+function extension:unregisterAddonExtension(ext)
+  self:unregisterAddon(ext:getId())
+end
+
+extension:watchPattern('^data/.*', onDataChange)
 
 extension:subscribeEvent('startup', function()
   local engine = extension:getEngine()
@@ -76,20 +138,29 @@ extension:subscribeEvent('startup', function()
     local name, path = exchange:getRequestArguments()
     logger:fine('add-on handler "'..tostring(name)..'" / "'..tostring(path)..'"')
     if name == '' then
-      local names = {}
-      for n in pairs(addons) do
-        table.insert(names, n)
+      local list = {}
+      for id, addon in pairs(addons) do
+        table.insert(list, {
+          id = id,
+          script = addon.script
+        })
       end
-      HttpExchange.ok(exchange, json.encode(names), 'application/json')
+      HttpExchange.ok(exchange, json.encode(list), 'application/json')
     else
       local addon = addons[name]
-      if addon then
+      if addon and addon.handler then
         logger:fine('calling add-on "'..tostring(name)..'" handler')
-        return addon:handle(exchange)
+        return addon.handler:handle(exchange)
       end
       HttpExchange.notFound(exchange)
     end
   end))
+  addContext(server, '/ws/', Map.assign(WebSocketUpgradeHandler:new(), {
+    onOpen = function(_, webSocket, exchange)
+      table.insert(websockets, webSocket)
+      webSocket.onClose = onWebSocketClose
+    end
+  }))
 
 end)
 

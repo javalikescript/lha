@@ -22,7 +22,8 @@ new Vue({
   el: '#extension',
   data: {
     extensionId: '',
-    extension: {config: {}, info: {}, manifest: {}}
+    extension: {config: {}, info: {}, manifest: {}},
+    schema: false
   },
   methods: {
     onDisable: function() {
@@ -64,7 +65,12 @@ new Vue({
         return response.json();
       }).then(function(extension) {
         self.extension = extension;
-        //console.log('extension', self.extension);
+        return app.getThings();
+      }).then(function(things) {
+        if (self.extension && self.extension.manifest && self.extension.manifest.schema) {
+          self.schema = computeJsonSchema(self.extension.manifest.schema, things);
+        }
+        //console.log('extension', self.extension, 'schema', JSON.stringify(self.schema, undefined, 2));
       });
     }
   }
@@ -89,7 +95,8 @@ new Vue({
   el: '#addExtension',
   data: {
     extensionId: '',
-    extension: {config: {}, info: {}, manifest: {}}
+    extension: {config: {}, info: {}, manifest: {}},
+    schema: false
   },
   methods: {
     onAdd: function() {
@@ -120,7 +127,12 @@ new Vue({
         return response.json();
       }).then(function(extension) {
         self.extension = extension;
-        //console.log('extension', self.extension);
+        return app.getThings();
+      }).then(function(things) {
+        if (self.extension && self.extension.manifest && self.extension.manifest.schema) {
+          self.schema = computeJsonSchema(self.extension.manifest.schema, things);
+        }
+        //console.log('extension', self.extension, 'schema', self.schema);
       });
     }
   }

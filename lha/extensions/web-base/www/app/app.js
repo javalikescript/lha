@@ -5,7 +5,6 @@ var app = new Vue({
   el: '#app',
   data: {
     menu: '',
-    settings: '',
     dialog: '',
     page: '',
     path: '',
@@ -64,7 +63,6 @@ var app = new Vue({
     },
     selectPage: function(id, path) {
       this.menu = '';
-      this.settings = '';
       this.page = id;
       this.$emit('page-selected', id, path);
     },
@@ -97,55 +95,60 @@ var app = new Vue({
       var cacheEntry = this.cache[cacheId];
       return cacheEntry ? cacheEntry.value : undefined;
     },
-    getThings: function() {
-      var cacheValue = this.getFromCache('/engine/things');
+    getWithCache: function(cacheId, getter) {
+      var cacheValue = this.getFromCache(cacheId);
       if (cacheValue) {
         return Promise.resolve(cacheValue);
       }
       var self = this;
-      return fetch('/engine/things').then(function(response) {
-        return response.json();
-      }).then(function(things) {
+      return getter(cacheId).then(function(value) {
+        self.putInCache(cacheId, value);
+        return value;
+      });
+    },
+    fetchWithCache: function(path, fn, text) {
+      return this.getWithCache(path, function() {
+        return fetch(path).then(function(response) {
+          return text ? response.text() : response.json();
+        }).then(function(value) {
+          return fn ? fn(value) : value;
+        });
+      });
+    },
+    getThings: function() {
+      return this.fetchWithCache('/engine/things', function(things) {
         if (Array.isArray(things)) {
           things.sort(compareByTitle);
         }
-        self.putInCache('/engine/things', things);
         return things;
       });
     },
-    getExtensions: function() {
-      var cacheValue = this.getFromCache('/engine/extensions');
-      if (cacheValue) {
-        return Promise.resolve(cacheValue);
-      }
+    getThingsById: function() {
       var self = this;
-      return fetch('/engine/extensions').then(function(response) {
-        return response.json();
-      }).then(function(extensions) {
+      return this.getWithCache('/engine/things?byId', function() {
+        return self.getThings().then(function(things) {
+          return toMap(things, 'thingId');
+        });
+      });
+    },
+    getExtensions: function() {
+      return this.fetchWithCache('/engine/extensions', function(extensions) {
         if (Array.isArray(extensions)) {
           extensions.sort(compareByName);
         }
-        self.putInCache('/engine/extensions', extensions);
         return extensions;
       });
     },
     getExtensionsById: function() {
-      var cacheValue = this.getFromCache('/engine/extensions?byId');
-      if (cacheValue) {
-        return Promise.resolve(cacheValue);
-      }
       var self = this;
-      return this.getExtensions().then(function(extensions) {
-        var extensionsById = {};
-        if (Array.isArray(extensions)) {
-          for (var i = 0; i < extensions.length; i++) {
-            var extension = extensions[i];
-            extensionsById[extension.id] = extension;
-          }
-        }
-        self.putInCache('/engine/extensions?byId', extensionsById);
-        return extensionsById;
+      return this.getWithCache('/engine/extensions?byId', function() {
+        return self.getExtensions().then(function(extension) {
+          return toMap(extension, 'id');
+        });
       });
+    },
+    getPropertiesByThingId: function() {
+      return this.fetchWithCache('/engine/properties');
     }
   }
 });
@@ -158,10 +161,15 @@ Vue.component('app-menu', {
   data: function() {
       return {app: app};
   },
-  props: ['id', 'title'],
-  template: '<section v-bind:id="id" class="menu" v-bind:class="{ hideLeft: app.menu !== id }"><header>' +
+  props: {
+    id: String,
+    title: String,
+    homePage: String
+  },
+  template: '#menu-template'
+  /*'<section v-bind:id="id" class="menu" v-bind:class="{ hideLeft: app.menu !== id }"><header>' +
     '<button v-on:click="app.menu = \'\'"><i class="fa fa-window-close"></i></button>' +
-    '<h1>{{ title }}</h1><div /></header><slot>Article</slot></section>'
+    '<h1>{{ title }}</h1><div /></header><slot>Article</slot></section>'*/
 });
 
 Vue.component('app-dialog', {
@@ -169,10 +177,11 @@ Vue.component('app-dialog', {
       return {app: app};
   },
   props: ['id', 'title'],
-  template: '<section v-bind:id="id" class="page dialog" v-bind:class="{ hide: app.dialog !== id }">' +
+  template: '#dialog-template'
+  /*'<section v-bind:id="id" class="page dialog" v-bind:class="{ hide: app.dialog !== id }">' +
     '<header><div /><h1>{{ title }}</h1><div><slot name="bar-right">' +
     '<button v-on:click="app.dialog = \'\'"><i class="fa fa-window-close"></i></button>' +
-    '</slot></div></header><slot>Article</slot></section>'
+    '</slot></div></header><slot>Article</slot></section>'*/
 });
 
 Vue.component('app-page', {
@@ -182,19 +191,24 @@ Vue.component('app-page', {
   props: {
     id: String,
     title: String,
-    hideClass: {
+    hideBack: Boolean,
+    homePage: String,
+    menu: {
+      type: String,
+      default: 'menu'
+    },
+    transitionClass: {
       type: String,
       default: 'hideRight'
-    },
-    hideNav: Boolean,
-    showMenu: Boolean
+    }
   },
-  template: '<section v-bind:id="id" v-bind:class="[{page: true}, app.page === id ? \'\' : hideClass]">' +
+  template: '#page-template',
+  /*'<section v-bind:id="id" v-bind:class="[{page: true}, app.page === id ? \'\' : hideClass]">' +
     '<header><div><button v-on:click="app.menu = \'menu\'" v-if="showMenu"><i class="fa fa-bars"></i></button>' +
     '<button v-on:click="app.back()" v-if="!hideNav"><i class="fa fa-chevron-left"></i></button>' +
     '<button v-on:click="app.toPage(\'main\')" v-if="!hideNav"><i class="fas fa-home"></i></button></div>' +
     '<h1>{{ title }}</h1><div><slot name="bar-right"></slot></div>' +
-    '</header><slot>Article</slot></section>',
+    '</header><slot>Article</slot></section>'*/
   created: function() {
     //console.log('created() app-page, this.app', this);
     this.app.pages[this.id] = this;
@@ -212,121 +226,6 @@ Vue.component('page-article', {
   template: '<article class="content"><section><slot>Content</slot></section></article>'
 });
 
-Vue.component('json-item', {
-  props: ['name', 'obj', 'pobj', 'schema', 'root'],
-  data: function() {
-    return {
-      open: true
-    };
-  },
-  template: '<li class="json"><div @click="toggle">' +
-    '<span>{{ label }}:</span><br>' +
-    '<input v-if="hasStringValue && !hasEnumValues" v-model="value" type="text" placeholder="String Value">' +
-    '<input v-if="hasNumberValue && !hasEnumValues" v-model="value" type="number" placeholder="Number Value">' +
-    '<label v-if="hasBooleanValue" class="switch"><input type="checkbox" v-model="value" /><span class="slider"></span></label>' +
-    '<select v-if="hasEnumValues && (hasStringValue || hasNumberValue)" v-model="value"><option v-for="ev in enumValues" :value="ev.const">{{ev.title}}</option></select>' +
-    '</div>' +
-    '<ul class="json-properties" v-show="open" v-if="hasProperties"><li is="json-item" v-for="n in propertyNames" :key="n" :name="n" :pobj="obj" :obj="getProperty(n)" :schema="schema.properties[n]" :root="root"></li></ul>' +
-    '<ul class="json-items" v-show="open" v-if="isList">' +
-    '<li is="json-item" v-for="(so, i) in obj" :key="i" :name="\'#\' + i" :pobj="obj" :obj="so" :schema="schema.items" :root="root"></li>' +
-    '<li><button v-on:click="addItem" title="Add Item"><i class="fa fa-plus"></i></button></li>' +
-    '</ul>' +
-    '</li>',
-  computed: {
-    label: function() {
-      return this.schema && this.schema.title || this.name || 'Value';
-    },
-    hasStringValue: function() {
-      return this.schema && (this.schema.type === 'string');
-    },
-    hasEnumValues: function() {
-      return this.schema && (Array.isArray(this.schema.enum) || Array.isArray(this.schema.enumValues));
-    },
-    hasNumberValue: function() {
-      return this.schema && ((this.schema.type === 'number') || (this.schema.type === 'integer'));
-    },
-    hasBooleanValue: function() {
-      return this.schema && (this.schema.type === 'boolean');
-    },
-    propertyNames: function() {
-      var names = [];
-      for (var name in this.schema.properties) {
-        names.push(name);
-      }
-      names.sort(strcasecmp);
-      return names;
-    },
-    enumValues: function() {
-      if (Array.isArray(this.schema.enumValues)) {
-        return this.schema.enumValues;
-      } else if (Array.isArray(this.schema.enum)) {
-        return this.schema.enum.map(function(key) {
-          return {
-            "const": key,
-            "title": key
-          };
-        });
-      }
-      return [];
-    },
-    value: {
-      get: function() {
-        return this.obj;
-      },
-      set: function(val) {
-        //console.log('value()', val, this.$vnode.key);
-        this.pobj[this.$vnode.key] = parseJsonItemValue(this.schema.type, val);
-      }
-    },
-    isList: function() {
-      return this.schema && (this.schema.type === 'array') && (typeof this.schema.items === 'object') && Array.isArray(this.obj);
-    },
-    hasProperties: function() {
-      if (this.schema && (this.schema.type === 'object') && (typeof this.schema.properties === 'object')) {
-        for (var name in this.schema.properties) {
-          var ss = this.schema.properties[name];
-          if (!(name in this.obj)) {
-            this.obj[name] = newJsonItem(ss.type);
-          }
-        }
-        return true;
-      }
-      return false;
-    }
-  },
-  methods: {
-    getProperty: function(name) { 
-      if (!(name in this.obj)) {
-        if (name in this.schema.properties) {
-          this.obj[name] = newJsonItem(this.schema.properties[name].type);
-        } else {
-          this.obj[name] = '';
-        }
-      }
-      return this.obj[name];
-    },
-    addItem: function() {
-      if (this.schema && (this.schema.type === 'array') && (typeof this.schema.items === 'object') && Array.isArray(this.obj)) {
-        console.log('addItem()', this.obj, this.schema);
-        var item = newJsonItem(this.schema.items.type);
-        this.obj.push(item);
-        this.$forceUpdate();
-      } else {
-        console.error('Cannot add item', this.obj, this.schema);
-      }
-    },
-    toggle: function() {
-      if (this.schema && ((this.schema.type === 'array') || (this.schema.type === 'object'))) {
-        this.open = !this.open
-      }
-    }
-  }
-});
-Vue.component('json', {
-  props: ['name', 'obj', 'schema'],
-  template: '<ul class="json-root"><json-item :name="name" :obj="obj" :schema="schema" :root="this"></json-item></ul>'
-});
-
 /************************************************************
  * Menu
  ************************************************************/
@@ -334,15 +233,19 @@ var menu = new Vue({
   el: '#menu',
   data: {
     pages: [{
-      id: 'data-chart',
-      name: 'Chart' // time series
-    }, {
       id: 'things',
       name: 'Things'
     }, {
       id: 'extensions',
       name: 'Extensions'
     }]
+  },
+  computed: {
+    sortedPages: function() {
+      var pages = [].concat(this.pages);
+      pages.sort(compareByName);
+      return pages;
+    }
   }
 });
 
@@ -417,40 +320,37 @@ var main = new Vue({
 });
 
 /************************************************************
- * Settings
+ * Engine Information
  ************************************************************/
-var settings = new Vue({
-  el: '#settings',
+ new Vue({
+  el: '#engineInfo',
   data: {
-    logLevel: ''
+    clock: '...',
+    memory: '...',
+    time: '...'
   },
   methods: {
-    clearCache: function() {
-      app.clearCache();
-    },
-    gc: function() {
+    onShow: function() {
       var page = this;
-      fetch('/engine/admin/gc', {method: 'POST'}).then(function(response) {
-        page.refreshInfo();
+      fetch('/engine/admin/info').then(function(response) {
+        return response.json();
+      }).then(function(data) {
+        //console.log('fetch(admin/info)', data);
+        page.clock = data.clock;
+        page.memory = data.memory;
+        var clientTime = Math.round(Date.now() / 1000);
+        var delta = clientTime - data.time;
+        page.time = '' + data.time + ' (' + delta + ')';
+        toaster.toast('Refreshed');
       });
-    },
-    pollThings: function() {
-      fetch('/engine/poll', {method: 'POST'}).then(function() {
-        toaster.toast('Polling triggered');
-      });
-    },
-    applyLogLevel: function() {
-      var logLevel = this.logLevel;
-      if (logLevel) {
-        fetch('/engine/admin/setLogLevel', {method: 'POST', body: logLevel}).then(function() {
-          toaster.toast('Log Level updated to ' + logLevel);
-        });
-      }
     }
   }
 });
 
-new Vue({
+/************************************************************
+ * Engine Configuration
+ ************************************************************/
+ new Vue({
   el: '#engineConfig',
   data: {
     schema: {},
@@ -484,90 +384,6 @@ new Vue({
   }
 });
 
-new Vue({
-  el: '#settingsInfo',
-  data: {
-    clock: '...',
-    memory: '...',
-    time: '...'
-  },
-  methods: {
-    onShow: function() {
-      var page = this;
-      fetch('/engine/admin/info').then(function(response) {
-        return response.json();
-      }).then(function(data) {
-        //console.log('fetch(admin/info)', data);
-        page.clock = data.clock;
-        page.memory = data.memory;
-        var clientTime = Math.round(Date.now() / 1000);
-        var delta = clientTime - data.time;
-        page.time = '' + data.time + ' (' + delta + ')';
-        toaster.toast('Refreshed');
-      });
-    }
-  }
-});
-
-new Vue({
-  el: '#moreSettings',
-  methods: {
-    saveConfig: function() {
-      fetch('/engine/admin/configuration/save', {method: 'POST'}).then(function() {
-        toaster.toast('Configuration saved');
-        app.clearCache();
-      });
-    },
-    reloadExtensions: function() {
-      fetch('/engine/admin/reloadExtensions/all', {method: 'POST'}).then(function() {
-        toaster.toast('Extensions reloaded');
-        app.clearCache();
-      });
-    },
-    reloadScripts: function() {
-      fetch('/engine/admin/reloadScripts/all', {method: 'POST'}).then(function() {
-        toaster.toast('Scripts reloaded');
-        app.clearCache();
-      });
-    },
-    restartServer: function() {
-      confirmation.ask('Restart the server?').then(function() {
-        fetch('/engine/admin/restart', { method: 'POST'});
-      });
-    },
-    stopServer: function() {
-      confirmation.ask('Stop the server?').then(function() {
-        fetch('/engine/admin/stop', { method: 'POST'}).then(function() {
-          app.toPage('main');
-          toaster.toast('Server stopped');
-        });
-      });
-    },
-    selectFile: function(event) {
-      //this.$els.uploadInput.click();
-      this.$refs.uploadInput.click();
-    },
-    uploadFile: function(event) {
-      //console.log('uploadFile', this, arguments);
-      var input = event.target;
-      if (input.files.length !== 1) {
-        return;
-      }
-      var file = input.files[0];
-      console.log('uploadFile', file);
-      fetch('/engine/tmp/' + file.name, {
-        method: 'PUT',
-        headers: {
-          "Content-Type": "application/octet-stream"
-        },
-        body: file
-      }).then(function() {
-        fetch('/engine/admin/deploy/' + file.name, { method: 'POST'});
-      });
-    }
-  }
-});
-
 /************************************************************
  * Load simple pages
  ************************************************************/
@@ -575,60 +391,7 @@ new Vue({
   el: '#pages'
 });
 
-/************************************************************
- * Route application using location hash
- ************************************************************/
-var onHashChange = function() {
-  var matches = window.location.hash.match(/^#(\/[^\/]+\/.*)$/);
-  if (matches) {
-    app.navigateTo(matches[1]);
-  } else {
-    app.toPage('main');
-  }
-};
-app.$on('page-selected', function(id, path) {
-  window.location.replace(window.location.pathname + '#' + formatNavigationPath(id, path));
-});
-window.addEventListener('hashchange', onHashChange);
-
-var webBaseConfig = {};
-var startCountDown = 1;
-var countDownStart = function() {
-  startCountDown--;
-  console.log('countDownStart() ' + startCountDown);
-  if (startCountDown === 0) {
-    onHashChange();
-    if (webBaseConfig.theme) {
-      settings.theme = webBaseConfig.theme;
-    }
-    setTheme(settings.theme);
-  }
-};
-
-startCountDown++;
-fetch('/engine/configuration/extensions/web-base').then(function(response) {
-  return response.json();
-}).then(function(response) {
-  webBaseConfig = response.value || {};
-  countDownStart();
-}, function() {
-  webBaseConfig = {};
-  countDownStart();
-});
-
-startCountDown++;
-fetch('addon/').then(function(response) {
-  return response.json();
-}).then(function(addons) {
-  console.log('loading addons', addons);
-  if (Array.isArray(addons)) {
-    addons.forEach(function(addon) {
-      console.log('loading addon ' + addon);
-      startCountDown++;
-      require(['addon/' + addon + '/main.js'], countDownStart);
-    });
-  }
-  countDownStart();
-});
-
-countDownStart();
+function addPageComponent(vue) {
+  var component = vue.$mount();
+  document.getElementById('pages').appendChild(component.$el);
+}

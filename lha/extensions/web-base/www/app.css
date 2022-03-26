@@ -282,6 +282,37 @@ article.tiles, .tile-container {
 .tile-width {
   width: 36.5rem;
 }
+.tile > span, .tile > p {
+  font-size: 1.9rem;
+  font-weight: normal;
+  line-height: 2.5rem;
+  padding: 0.5rem;
+}
+.tile span, .tile p {
+  font-size: 1.6rem;
+  font-weight: normal;
+  line-height: 2rem;
+  padding: 0.4rem;
+}
+.tile span.tile-value, .tile p.tile-value {
+  font-size: 5rem;
+  padding: 2rem;
+}
+.tile > .tile-content {
+  height: 12rem;
+}
+.tile-content i {
+  font-size: 3rem;
+  padding: 1.5rem;
+}
+.tile > .tile-content:last-child {
+  height: 14rem;
+}
+.tile-content:last-child i {
+  font-size: 5rem;
+  padding: 2rem;
+}
+
 .bar {
   display: flex;
   justify-content: space-between;
@@ -290,12 +321,7 @@ article.tiles, .tile-container {
 .bar p {
   display: inline;
 }
-.tile > span, .tile > p {
-  font-size: 1.9rem;
-  font-weight: normal;
-  line-height: 2.5rem;
-  padding: 0.5rem;
-}
+
 article.cards, .card-container {
   padding: 1rem;
   width: 100%;
@@ -365,6 +391,7 @@ section > article > section, .card {
   -webkit-transition: .5s;
   transition: .5s;
 }
+
 .theme_ms .slider {
   background-color: #c8c8c7;
 }
@@ -388,4 +415,23 @@ input:checked + .slider:before {
   -webkit-transform: translateX(1rem);
   -ms-transform: translateX(1rem);
   transform: translateX(1rem);
+}
+
+.big.switch {
+  width: 3.6rem;
+  height: 1.8rem;
+}
+.big .slider {
+  border-radius: 1.8rem;
+}
+.big .slider:before {
+  height: 1.2rem;
+  width: 1.2rem;
+  left: 0.6rem;
+  bottom: 0.4rem;
+}
+.big input:checked + .slider:before {
+  -webkit-transform: translateX(1.2rem);
+  -ms-transform: translateX(1.2rem);
+  transform: translateX(1.2rem);
 }

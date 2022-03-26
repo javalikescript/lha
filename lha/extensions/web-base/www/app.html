@@ -24,9 +24,7 @@
 <!-- Custom pages used by components -->
 <div id="custom-pages" class="pages">
   <!--
-    ======================================================================
-    == Confirmation dialog
-    ======================================================================
+    confirmation dialog
   -->
   <app-dialog id="confirmation" title="Confirm">
     <template slot="bar-right">
@@ -39,108 +37,17 @@
     </page-article>
   </app-dialog>
   <!--
-    ======================================================================
-    == Menu
-    ======================================================================
+    default menu
   -->
-  <app-menu id="menu" title="Menu">
+  <app-menu id="menu" title="Menu" home-page="main">
     <article class="content">
       <ul>
-        <li v-for="page in pages" v-on:click="app.toPage(page.id)">{{ page.name }}</li>
+        <li v-for="page in sortedPages" v-on:click="app.toPage(page.id)">{{ page.name }}</li>
       </ul>
     </article>
   </app-menu>
   <!--
-    ======================================================================
-    == charts
-    ======================================================================
-  -->
-  <app-page id="data-chart" title="Data Chart">
-    <template slot="bar-right">
-      <button v-if="paths.length > 0" v-on:click="cleanMultiHistoricalData" title="Clean stack"><i class="fas fa-eraser"></i></button>
-      <button v-on:click="pushMultiHistoricalData" :title="'Add to stack (' + paths.length + ')'"><i class="fas fa-plus"></i></button>
-      <button v-on:click="reloadHistoricalData" title="Refresh"><i class="fas fa-sync"></i></button>
-    </template>
-    <article class="content">
-      <div style="text-align: center;">
-        <select v-model="path" v-on:change="openPath">
-          <option value="" disabled selected>(Choose something)</option>
-          <optgroup  v-for="thing in things" :label="thing.title" v-if="thing.archiveData">
-            <option v-for="(property, name) in thing.properties" :value="thing.thingId + '/' + name">{{ property.title }}</option>
-          </optgroup>
-        </select>
-        <span>Duration:</span>
-        <select v-model="duration" v-on:change="reloadHistoricalData">
-          <option value="7200">2 hours</option>
-          <option value="21600">6 hours</option>
-          <option value="43200">12 hours</option>
-          <option value="64800">18 hours</option>
-          <option value="86400">One day</option>
-          <option value="172800">2 days</option>
-          <option value="259200">3 days</option>
-          <option value="604800">7 days</option>
-          <option value="1209600">2 weeks</option>
-          <option value="2419200">4 weeks</option>
-          <option value="5443200">2 months</option>
-          <option value="15768000">6 months</option>
-          <option value="31536000">1 year</option>
-          <option value="63072000">2 years</option>
-          <option value="315360000">10 years</option>
-        </select>
-        <span>Period:</span>
-        <select v-model="period" v-on:change="reloadHistoricalData">
-          <option value="0">Auto</option>
-          <option value="60">1 min</option>
-          <option value="180">3 min</option>
-          <option value="600">10 min</option>
-          <option value="1800">30 min</option>
-          <option value="3600">1 hour</option>
-          <option value="7200">2 hours</option>
-          <option value="21600">6 hours</option>
-          <option value="86400">24 hours</option>
-        </select>
-        <span>To:</span>
-        <select v-model="toDays" v-on:change="reloadHistoricalData">
-          <option value="0">Now</option>
-          <option value="1">1 day ago</option>
-          <option value="2">2 days ago</option>
-          <option value="7">1 week ago</option>
-          <option value="14">2 weeks ago</option>
-          <option value="21">3 weeks ago</option>
-          <option value="28">4 weeks ago</option>
-          <option value="60">2 months ago</option>
-          <option value="180">6 months ago</option>
-          <option value="365">1 year ago</option>
-        </select>
-        <!--
-          <select v-model="chartType">
-            <option value="line">Lines</option>
-            <option value="bar">Bars</option>
-          </select>
-        -->
-        <select v-model="chartBeginAtZero" v-on:change="reloadHistoricalData">
-          <option value="false">Centered</option>
-          <option value="true">Zero based</option>
-        </select>
-        <!--
-          <span>Tension:</span>
-          <select v-model="chartTension">
-            <option value="0">None</option>
-            <option value="0.1">Low</option>
-            <option value="0.4">High</option>
-          </select>
-        -->
-      </div>
-      <div style="position: relative; height:40vh; width:80vw">
-        <!-- style="height: 320px; " style="position: relative; "  height="400" -->
-        <canvas id="chart-data-view-canvas"></canvas>
-      </div>
-    </article>
-  </app-page>
-  <!--
-    ======================================================================
-    == things
-    ======================================================================
+    things
   -->
   <app-page id="things" title="Things">
     <template slot="bar-right">
@@ -232,9 +139,7 @@
     </article>
   </app-page>
   <!--
-    ======================================================================
-    == extensions
-    ======================================================================
+    extensions
   -->
   <app-page id="extensions" title="Extensions">
     <template slot="bar-right">
@@ -261,14 +166,16 @@
       <button v-on:click="onDisable().then(function(){ app.back(); })" title="Disable"><i class="fa fa-trash"></i></button>
       <button v-on:click="onReload" title="Reload"><i class="fas fa-redo"></i></button>
     </template>
-    <page-article>
-      <p>{{ extension.info.name }}</p>
-      <p>{{ extension.info.description }}</p>
-      <json v-if="hasSchema(extension.manifest.schema)" :name="'Configuration'" :obj="extension.config" :schema="extension.manifest.schema"></json>
+    <article class="content">
+      <section>
+        <p>{{ extension.info.name }}</p>
+        <p>{{ extension.info.description }}</p>
+        <json v-if="schema" :name="'Configuration'" :obj="extension.config" :schema="schema"></json>
+      </section>
       <section>
         <button v-on:click="onSave()"><i class="far fa-save"></i>&nbsp;Save</button>
       </section>
-    </page-article>
+    </article>
   </app-page>
   <app-page id="addExtensions" title="Add Extensions">
     <article class="cards">
@@ -284,55 +191,22 @@
     </article>
   </app-page>
   <app-page id="addExtension" title="Add Extension">
-    <page-article>
-      <p>{{ extension.info.name }}</p>
-      <p>{{ extension.info.description }}</p>
-      <json v-if="hasSchema(extension.manifest.schema)" :name="'Configuration'" :obj="extension.config" :schema="extension.manifest.schema"></json>
+    <article class="content">
+      <section>
+        <p>{{ extension.info.name }}</p>
+        <p>{{ extension.info.description }}</p>
+        <json v-if="hasSchema(extension.manifest.schema)" :name="'Configuration'" :obj="extension.config" :schema="extension.manifest.schema"></json>
+      </section>
       <section>
         <button v-on:click="onAdd().then(function(){ app.replacePage('extensions'); })"><i class="fa fa-plus"></i>&nbsp;Add</button>
         <button v-on:click="app.back()">Cancel</button>
       </section>
-    </page-article>
+    </article>
   </app-page>
   <!--
-    ======================================================================
-    == Settings
-    ======================================================================
+    Server Info
   -->
-  <app-page id="settings" title="Settings" hide-class="hideTop">
-    <page-article>
-      <p>Engine</p>
-      <button v-on:click="app.toPage('engineConfig')"><i class="fas fa-sliders-h"></i>&nbsp;Configuration...</button>
-      <button v-on:click="app.toPage('settingsInfo')"><i class="fas fa-tools"></i>&nbsp;Info...</button>
-      <button v-on:click="app.toPage('moreSettings')"><i class="fas fa-tools"></i>&nbsp;More...</button>
-      <p>Log Level</p>
-      <select v-model="logLevel" v-on:change="applyLogLevel">
-        <option value="error">Error</option>
-        <option value="warn">Warning</option>
-        <option value="info">Information</option>
-        <option value="config">Configuration</option>
-        <option value="fine">fine</option>
-        <option value="finer">finer</option>
-        <option value="finest">finest</option>
-        <option value="debug">debug</option>
-        <option value="all">all</option>
-      </select>
-      <p>Actions</p>
-      <button v-on:click="gc()"><i class="fa fa-trash"></i>&nbsp;Collect Garbage</button>
-      <button v-on:click="pollThings()"><i class="far fa-bell"></i>&nbsp;Poll Things</button>
-      <button v-on:click="clearCache()"><i class="fa fa-trash"></i>&nbsp;Clear Cache</button>
-    </page-article>
-  </app-page>
-  <app-page id="engineConfig" title="Engine Configuration">
-    <template slot="bar-right">
-      <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
-      <button v-on:click="onSave()" title="Save"><i class="far fa-save"></i></button>
-    </template>
-    <page-article>
-      <json :name="'Configuration'" :obj="config" :schema="schema"></json>
-    </page-article>
-  </app-page>
-  <app-page id="settingsInfo" title="Server Info">
+  <app-page id="engineInfo" title="Server Info">
     <template slot="bar-right">
       <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
     </template>
@@ -345,30 +219,25 @@
       </dl>
     </page-article>
   </app-page>
-  <app-page id="moreSettings" title="More Settings">
+  <!--
+    Engine Configuration
+  -->
+  <app-page id="engineConfig" title="Server Configuration" transition-class="hideTop">
+    <template slot="bar-right">
+      <button v-on:click="app.toPage('engineInfo')" title="Server Information"><i class="fas fa-info"></i></button>
+      <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
+      <button v-on:click="onSave()" title="Save"><i class="far fa-save"></i></button>
+    </template>
     <page-article>
-      <p>Settings</p>
-      <button v-on:click="saveConfig"><i class="far fa-save"></i>&nbsp;Save Configuration</button>
-      <button v-on:click="stopServer"><i class="fas fa-power-off"></i>&nbsp;Stop the Server</button>
-      <p>Advanced</p>
-      <button v-on:click="reloadExtensions"><i class="fas fa-redo"></i>&nbsp;Reload the Extensions</button>
-      <button v-on:click="reloadScripts"><i class="fas fa-redo"></i>&nbsp;Reload the Scripts</button>
-      <!--
-      <p>Beyond</p>
-      <button v-on:click="restartServer"><i class="fas fa-redo"></i>&nbsp;Restart the Server</button>
-      <button v-on:click="selectFile"><i class="fas fa-upload"></i>&nbsp;Upgrade the Server</button>
-      <input v-on:change="uploadFile" type="file" accept=".zip" ref="uploadInput" style="display: none;" />
-      -->
+      <json :name="'Configuration'" :obj="config" :schema="schema"></json>
     </page-article>
   </app-page>
   <!--
-    ======================================================================
-    == Main
-    ======================================================================
+    Main
   -->
-  <app-page id="main" title="Welcome" show-menu="true" hide-nav="true">
+  <app-page id="main" title="Welcome" hide-back="true">
     <template slot="bar-right">
-      <button v-on:click="app.toPage('settings')" title="Settings"><i class="fas fa-cog"></i></button>
+      <button v-on:click="app.toPage('engineConfig')" title="Configuration"><i class="fas fa-cog"></i></button>
     </template>
     <article class="tiles">
       <div class="tile" v-for="page in pages" v-on:click="app.toPage(page.id)"><span>{{ page.name }}</span></div>
@@ -385,9 +254,50 @@
 </div>
 <div id="app"></div>
 </body>
+<script type="text/x-template" id="dialog-template">
+  <section v-bind:id="id" class="page dialog" v-bind:class="{ hide: app.dialog !== id }">
+    <header>
+      <div />
+      <h1>{{ title }}</h1>
+      <div>
+        <slot name="bar-right">
+          <button v-on:click="app.dialog = ''"><i class="fa fa-window-close"></i></button>
+        </slot>
+      </div>
+    </header>
+    <slot>Article</slot>
+  </section>
+</script>
+<script type="text/x-template" id="menu-template">
+  <section v-bind:id="id" class="menu" v-bind:class="{ hideLeft: app.menu !== id }">
+    <header>
+      <div>
+        <button v-on:click="app.menu = ''"><i class="fa fa-window-close"></i></button>
+        <button v-on:click="app.toPage(homePage)" v-if="homePage && (app.page !== homePage)"><i class="fas fa-home"></i></button>
+      </div>
+      <h1>{{ title }}</h1><div />
+    </header>
+    <slot>Article</slot>
+  </section>
+</script>
+<script type="text/x-template" id="page-template">
+  <section v-bind:id="id" v-bind:class="[{page: true}, app.page === id ? '' : transitionClass]">
+    <header>
+      <div>
+        <button v-on:click="app.menu = menu" v-if="menu"><i class="fa fa-bars"></i></button>
+        <button v-on:click="app.back()" v-if="!hideBack"><i class="fa fa-chevron-left"></i></button>
+        <button v-on:click="app.toPage(homePage)" v-if="homePage"><i class="fas fa-home"></i></button>
+      </div>
+      <h1>{{ title }}</h1>
+      <div>
+        <slot name="bar-right"></slot>
+      </div>
+    </header>
+    <slot>Article</slot>
+  </section>
+</script>
 <script src="static/moment.js" type="text/javascript"></script>
 <script src="static/chart/Chart.min.js"></script>
-<script src="static/amdimpl.js" type="text/javascript" charset="utf-8"></script>
 <script type="text/javascript">
 //<!--
   if (navigator.userAgent.indexOf('Edge') >= 0) {
@@ -407,11 +317,12 @@
   }
 //-->
 </script>
-<script src="app/amd.js" type="text/javascript" charset="utf-8"></script>
+<script src="static/amdimpl.js" type="text/javascript" charset="utf-8"></script>
 <script src="app/app.js" type="text/javascript" charset="utf-8"></script>
-<script src="app/charts.js" type="text/javascript" charset="utf-8"></script>
+<script src="app/json.js" type="text/javascript" charset="utf-8"></script>
 <script src="app/extensions.js" type="text/javascript" charset="utf-8"></script>
 <script src="app/things.js" type="text/javascript" charset="utf-8"></script>
+<script src="app/boot.js" type="text/javascript" charset="utf-8"></script>
 <!-- blockly for web-script extension -->
 <script src="static/blockly/blockly_compressed.js"></script>
 <script src="static/blockly/blocks_compressed.js"></script>
