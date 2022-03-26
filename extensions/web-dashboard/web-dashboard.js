@@ -30,6 +30,10 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
     return 'unknown';
   }
 
+  function lightLevelToLux(value) {
+    return Math.round((Math.pow(10, value / 10000) - 1) * 100) / 100;
+  }
+
   var extensionId = 'web-dashboard';
   var extensionName = 'Dashboard';
 

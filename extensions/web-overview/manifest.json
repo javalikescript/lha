@@ -1,6 +1,0 @@
-{
-  "name": "Overview",
-  "description": "Web Overview",
-  "version": "1.0",
-  "script": "../web-base/web-ext.lua"
-}
