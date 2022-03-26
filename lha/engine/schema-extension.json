@@ -34,7 +34,7 @@
       "type": "object"
     },
     "script": {
-      "default": "main.lua",
+      "default": "init.lua",
       "title": "The script to load the extension",
       "type": "string"
     },

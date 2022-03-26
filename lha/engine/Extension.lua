@@ -6,9 +6,10 @@ local tables = require('jls.util.tables')
 local TableList = require('jls.util.TableList')
 local Scheduler = require('jls.util.Scheduler')
 local system = require('jls.lang.system')
+
 local utils = require('lha.engine.utils')
 
-local schema = utils.requireJson('lha.extensions.schema')
+local schema = utils.requireJson('lha.engine.schema-extension')
 
 --- A Extension class.
 -- @type Extension
@@ -54,7 +55,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
         end
       end
     end
-    self:refreshConfiguration()
+    self:connectConfiguration()
   end
 
   function extension:getEngine()
@@ -122,8 +123,8 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     }
   end
 
-  function extension:refreshConfiguration()
-    self.configuration = tables.mergePath(self.engine.root, 'configuration/extensions/'..self.id, {active = false}, true)
+  function extension:connectConfiguration()
+    self.configuration = tables.mergePath(self.engine.root, 'configuration/extensions/'..self.id, {})
   end
 
   function extension:getConfiguration()
@@ -146,6 +147,9 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
         logger:warn('unable to get default values from schema, due to '..tostring(err))
         logger:warn('schema :'..json.stringify(self.manifest.schema, 2))
       end
+    end
+    if next(self.configuration) == nil then
+      self.configuration.active = false
     end
   end
 
@@ -352,6 +356,13 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
         if logger:isLoggable(logger.FINE) then
           logger:fine('the thing "'..key..'" on extension '..self.id..' is now managed by the engine')
         end
+        -- sync properties
+        for name, property in pairs(discoveredThing:getProperties()) do
+          local value = property:getValue()
+          if value ~= nil then
+            thing:updatePropertyValue(name, value)
+          end
+        end
         self.discoveredThings[key] = nil
       else
         return discoveredThing
@@ -382,7 +393,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
   end
 
   function extension:getScriptFile()
-    return File:new(self.dir, self.manifest and self.manifest.script or 'main.lua')
+    return File:new(self.dir, self.manifest and self.manifest.script or 'init.lua')
   end
 
   function extension:loadManifest()
