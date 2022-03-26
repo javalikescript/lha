@@ -1,0 +1,18 @@
+<app-page id="scripts" title="Scripts">
+  <template slot="bar-right">
+    <button v-on:click="newScript" title="Create"><i class="fa fa-plus"></i></button>
+  </template>
+  <article class="cards">
+    <div class="card" v-for="script in scripts">
+      <div class="bar">
+        <p>{{ script.name }}</p>
+        <div>
+          <button v-on:click="reloadScript(script)"><i class="fas fa-redo"></i>&nbsp;Reload</button>
+          <button v-on:click="app.toPage('scriptsEditor', script.id)"><i class="fas fa-edit"></i>&nbsp;Open</button>
+        </div>
+      </div>
+      <p>{{ script.description }}</p>
+      <p><input type="checkbox" v-model="script.active" v-on:click="activateScript(script)" /> Active</p>
+    </div>
+  </article>
+</app-page>

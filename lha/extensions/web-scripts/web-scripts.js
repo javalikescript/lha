@@ -1,5 +1,4 @@
-define(['requirePath'], function(requirePath) {
-//define(['./toolbox.xml'], function(toolboxXml) {
+define(['requirePath', './scripts.xml', './script-editor.xml'], function(requirePath, scriptsTemplate, scriptEditorTemplate) {
 
   var exportToLua = function(workspace) {
     //Blockly.Lua.INFINITE_LOOP_TRAP = 'if(--window.LoopTrap == 0) throw "Infinite loop.";\n';
@@ -256,13 +255,7 @@ define(['requirePath'], function(requirePath) {
   };
 
   var scriptsEditorVue = new Vue({
-    template: '<app-page id="scriptsEditor" title="Scripts Editor">' +
-      '<template slot="bar-right">'+
-      '<button v-on:click="onDelete" title="Delete"><i class="fa fa-trash"></i></button>' +
-      '<button v-on:click="onSave" title="Save"><i class="far fa-save"></i></button>' +
-      '</template><article class="content">' +
-      '<div id="scriptsEditorBlocklyDiv" style="height: 100%; width: 100%;"></div>' +
-      '</article></app-page>',
+    template: scriptEditorTemplate,
     data: {
       scriptId: '',
       things: [],
@@ -346,16 +339,7 @@ define(['requirePath'], function(requirePath) {
   });
   
   var scriptsVue = new Vue({
-    template: '<app-page id="scripts" title="Scripts"><template slot="bar-right">' +
-      '<button v-on:click="newScript" title="Create"><i class="fa fa-plus"></i></button>' +
-      '</template><article class="cards">' +
-      '<div class="card" v-for="script in scripts">' +
-      '<div class="bar"><p>{{ script.name }}</p><div>' +
-      '<button v-on:click="reloadScript(script)"><i class="fas fa-redo"></i>&nbsp;Reload</button>' +
-      '<button v-on:click="app.toPage(\'scriptsEditor\', script.id)"><i class="fas fa-edit"></i>&nbsp;Open</button>' +
-      '</div></div><p>{{ script.description }}</p>' +
-      '<p><input type="checkbox" v-model="script.active" v-on:click="activateScript(script)" /> Active</p>' +
-      '</div></article></app-page>',
+    template: scriptsTemplate,
     data: {
       scripts: []
     },
@@ -395,12 +379,9 @@ define(['requirePath'], function(requirePath) {
       }
     }
   });
-  
-  var scriptEditorComponent = scriptsEditorVue.$mount();
-  document.getElementById('pages').appendChild(scriptEditorComponent.$el);
-  
-  var scriptsComponent = scriptsVue.$mount();
-  document.getElementById('pages').appendChild(scriptsComponent.$el);
+
+  addPageComponent(scriptsEditorVue);
+  addPageComponent(scriptsVue);
 
   menu.pages.push({
     id: 'scripts',
