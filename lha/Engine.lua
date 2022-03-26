@@ -715,49 +715,43 @@ return class.create(function(engine)
     self.extensions = {}
     self.idGenerator = IdGenerator:new()
 
-    local optionsDir = File:new(options.engine):getAbsoluteFile():getParentFile()
-    checkDirectoryOrExit(optionsDir)
-    logger:debug('optionsDir is '..optionsDir:getPath())
-
-    local enginePath = assert(package.searchpath('lha.Engine', package.path))
-    local engineFile = File:new(enginePath):getAbsoluteFile()
-    local rootDir = engineFile:getParentFile():getParentFile()
+    local rootDir = File:new(options.engine):getAbsoluteFile():getParentFile()
     checkDirectoryOrExit(rootDir)
-    logger:debug('rootDir is '..rootDir:getPath())
+    logger:fine('rootDir is '..rootDir:getPath())
     self.rootDir = rootDir
 
     -- setup
-    local workDir = utils.getAbsoluteFile(options.work or 'work', optionsDir)
+    local workDir = utils.getAbsoluteFile(options.work or 'work', rootDir)
     checkDirectoryOrExit(workDir)
-    logger:debug('workDir is '..workDir:getPath())
+    logger:fine('workDir is '..workDir:getPath())
     self.workDir = workDir
 
     local configurationDir = File:new(workDir, 'configuration')
-    logger:debug('configurationDir is '..configurationDir:getPath())
+    logger:fine('configurationDir is '..configurationDir:getPath())
     createDirectoryOrExit(configurationDir)
     self.configHistory = HistoricalTable:new(configurationDir, 'config', {keepTable = true})
 
     local dataDir = File:new(workDir, 'data')
-    logger:debug('dataDir is '..dataDir:getPath())
+    logger:fine('dataDir is '..dataDir:getPath())
     createDirectoryOrExit(dataDir)
     self.dataHistory = HistoricalTable:new(dataDir, 'data')
 
     self.extensionsDir = File:new(workDir, 'extensions')
-    logger:debug('extensionsDir is '..self.extensionsDir:getPath())
+    logger:fine('extensionsDir is '..self.extensionsDir:getPath())
     createDirectoryOrExit(self.extensionsDir)
 
     self.lhaExtensionsDir = nil
     if rootDir:getPath() ~= workDir:getPath() then
       self.lhaExtensionsDir = File:new(rootDir, 'extensions')
-      logger:debug('lhaExtensionsDir is '..self.lhaExtensionsDir:getPath())
+      logger:fine('lhaExtensionsDir is '..self.lhaExtensionsDir:getPath())
     end
 
     self.scriptsDir = File:new(workDir, 'scripts')
-    logger:debug('scriptsDir is '..self.scriptsDir:getPath())
+    logger:fine('scriptsDir is '..self.scriptsDir:getPath())
     createDirectoryOrExit(self.scriptsDir)
 
     self.tmpDir = File:new(workDir, 'tmp')
-    logger:debug('tmpDir is '..self.tmpDir:getPath())
+    logger:fine('tmpDir is '..self.tmpDir:getPath())
     createDirectoryOrExit(self.tmpDir)
   end
 
