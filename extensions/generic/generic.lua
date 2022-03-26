@@ -1,6 +1,6 @@
 local logger = require('jls.lang.logger')
 local tables = require('jls.util.tables')
-local Thing = require('lha.engine.Thing')
+local Thing = require('lha.Thing')
 
 logger:info('generic extension')
 

@@ -1,7 +1,7 @@
 local extension = ...
 
-local Thing = require('lha.engine.Thing')
---local ThingProperty = require('lha.engine.ThingProperty')
+local Thing = require('lha.Thing')
+--local ThingProperty = require('lha.ThingProperty')
 local logger = require('jls.lang.logger')
 local loader = require('jls.lang.loader')
 local memprof = require('jls.util.memprof')

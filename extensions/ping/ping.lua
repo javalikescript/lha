@@ -2,7 +2,7 @@ local extension = ...
 
 local logger = require('jls.lang.logger')
 local system = require('jls.lang.system')
-local Thing = require('lha.engine.Thing')
+local Thing = require('lha.Thing')
 
 local function createThing(targetName)
   return Thing:new('Host '..targetName, 'Host Reachability', {'BinarySensor'}):addProperty('reachable', {

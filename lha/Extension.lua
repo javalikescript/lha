@@ -7,9 +7,8 @@ local TableList = require('jls.util.TableList')
 local Scheduler = require('jls.util.Scheduler')
 local system = require('jls.lang.system')
 
-local utils = require('lha.engine.utils')
-
-local schema = utils.requireJson('lha.engine.schema-extension')
+local utils = require('lha.utils')
+local schema = utils.requireJson('lha.schema-extension')
 
 --- A Extension class.
 -- @type Extension

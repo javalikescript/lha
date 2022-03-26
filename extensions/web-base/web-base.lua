@@ -1,6 +1,6 @@
 local extension = ...
 
--- -config.extensions.web-base.assets ../../../assets/www_static/
+-- -config.extensions.web-base.assets ../../assets/www_static/
 
 local logger = require('jls.lang.logger')
 local event = require('jls.lang.event')
@@ -16,7 +16,7 @@ local Map = require("jls.util.Map")
 local List = require("jls.util.List")
 local tables = require("jls.util.tables")
 
-local utils = require('lha.engine.utils')
+local utils = require('lha.utils')
 
 local AddonFileHttpHandler = require('jls.lang.class').create(FileHttpHandler, function(fileHttpHandler)
 

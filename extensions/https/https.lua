@@ -5,7 +5,7 @@ local HttpServer = require('jls.net.http.HttpServer')
 local BasicAuthenticationHttpFilter = require('jls.net.http.filter.BasicAuthenticationHttpFilter')
 local Date = require('jls.util.Date')
 local secure = require('jls.net.secure')
-local utils = require('lha.engine.utils')
+local utils = require('lha.utils')
 
 local function writeCertificateAndPrivateKey(certFile, pkeyFile, commonName)
   local cacert, pkey = secure.createCertificate({

@@ -1,0 +1,73 @@
+<app-page id="web-dashboard" title="Dashboard">
+  <template slot="bar-right">
+    <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
+    <button v-on:click="onAdd()" title="Add"><i class="fa fa-plus"></i></button>
+  </template>
+  <article class="tiles">
+    <div class="tile" v-for="tile in tiles">
+      <div class="bar">
+        <span>{{ tile.title }}</span>
+      </div>
+      <span class="tile-value">{{ tile.value }}</span>
+    </div>
+    <!--
+    -->
+    <!--
+    <div class="tile">
+      <div class="bar">
+        <span>Title</span>
+      </div>
+      <div class="tile-content">
+        <i class="fas fa-running"></i>
+        <i class="fas fa-person"></i>
+        <br/>
+        <p>Description</p>
+      </div>
+    </div>
+    <div class="tile">
+      <div class="bar">
+        <span>Title</span>
+      </div>
+      <div class="tile-content">
+        <i class="fas fa-lightbulb"></i>
+        <i class="fas fa-lightbulb-off"></i>
+        <br/>
+        <p>Description</p>
+      </div>
+    </div>
+    <div class="tile">
+      <div class="bar">
+        <span>Title</span>
+      </div>
+      <span class="tile-value">20°C</span>
+      <div class="bar">
+        <div/>
+        <div>
+          <span>60%</span>
+          <span>+/-2</span>
+        </div>
+      </div>
+    </div>
+    <div class="tile">
+      <div class="bar">
+        <div>
+          <span>Title</span>
+        </div>
+        <div>
+          <button><i class="fas fa-info"></i></button>
+        </div>
+      </div>
+      <div class="tile-content">
+        <i class="fas fa-thermometer-half"></i>
+        <br/>
+        <p>Description</p>
+      </div>
+      <div class="bar">
+        <span>Max</span>
+        <span>Min</span>
+        <span>Value</span>
+      </div>
+    </div>
+    -->
+  </article>
+</app-page>

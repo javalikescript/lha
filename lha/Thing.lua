@@ -3,8 +3,8 @@ local TableList = require('jls.util.TableList')
 local color = require('jls.util.color')
 local hex = require('jls.util.hex')
 
-local ThingProperty = require('lha.engine.ThingProperty')
-local ThingEvent = require('lha.engine.ThingEvent')
+local ThingProperty = require('lha.ThingProperty')
+local ThingEvent = require('lha.ThingEvent')
 
 -- Standard properties, see https://webthings.io/schemas/
 

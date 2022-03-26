@@ -2,7 +2,7 @@ local extension = ...
 
 local logger = require('jls.lang.logger')
 local FileHttpHandler = require('jls.net.http.handler.FileHttpHandler')
-local utils = require('lha.engine.utils')
+local utils = require('lha.utils')
 
 local contexts = {}
 

@@ -5,7 +5,7 @@ local class = require('jls.lang.class')
 local Promise = require('jls.lang.Promise')
 local http = require('jls.net.http')
 local json = require('jls.util.json')
-local Thing = require('lha.engine.Thing')
+local Thing = require('lha.Thing')
 
 -- Helper classes and functions
 

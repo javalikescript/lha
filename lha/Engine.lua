@@ -16,13 +16,13 @@ local TableList = require('jls.util.TableList')
 local Date = require('jls.util.Date')
 local ZipFile = require('jls.util.zip.ZipFile')
 
-local HistoricalTable = require('lha.engine.HistoricalTable')
-local IdGenerator = require('lha.engine.IdGenerator')
-local Extension = require('lha.engine.Extension')
-local Thing = require('lha.engine.Thing')
-local utils = require('lha.engine.utils')
+local HistoricalTable = require('lha.HistoricalTable')
+local IdGenerator = require('lha.IdGenerator')
+local Extension = require('lha.Extension')
+local Thing = require('lha.Thing')
+local utils = require('lha.utils')
 
-local schema = utils.requireJson('lha.engine.schema')
+local schema = utils.requireJson('lha.schema')
 
 local function createDirectoryOrExit(dir)
   if not dir:isDirectory() then
@@ -719,10 +719,9 @@ return class.create(function(engine)
     checkDirectoryOrExit(optionsDir)
     logger:debug('optionsDir is '..optionsDir:getPath())
 
-    local enginePath = assert(package.searchpath('lha.engine.Engine', package.path))
+    local enginePath = assert(package.searchpath('lha.Engine', package.path))
     local engineFile = File:new(enginePath):getAbsoluteFile()
-    local lhaDir = engineFile:getParentFile():getParentFile()
-    local rootDir = lhaDir:getParentFile()
+    local rootDir = engineFile:getParentFile():getParentFile()
     checkDirectoryOrExit(rootDir)
     logger:debug('rootDir is '..rootDir:getPath())
     self.rootDir = rootDir
@@ -748,8 +747,8 @@ return class.create(function(engine)
     createDirectoryOrExit(self.extensionsDir)
 
     self.lhaExtensionsDir = nil
-    if lhaDir:getPath() ~= workDir:getPath() then
-      self.lhaExtensionsDir = File:new(lhaDir, 'extensions')
+    if rootDir:getPath() ~= workDir:getPath() then
+      self.lhaExtensionsDir = File:new(rootDir, 'extensions')
       logger:debug('lhaExtensionsDir is '..self.lhaExtensionsDir:getPath())
     end
 

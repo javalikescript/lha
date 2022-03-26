@@ -1,4 +1,4 @@
-local IdGenerator = require('lha.engine.IdGenerator')
+local IdGenerator = require('lha.IdGenerator')
 
 local os_time = os.time
 local function sleep(millis)

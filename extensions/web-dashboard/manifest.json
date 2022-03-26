@@ -1,0 +1,50 @@
+{
+  "name": "Dashboard",
+  "description": "Expose things on dashboard",
+  "dependencies": ["web-base"],
+  "version": "0.1",
+  "script": "../web-base/web-ext.lua",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "tiles": {
+        "title": "Tiles",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "title": "Title",
+              "type": "string",
+              "default": "My Tile"
+            },
+            "type": {
+              "title": "The type of things",
+              "type": "string",
+              "enumValues": [
+                {"const": "auto", "title": "Auto"},
+                {"const": "temperature", "title": "Temperature"},
+                {"const": "weather", "title": "Weather"},
+                {"const": "light", "title": "Light"},
+                {"const": "motion", "title": "Motion"}
+              ],
+              "default": "auto"
+            },
+            "group": {
+              "title": "Group",
+              "type": "string"
+            },
+            "thingIds": {
+              "title": "Things",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enumVar": "thingIds"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

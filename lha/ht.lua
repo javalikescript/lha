@@ -1,7 +1,7 @@
 local File = require('jls.io.File')
 local Date = require("jls.util.Date")
 local tables = require("jls.util.tables")
-local HistoricalTable = require('lha.engine.HistoricalTable')
+local HistoricalTable = require('lha.HistoricalTable')
 local json = require('jls.util.json')
 local runtime = require('jls.lang.runtime')
 

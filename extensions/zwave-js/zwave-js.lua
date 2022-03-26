@@ -10,7 +10,7 @@ local strings = require('jls.util.strings')
 local json = require('jls.util.json')
 local Map = require('jls.util.Map')
 
-local Thing = require('lha.engine.Thing')
+local Thing = require('lha.Thing')
 
 --logger = logger:getClass():new(); logger:setLevel(logger.FINE)
 

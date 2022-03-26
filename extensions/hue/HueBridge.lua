@@ -7,7 +7,7 @@ local Date = require('jls.util.Date')
 local protectedCall = require('jls.lang.protectedCall')
 local WebSocket = require('jls.net.http.ws').WebSocket
 
-local Thing = require('lha.engine.Thing')
+local Thing = require('lha.Thing')
 
 local CONST = {
   SENSORS = 'sensors',
