@@ -1,4 +1,5 @@
 local logger = require('jls.lang.logger')
+local loader = require('jls.lang.loader')
 local protectedCall = require('jls.lang.protectedCall')
 local File = require('jls.io.File')
 local json = require('jls.util.json')
@@ -150,6 +151,10 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     if next(self.configuration) == nil then
       self.configuration.active = false
     end
+  end
+
+  function extension:require(name, base)
+    return loader.load(name, base and self.dir:getParent() or self.dir:getPath())
   end
 
   function extension:subscribePollEvent(fn, minIntervalSec, lastPollSec)

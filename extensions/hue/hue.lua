@@ -3,8 +3,7 @@ local extension = ...
 local logger = require('jls.lang.logger')
 local Date = require('jls.util.Date')
 
-local HueBridge = require('extensions.hue.HueBridge')
-
+local HueBridge = extension:require('hue.HueBridge', true)
 
 local configuration = extension:getConfiguration()
 
