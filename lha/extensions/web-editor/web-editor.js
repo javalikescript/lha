@@ -17,9 +17,9 @@ define(function() {
         }
       }
   });
-  var aComponent = aVue.$mount();
-  document.getElementById('pages').appendChild(aComponent.$el);
-  
+
+  addPageComponent(aVue);
+
   menu.pages.push({
     id: 'editor',
     name: 'Editor'
