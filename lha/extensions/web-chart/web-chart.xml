@@ -1,0 +1,82 @@
+<app-page id="data-chart" title="Data Chart">
+  <template slot="bar-right">
+    <button v-if="paths.length > 0" v-on:click="cleanMultiHistoricalData" title="Clean stack"><i class="fas fa-eraser"></i></button>
+    <button v-on:click="pushMultiHistoricalData" :title="'Add to stack (' + paths.length + ')'"><i class="fas fa-plus"></i></button>
+    <button v-on:click="reloadHistoricalData" title="Refresh"><i class="fas fa-sync"></i></button>
+  </template>
+  <article class="content">
+    <div style="text-align: center;">
+      <select v-model="path" v-on:change="openPath">
+        <option value="" disabled selected>(Choose something)</option>
+        <optgroup  v-for="thing in things" :label="thing.title" v-if="thing.archiveData">
+          <option v-for="(property, name) in thing.properties" v-if="!property.configuration" :value="thing.thingId + '/' + name">{{ property.title }}</option>
+        </optgroup>
+      </select>
+      <span>Duration:</span>
+      <select v-model="duration" v-on:change="reloadHistoricalData">
+        <option value="7200">2 hours</option>
+        <option value="21600">6 hours</option>
+        <option value="43200">12 hours</option>
+        <option value="64800">18 hours</option>
+        <option value="86400">One day</option>
+        <option value="172800">2 days</option>
+        <option value="259200">3 days</option>
+        <option value="604800">7 days</option>
+        <option value="1209600">2 weeks</option>
+        <option value="2419200">4 weeks</option>
+        <option value="5443200">2 months</option>
+        <option value="15768000">6 months</option>
+        <option value="31536000">1 year</option>
+        <option value="63072000">2 years</option>
+        <option value="315360000">10 years</option>
+      </select>
+      <span>Period:</span>
+      <select v-model="period" v-on:change="reloadHistoricalData">
+        <option value="0">Auto</option>
+        <option value="60">1 min</option>
+        <option value="180">3 min</option>
+        <option value="600">10 min</option>
+        <option value="1800">30 min</option>
+        <option value="3600">1 hour</option>
+        <option value="7200">2 hours</option>
+        <option value="21600">6 hours</option>
+        <option value="86400">24 hours</option>
+      </select>
+      <span>To:</span>
+      <select v-model="toDays" v-on:change="reloadHistoricalData">
+        <option value="0">Now</option>
+        <option value="1">1 day ago</option>
+        <option value="2">2 days ago</option>
+        <option value="7">1 week ago</option>
+        <option value="14">2 weeks ago</option>
+        <option value="21">3 weeks ago</option>
+        <option value="28">4 weeks ago</option>
+        <option value="60">2 months ago</option>
+        <option value="180">6 months ago</option>
+        <option value="365">1 year ago</option>
+      </select>
+      <!--
+        <select v-model="chartType">
+          <option value="line">Lines</option>
+          <option value="bar">Bars</option>
+        </select>
+      -->
+      <select v-model="chartBeginAtZero" v-on:change="reloadHistoricalData">
+        <option value="false">Centered</option>
+        <option value="true">Zero based</option>
+      </select>
+      <!--
+        <span>Tension:</span>
+        <select v-model="chartTension">
+          <option value="0">None</option>
+          <option value="0.1">Low</option>
+          <option value="0.4">High</option>
+        </select>
+      -->
+    </div>
+    <div style="position: relative; height:40vh; width:80vw">
+      <!-- style="height: 320px; " style="position: relative; "  height="400" -->
+      <canvas id="chart-data-view-canvas"></canvas>
+    </div>
+  </article>
+</app-page>

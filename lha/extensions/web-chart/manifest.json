@@ -1,0 +1,7 @@
+{
+  "name": "Web Chart",
+  "description": "Add Chart capability",
+  "dependencies": ["web-base"],
+  "version": "1.0",
+  "script": "../web-base/web-ext.lua"
+}
