@@ -2,6 +2,7 @@ local tables = require('jls.util.tables')
 local TableList = require('jls.util.TableList')
 local color = require('jls.util.color')
 local hex = require('jls.util.hex')
+
 local ThingProperty = require('lha.engine.ThingProperty')
 local ThingEvent = require('lha.engine.ThingEvent')
 
@@ -127,7 +128,23 @@ local PROPERTY_METADATA = {
     title = 'Smoke',
     description = 'Whether smoke is detected',
     readOnly = true
-  }
+  },
+  BATTERY_LEVEL = {
+    ['@type'] = 'LevelProperty',
+    type = 'number',
+    title = 'Battery Level',
+    description = 'The battery level in percent',
+    configuration = true,
+    readOnly = true,
+    unit = 'percent'
+  },
+  ENABLED = {
+    ['@type'] = 'OnOffProperty',
+    type = 'boolean',
+    title = 'Thing Enabled',
+    description = 'Whether the thing is enabled',
+    configuration = true
+  },
 }
 
 local PROPERTY_METADATA_BY_NAME = {
@@ -139,10 +156,12 @@ local PROPERTY_METADATA_BY_NAME = {
   presence = PROPERTY_METADATA.MOTION,
   humidity = PROPERTY_METADATA.RELATIVE_HUMIDITY,
   pressure = PROPERTY_METADATA.ATMOSPHERIC_PRESSURE,
-  lightlevel = PROPERTY_METADATA.LIGHT_LEVEL,
+  lightlevel = PROPERTY_METADATA.LIGHT_LEVEL, -- TODO use camel case
   illuminance = PROPERTY_METADATA.ILLUMINANCE,
   pushed = PROPERTY_METADATA.PUSHED,
   smoke = PROPERTY_METADATA.SMOKE,
+  batteryLevel = PROPERTY_METADATA.BATTERY_LEVEL,
+  enabled = PROPERTY_METADATA.ENABLED,
 }
 
 local PROPERTY_NAME_BY_METADATA = {}
@@ -233,6 +252,7 @@ return require('jls.lang.class').create(function(thing)
   end
 
   --- Adds a property to this thing.
+  -- Sensor values, configuration parameters, statuses, computation results
   -- @param name The property's name
   -- @param property The property to add
   -- @return this thing
@@ -380,7 +400,8 @@ return require('jls.lang.class').create(function(thing)
     error('No metadata for property "'..tostring(name)..'"')
   end
 
-  function thing:addPropertiesFromNames(names)
+  function thing:addPropertiesFromNames(...)
+    local names = {...}
     for _, name in ipairs(names) do
       self:addPropertyFromName(name)
     end

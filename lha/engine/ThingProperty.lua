@@ -16,6 +16,8 @@ return require('jls.lang.class').create(function(thingProperty)
   --   - A description (A string providing a human friendly description)
   --   - enum (an enumeration of possible values for the property)
   --   - readOnly (A boolean indicating whether or not the property is read-only, defaulting to false)
+  --   - configuration (A boolean indicating whether or not the property is a configuration, defaulting to false)
+  --   - observable (A boolean indicating whether or not the property is observable, defaulting to false)
   --   - A minimum and maximum (numeric values)
   -- @function ThingProperty:new
   -- @param metadata the property metadata, i.e. type, description, unit, etc., as a table
@@ -29,7 +31,11 @@ return require('jls.lang.class').create(function(thingProperty)
   end
 
   function thingProperty:isReadOnly()
-    return self.metadata and (self.metadata.readOnly == true)
+    return self.metadata.readOnly == true
+  end
+
+  function thingProperty:isConfiguration()
+    return self.metadata.configuration == true
   end
 
   function thingProperty:getValue()
