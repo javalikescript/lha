@@ -21,7 +21,10 @@ ifdef HOST
 	endif
 endif
 
-LUACLIBS := ../luaclibs/dist-$(PLAT)
+LUACLIBS := ../luaclibs
+LUACLIBS_DIST := $(LUACLIBS)/dist-$(PLAT)
+#LUAJLS := $(LUACLIBS)/luajls
+LUAJLS := $(LUACLIBS_DIST)
 LHA_DIST := dist
 
 SO_windows=dll
@@ -59,20 +62,20 @@ dist-copy-linux:
 	cp -u lha.sh $(LHA_DIST)/
 
 dist-copy-windows:
-	cp -u $(LUACLIBS)/lua*.$(SO) $(LHA_DIST)/bin/
+	cp -u $(LUACLIBS_DIST)/lua*.$(SO) $(LHA_DIST)/bin/
 	cp -u lha.bat $(LHA_DIST)/
 
 dist-copy: dist-copy-$(PLAT)
-	cp -u $(LUACLIBS)/lua$(EXE) $(LHA_DIST)/bin/
-	cp -u $(LUACLIBS)/cjson.$(SO) $(LHA_DIST)/bin/
-	cp -u $(LUACLIBS)/luv.$(SO) $(LHA_DIST)/bin/
-	cp -u $(LUACLIBS)/openssl.$(SO) $(LHA_DIST)/bin/
-	cp -u $(LUACLIBS)/serial.$(SO) $(LHA_DIST)/bin/
-	cp -u $(LUACLIBS)/zlib.$(SO) $(LHA_DIST)/bin/
-	cp -ru $(LUACLIBS)/sha1/ $(LHA_DIST)/lua/
-	cp -u $(LUACLIBS)/XmlParser.lua $(LHA_DIST)/lua/
-	cp -u $(LUACLIBS)/sha1.lua $(LHA_DIST)/lua/
-	cp -ru $(LUACLIBS)/jls/ $(LHA_DIST)/lua/
+	cp -u $(LUACLIBS_DIST)/lua$(EXE) $(LHA_DIST)/bin/
+	cp -u $(LUACLIBS_DIST)/cjson.$(SO) $(LHA_DIST)/bin/
+	cp -u $(LUACLIBS_DIST)/luv.$(SO) $(LHA_DIST)/bin/
+	cp -u $(LUACLIBS_DIST)/openssl.$(SO) $(LHA_DIST)/bin/
+	cp -u $(LUACLIBS_DIST)/serial.$(SO) $(LHA_DIST)/bin/
+	cp -u $(LUACLIBS_DIST)/zlib.$(SO) $(LHA_DIST)/bin/
+	cp -ru $(LUACLIBS_DIST)/sha1/ $(LHA_DIST)/lua/
+	cp -u $(LUACLIBS_DIST)/XmlParser.lua $(LHA_DIST)/lua/
+	cp -u $(LUACLIBS_DIST)/sha1.lua $(LHA_DIST)/lua/
+	cp -ru $(LUAJLS)/jls/ $(LHA_DIST)/lua/
 	cp -ru lha/ $(LHA_DIST)/lua/
 	cp -u *.lua $(LHA_DIST)/
 	cp -ru extensions/ $(LHA_DIST)/
