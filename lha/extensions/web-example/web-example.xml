@@ -1,0 +1,5 @@
+<app-page id="example" title="Sample Page">
+  <page-article>
+    <p>Example content</p>
+  </page-article>
+</app-page>
