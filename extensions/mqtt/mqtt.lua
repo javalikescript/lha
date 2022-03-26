@@ -18,7 +18,7 @@ local configuration = extension:getConfiguration()
 
 local function publisher(value, previousValue, path)
   if mqttClient then
-    local topic = configuration.prefix + path
+    local topic = configuration.prefix..path
     mqttClient:publish(topic, json.encode({
       value = value,
       previousValue = previousValue
