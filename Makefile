@@ -12,6 +12,15 @@ else
 	MK_PATH := $(subst /c/,C:/,$(MK_PATH))
 endif
 
+ifdef HOST
+	CROSS_PREFIX ?= $(HOST)-
+	ifneq (,$(findstring arm,$(HOST)))
+		ARCH = arm
+	else ifneq (,$(findstring aarch64,$(HOST)))
+		ARCH = aarch64
+	endif
+endif
+
 LUACLIBS := ../luaclibs/dist-$(PLAT)
 LHA_DIST := dist
 
@@ -28,7 +37,7 @@ EXE := $(EXE_$(PLAT))
 MAIN_MK := $(MK_$(PLAT))
 ZIP := $(ZIP_$(PLAT))
 
-GCC_NAME ?= $(shell gcc -dumpmachine)
+GCC_NAME ?= $(shell $(CROSS_PREFIX)gcc -dumpmachine)
 LUA_DATE = $(shell date '+%Y%m%d')
 DIST_SUFFIX ?= -$(GCC_NAME).$(LUA_DATE)
 
