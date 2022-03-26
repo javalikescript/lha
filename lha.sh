@@ -1,1 +1,1 @@
-nohup lua lha/engine/main.lua &
+nohup bin/lua lha.lua &
