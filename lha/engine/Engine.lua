@@ -14,6 +14,7 @@ local strings = require('jls.util.strings')
 local tables = require('jls.util.tables')
 local TableList = require('jls.util.TableList')
 local Date = require('jls.util.Date')
+local ZipFile = require('jls.util.zip.ZipFile')
 
 local HistoricalTable = require('lha.engine.HistoricalTable')
 local IdGenerator = require('lha.engine.IdGenerator')
@@ -146,6 +147,39 @@ local function getUpdateTime()
   return Date.now()
 end
 
+local function computeChanges(t, key)
+  local fullKey = key..HistoricalTable.CHANGES_SUFFIX
+  local previousValue = t[fullKey]
+  if previousValue then
+    t[fullKey] = previousValue + 1
+  else
+    t[fullKey] = 1
+  end
+end
+local function computeMin(t, key, value)
+  local fullKey = key..HistoricalTable.MIN_SUFFIX
+  local previousValue = t[fullKey]
+  if not previousValue or value < previousValue then
+    t[fullKey] = value
+  end
+end
+local function computeMax(t, key, value)
+  local fullKey = key..HistoricalTable.MAX_SUFFIX
+  local previousValue = t[fullKey]
+  if not previousValue or value > previousValue then
+    t[fullKey] = value
+  end
+end
+local function isValidValue(value)
+  if value == nil then
+    return false
+  end
+  -- valid number is not nan nor +/-inf
+  if type(value) == 'number' and (value ~= value or value == math.huge or value == -math.huge) then
+    return false
+  end
+  return true
+end
 
 local EngineThing = class.create(Thing, function(engineThing, super)
 
@@ -174,6 +208,10 @@ local EngineThing = class.create(Thing, function(engineThing, super)
     return self.configuration.archiveData
   end
 
+  function engineThing:getThingId()
+    return self.thingId
+  end
+
   function engineThing:setPropertyValue(name, value)
     local property = self:getProperty(name)
     if not property or property:isReadOnly() then
@@ -197,53 +235,33 @@ local EngineThing = class.create(Thing, function(engineThing, super)
     end
   end
 
-  local function computeChanges(t, key)
-    local fullKey = key..HistoricalTable.CHANGES_SUFFIX
-    local previousValue = t[fullKey]
-    if previousValue then
-      t[fullKey] = previousValue + 1
-    else
-      t[fullKey] = 2
-    end
-  end
-  local function computeMin(t, key, value)
-    local fullKey = key..HistoricalTable.MIN_SUFFIX
-    local previousValue = t[fullKey]
-    if not previousValue or value < previousValue then
-      t[fullKey] = value
-    end
-  end
-  local function computeMax(t, key, value)
-    local fullKey = key..HistoricalTable.MAX_SUFFIX
-    local previousValue = t[fullKey]
-    if not previousValue or value > previousValue then
-      t[fullKey] = value
-    end
-  end
-
   function engineThing:updatePropertyValue(name, value)
-    local property = self.properties[name]
-    if property then
-      -- check numbers are valid, not nan nor +/-inf
-      if type(value) == 'number' and (value ~= value or value == math.huge or value == -math.huge) then
-        logger:warn('Invalid number value on update property "'..name..'"')
-        return
-      end
+    if isValidValue(value) then
       self.lastupdated = getUpdateTime()
       if self:isArchiveData() then
-        local path = 'data/'..self.thingId..'/'..name
-        local previousValue, t, key = self.engine:setRootValue(path, value, true)
-        if previousValue ~= nil and previousValue ~= value then
-          local mt = property:getMetadata('type') -- type(value)
-          if mt == 'number' or mt == 'integer' then
-            computeMin(t, key, math.min(value, previousValue))
-            computeMax(t, key, math.max(value, previousValue))
-          elseif mt == 'boolean' or mt == 'string' then
-            computeChanges(t, key)
+        local property = self:getProperty(name)
+        if property and not property:isConfiguration() then
+          local currentValue = property:getValue()
+          local path = 'data/'..self.thingId..'/'..name
+          local prev, t, key = tables.setPath(self.engine.root, path, value)
+          if currentValue ~= value then
+            self.engine:publishRootChange(path, value, currentValue)
+            local mt = property:getMetadata('type') -- type(value)
+            if mt == 'number' or mt == 'integer' then
+              -- if had current value and not first update since archive
+              if currentValue ~= nil and prev ~= nil then
+                computeMin(t, key, math.min(value, currentValue))
+                computeMax(t, key, math.max(value, currentValue))
+              end
+            elseif mt == 'boolean' or mt == 'string' then
+              computeChanges(t, key)
+            end
           end
         end
       end
       super.updatePropertyValue(self, name, value)
+    else
+      logger:warn('Invalid number value on update property "'..name..'"')
     end
   end
 
@@ -492,9 +510,7 @@ local REST_SCRIPTS = {
 local REST_ADMIN = {
   configuration = {
     save = function(exchange)
-      -- curl http://localhost:8080/engine/admin/configuration/save
-      local engine = exchange:getAttribute('engine')
-      engine.configHistory:saveJson()
+      exchange.attributes.engine.configHistory:saveJson()
       return 'Done'
     end
   },
@@ -508,14 +524,21 @@ local REST_ADMIN = {
     exchange.attributes.engine:reloadScripts(mode == 'full')
     return 'Done'
   end,
-  stop = function(exchange)
-    -- curl http://localhost:8080/engine/admin/configuration/stop
+  ['restart?method=POST'] = function(exchange)
     event:setTimeout(function()
       exchange.attributes.engine:stop()
+      exchange.attributes.engine:start()
     end, 100)
-    return 'Bye'
+    return 'In progress'
   end,
-  gc = function(exchange)
+  ['stop?method=POST'] = function(exchange)
+    event:setTimeout(function()
+      exchange.attributes.engine:stop()
+      event:stop()
+    end, 100)
+    return 'In progress'
+  end,
+  ['gc?method=POST'] = function(exchange)
     if not HttpExchange.methodAllowed(exchange, 'POST') then
       return false
     end
@@ -538,6 +561,45 @@ local REST_ADMIN = {
     end, false, false, 'csv')
     return report
   end,
+  backup = {
+    ['create?method=POST'] = function(exchange)
+      local engine = exchange:getAttribute('engine')
+      local ts = Date.timestamp()
+      local backup = File:new(engine:getTemporaryDirectory(), 'lha_backup.'..ts..'.zip')
+      ZipFile.zipTo(backup, engine:getWorkDirectory():listFiles(function(file)
+        return file:getName() ~= 'tmp'
+      end))
+      return backup:getName()
+    end,
+    ['deploy?method=POST'] = function(exchange)
+      local backupName = exchange:getRequest():getBody() or 'lha_backup.zip'
+      local engine = exchange:getAttribute('engine')
+      local backup = File:new(engine:getTemporaryDirectory(), backupName)
+      if not backup:isFile() then
+        HttpExchange.notFound(exchange)
+        return false
+      end
+      local workDir = engine:getWorkDirectory()
+      local workNew = File:new(workDir:getParentFile(), 'work_new')
+      local workOld = File:new(workDir:getParentFile(), 'work_old')
+      workNew:deleteRecursive()
+      workOld:deleteRecursive()
+      workNew:mkdir()
+      ZipFile.unzipTo(backup, workNew)
+      local tmpDir = File:new(workNew, 'tmp')
+      local tmpNew = File:new(workNew, 'tmp')
+      engine:stop()
+      if tmpDir:isDirectory() then
+        tmpDir:renameTo(tmpNew)
+      else
+        tmpNew:mkdir()
+      end
+      workDir:renameTo(workOld)
+      workNew:renameTo(workDir)
+      engine:start()
+      workOld:deleteRecursive()
+    end
+  },
   ['setLogLevel?method=POST'] = function(exchange)
     local request = exchange:getRequest()
     logger:setLevel(request:getBody())
@@ -778,8 +840,8 @@ return class.create(function(engine)
     httpServer:createContext('/engine/historicalData/(.*)', historicalDataHandler, {
       engine = self
     })
-    httpServer:createContext('/engine/scriptFiles/(.*)', FileHttpHandler:new(self.scriptsDir, 'rcd'))
-    httpServer:createContext('/engine/tmp/(.*)', FileHttpHandler:new(self.tmpDir, 'rcd'))
+    httpServer:createContext('/engine/scriptFiles/(.*)', FileHttpHandler:new(self.scriptsDir, 'rw'))
+    httpServer:createContext('/engine/tmp/(.*)', FileHttpHandler:new(self.tmpDir, 'rw'))
     self.server = httpServer
   end
 
@@ -1105,6 +1167,7 @@ return class.create(function(engine)
   end
 
   function engine:start(defaultConfig, customConfig)
+    logger:info('Starting engine')
     self.configHistory:loadLatest()
     self.dataHistory:loadLatest()
     self.root = {
@@ -1140,12 +1203,13 @@ return class.create(function(engine)
   end
 
   function engine:stop()
+    logger:info('Stopping engine')
     self:stopHeartbeat()
+    self.scheduler:removeAllSchedules()
     self:stopHTTPServer()
     self:publishEvent('shutdown')
     self.configHistory:saveJson()
     self.dataHistory:saveJson()
-    event:stop()
   end
 
 end, function(Engine)
