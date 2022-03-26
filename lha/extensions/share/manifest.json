@@ -1,0 +1,35 @@
+{
+  "name": "HTTP Share",
+  "description": "Expose a server folder on the HTTP server",
+  "version": "1.0",
+  "script": "share.lua",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "shares": {
+        "title": "The shared folders to expose",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "title": "The URL path",
+              "type": "string",
+              "pattern": "^[%a%d_%-]+$",
+              "default": "share"
+            },
+            "dir": {
+              "title": "The directory to share",
+              "type": "string"
+            },
+            "permissions": {
+              "title": "The permissions",
+              "type": "string",
+              "default": "rwl"
+            }
+          }
+        }
+      }
+    }
+  }
+}
