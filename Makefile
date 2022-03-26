@@ -29,8 +29,7 @@ MAIN_MK := $(MK_$(PLAT))
 ZIP := $(ZIP_$(PLAT))
 
 GCC_NAME ?= $(shell gcc -dumpmachine)
-LUA_APP = $(LUACLIBS)/lua$(EXE)
-LUA_DATE = $(shell $(LUA_APP) -e "print(os.date('%Y%m%d'))")
+LUA_DATE = $(shell date '+%Y%m%d')
 DIST_SUFFIX ?= -$(GCC_NAME).$(LUA_DATE)
 
 WEBVIEW_ARCH = x64
