@@ -305,6 +305,8 @@ return require('jls.lang.class').create(function(hueBridge)
     'humidity',
     'temperature',
     'pressure',
+    'batteryLevel',
+    'enabled',
   }
 
   function hueBridge:lazyUpdateThing(thing, info)
@@ -410,7 +412,7 @@ end, function(HueBridge)
     elseif infoType == 'ZLLTemperature' or infoType == 'ZHATemperature' then
       return Thing:new(info.name or 'Temperature', 'Temperature Sensor', {'TemperatureSensor'}):addTemperatureProperty()
     elseif infoType == 'ZLLPresence' or infoType == 'ZHAPresence' then
-      return Thing:new(info.name or 'Presence', 'Motion Sensor', {'MotionSensor'}):addPresenceProperty()
+      return Thing:new(info.name or 'Presence', 'Motion Sensor', {'MotionSensor'}):addPropertiesFromNames('presence', 'batteryLevel', 'enabled')
     elseif infoType == 'ZLLSwitch' then
       return Thing:new(info.name or 'Switch', 'Switch Button', {'PushButton'}):addProperty('on', {
         ['@type'] = 'PushedProperty',
