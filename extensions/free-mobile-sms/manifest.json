@@ -1,5 +1,5 @@
 {
-  "name": "Free Mobile SMS API",
+  "name": "Free Mobile SMS",
   "description": "Send SMS via Free Mobile",
   "version": "0.1",
   "script": "free-mobile-sms.lua",

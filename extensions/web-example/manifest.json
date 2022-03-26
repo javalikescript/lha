@@ -1,5 +1,5 @@
 {
-  "name": "Web example",
+  "name": "Web Example",
   "description": "Expose web example add-on",
   "dependencies": ["web-base"],
   "version": "1.0",

@@ -1,5 +1,5 @@
 {
-  "name": "Web Chart",
+  "name": "Chart",
   "description": "Add Chart capability",
   "dependencies": ["web-base"],
   "version": "1.0",

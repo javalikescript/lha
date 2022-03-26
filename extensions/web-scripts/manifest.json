@@ -1,5 +1,5 @@
 {
-  "name": "Web scripts",
+  "name": "Web Scripts",
   "description": "Expose web scripts add-on",
   "dependencies": ["web-base"],
   "version": "1.0",

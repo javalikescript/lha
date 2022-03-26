@@ -1,5 +1,5 @@
 {
-  "name": "Web base",
+  "name": "Web Base",
   "description": "Exposes web base content for LHA",
   "version": "1.0",
   "script": "web-base.lua",
