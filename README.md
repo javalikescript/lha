@@ -16,8 +16,6 @@ Available extensions are:
 * Monitoring, based on Lua and [libuv](https://github.com/luvit/luv)
 * Ping, Test the reachability of a host on the network
 
-You could find the [luajls binaries here](https://github.com/javalikescript/luajls/releases/latest) or [here](http://javalikescript.free.fr/lua/download/).
-
 lha includes a web extension which requires the following libraries:
 * "vuejs" is licensed under the MIT License see https://vuejs.org/
   *Reactive, component-oriented view layer for modern web interfaces*
@@ -31,5 +29,3 @@ lha includes a web extension which requires the following libraries:
   *The iconic font and CSS framework*
 * "fetch" is licensed under the MIT license see https://github.com/github/fetch/releases
 * "promise" is licensed under the MIT license see https://github.com/taylorhakes/promise-polyfill
-
-You could find the required libraries [here](https://javalikescript.github.io/lha/download/lha_assets.20220209.zip).
