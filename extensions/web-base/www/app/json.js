@@ -16,9 +16,12 @@ function newJsonItem(type) {
     return undefined;
 }
 
-function parseJsonItemValue(type, value) {
+function parseJsonItemValue(type, value, optional) {
   if ((value === null) || (value === undefined)) {
     return value;
+  }
+  if ((value === '') && optional) {
+    return undefined;
   }
   var valueType = typeof value;
   if ((valueType !== 'string') && (valueType !== 'number') && (valueType !== 'boolean')) {
@@ -99,22 +102,17 @@ Vue.component('json-item', {
       open: true
     };
   },
-  template: '<li class="json"><div @click="toggle">' +
-    '<span>{{ label }}:</span><br>' +
-    '<input v-if="hasStringValue && !hasEnumValues" v-model="value" type="text" placeholder="String Value">' +
-    '<input v-if="hasNumberValue && !hasEnumValues" v-model="value" type="number" placeholder="Number Value">' +
-    '<label v-if="hasBooleanValue" class="switch big"><input type="checkbox" v-model="value" /><span class="slider"></span></label>' +
-    '<select v-if="hasEnumValues && (hasStringValue || hasNumberValue)" v-model="value"><option v-for="ev in enumValues" :value="ev.const">{{ev.title}}</option></select>' +
-    '</div>' +
-    '<ul class="json-properties" v-show="open" v-if="hasProperties"><li is="json-item" v-for="n in propertyNames" :key="n" :name="n" :pobj="obj" :obj="getProperty(n)" :schema="schema.properties[n]" :root="root"></li></ul>' +
-    '<ul class="json-items" v-show="open" v-if="isList">' +
-    '<li is="json-item" v-for="(so, i) in obj" :key="i" :name="\'#\' + i" :pobj="obj" :obj="so" :schema="schema.items" :root="root"></li>' +
-    '<li><button v-on:click="addItem" title="Add Item"><i class="fa fa-plus"></i></button></li>' +
-    '</ul>' +
-    '</li>',
+  template: '#json-item-template',
   computed: {
     label: function() {
-      return this.schema && this.schema.title || this.name || 'Value';
+      var title = this.schema && this.schema.title;
+      if (title) {
+        if (this.name) {
+          return title + ' (' + this.name + ')';
+        }
+        return title;
+      }
+      return this.name || 'Value';
     },
     hasStringValue: function() {
       return this.schema && (this.schema.type === 'string');
@@ -130,11 +128,26 @@ Vue.component('json-item', {
     },
     propertyNames: function() {
       var names = [];
+      var objectNames = [];
+      var arrayNames = [];
       for (var name in this.schema.properties) {
-        names.push(name);
+        var propertyType = this.schema.properties[name].type;
+        switch(propertyType) {
+          case 'array':
+            arrayNames.push(name);
+            break;
+          case 'object':
+            objectNames.push(name);
+            break;
+          default:
+            names.push(name);
+            break;
+        }
       }
+      arrayNames.sort(strcasecmp);
+      objectNames.sort(strcasecmp);
       names.sort(strcasecmp);
-      return names;
+      return names.concat(objectNames).concat(arrayNames);
     },
     enumValues: function() {
       if (Array.isArray(this.schema.enumValues)) {
@@ -155,11 +168,17 @@ Vue.component('json-item', {
       },
       set: function(val) {
         //console.log('value()', val, this.$vnode.key);
-        this.pobj[this.$vnode.key] = parseJsonItemValue(this.schema.type, val);
+        var v = parseJsonItemValue(this.schema.type, val, true);
+        if ((v !== null) && (v !== undefined)) {
+          this.pobj[this.$vnode.key] = v;
+        }
       }
     },
     isList: function() {
       return this.schema && (this.schema.type === 'array') && (typeof this.schema.items === 'object') && Array.isArray(this.obj);
+    },
+    isRemovable: function() {
+      return Array.isArray(this.pobj);
     },
     hasProperties: function() {
       if (this.schema && (this.schema.type === 'object') && (typeof this.schema.properties === 'object')) {
@@ -195,6 +214,15 @@ Vue.component('json-item', {
         console.error('Cannot add item', this.obj, this.schema);
       }
     },
+    removeItem: function() {
+      if (Array.isArray(this.pobj)) {
+        var index = parseInt(this.name, 10);
+        if (index && (index >= 1) && (index <= this.pobj.length)) {
+          this.pobj.splice(index - 1, 1);
+          this.$forceUpdate();
+        }
+      }
+    },
     toggle: function() {
       if (this.schema && ((this.schema.type === 'array') || (this.schema.type === 'object'))) {
         this.open = !this.open
@@ -205,5 +233,5 @@ Vue.component('json-item', {
 
 Vue.component('json', {
   props: ['name', 'obj', 'schema'],
-  template: '<ul class="json-root"><json-item :name="name" :obj="obj" :schema="schema" :root="this"></json-item></ul>'
+  template: '#json-template'
 });

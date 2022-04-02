@@ -85,12 +85,12 @@
   </app-page>
   <app-page id="thing" title="Thing">
     <template slot="bar-right">
-      <button v-if="edit" v-on:click="onSave()" title="Save"><i class="far fa-save"></i></button>
+      <button v-if="edit" v-on:click="onSave().then(function(){ edit = false; })" title="Save"><i class="far fa-save"></i></button>
       <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
       <!--
         <button v-on:click="refreshThingDescription()" title="Refresh Description"><i class="fas fa-redo"></i></button>
       -->
-      <button v-on:click="disableThing()" title="Disable"><i class="fa fa-trash"></i></button>
+      <button v-on:click="disableThing().then(function(){ app.back(); })" title="Disable"><i class="fa fa-trash"></i></button>
       <button v-on:click="onEdit()" title="Edit"><i :class="['fas', edit ? 'fa-eye' : 'fa-edit']"></i></button>
     </template>
     <article class="cards">
@@ -123,7 +123,6 @@
   <app-page id="addThings" title="Add Things">
     <template slot="bar-right">
       <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
-      <button v-on:click="onSave()" title="Save"><i class="far fa-save"></i></button>
     </template>
     <article class="cards">
       <div class="card" v-for="thing in things">
@@ -134,7 +133,9 @@
         <p>{{ thing.description }}</p>
       </div>
       <section>
-        <button v-on:click="onAddAll()"><i class="fa fa-plus"></i>&nbsp;Enable All</button>
+        <button v-on:click="onSave().then(function(){ app.replacePage('things'); })"><i class="far fa-save"></i>&nbsp;Enable Selected</button>
+        <button v-on:click="onAddAll().then(function(){ app.replacePage('things'); })"><i class="fa fa-plus"></i>&nbsp;Enable All</button>
+        <button v-on:click="app.back()">Cancel</button>
       </section>
     </article>
   </app-page>
@@ -152,7 +153,7 @@
           <p>{{ extension.name }}</p>
           <div>
             <button v-on:click="pollExtension(extension)"><i class="far fa-bell"></i>&nbsp;Poll</button>
-            <button v-on:click="app.toPage('extension', extension.id)"><i class="fas fa-info"></i>&nbsp;Details</button>
+            <button v-on:click="app.toPage('extension', extension.id)"><i class="fas fa-cog"></i>&nbsp;Settings</button>
           </div>
         </div>
         <p>{{ extension.description }}</p>
@@ -254,6 +255,40 @@
 </div>
 <div id="app"></div>
 </body>
+<script type="text/x-template" id="json-item-template">
+  <li class="json">
+    <div @click="toggle">
+      <div>
+        <i class="fa fa-chevron-right" v-if="!open"></i>
+        <span>{{ label }}:</span>
+        <i class="fa fa-trash" v-if="isRemovable" v-on:click="removeItem"></i>
+      </div>
+      <input v-if="hasStringValue && !hasEnumValues" v-model="value" type="text" placeholder="String Value">
+      <input v-if="hasNumberValue && !hasEnumValues" v-model="value" type="number" placeholder="Number Value">
+      <label v-if="hasBooleanValue" class="switch big">
+        <input type="checkbox" v-model="value" />
+        <span class="slider"></span>
+      </label>
+      <select v-if="hasEnumValues && (hasStringValue || hasNumberValue)" v-model="value">
+        <option v-for="ev in enumValues" :value="ev.const">{{ev.title}}</option>
+      </select>
+    </div>
+    <ul class="json-properties" v-show="open" v-if="hasProperties">
+      <li is="json-item" v-for="n in propertyNames" :key="n" :name="n" :pobj="obj" :obj="getProperty(n)" :schema="schema.properties[n]" :root="root"></li>
+    </ul>
+    <ul class="json-items" v-show="open" v-if="isList">
+      <li is="json-item" v-for="(so, i) in obj" :key="i" :name="String(i + 1)" :pobj="obj" :obj="so" :schema="schema.items" :root="root"></li>
+      <li>
+        <button v-on:click="addItem" title="Add Item"><i class="fa fa-plus"></i>&nbsp;Add {{ label }} Item</button>
+      </li>
+    </ul>
+  </li>
+</script>
+<script type="text/x-template" id="json-template">
+  <ul class="json-root">
+    <json-item :name="name" :obj="obj" :schema="schema" :root="this"></json-item>
+  </ul>
+</script>
 <script type="text/x-template" id="dialog-template">
   <section v-bind:id="id" class="page dialog" v-bind:class="{ hide: app.dialog !== id }">
     <header>
