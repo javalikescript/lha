@@ -16,6 +16,43 @@
               "title": "Thing Title",
               "type": "string"
             },
+            "description": {
+              "title": "Thing Description",
+              "type": "string"
+            },
+            "@type": {
+              "title": "Thing Types",
+              "type": "array",
+              "items": {
+                "title": "Thing Type",
+                "type": "string",
+                "enumValues": [
+                  {"const": "Alarm", "title": "Alarm"},
+                  {"const": "AirQualitySensor", "title": "Air Quality Sensor"},
+                  {"const": "BarometricPressureSensor", "title": "Barometric Pressure Sensor"},
+                  {"const": "BinarySensor", "title": "Binary Sensor"},
+                  {"const": "Camera", "title": "Camera"},
+                  {"const": "ColorControl", "title": "Color Control"},
+                  {"const": "ColorSensor", "title": "Color Sensor"},
+                  {"const": "DoorSensor", "title": "Door Sensor"},
+                  {"const": "EnergyMonitor", "title": "Energy Monitor"},
+                  {"const": "HumiditySensor", "title": "Humidity Sensor"},
+                  {"const": "LeakSensor", "title": "Leak Sensor"},
+                  {"const": "Light", "title": "Light"},
+                  {"const": "Lock", "title": "Lock"},
+                  {"const": "MotionSensor", "title": "Motion Sensor"},
+                  {"const": "MultiLevelSensor", "title": "Multi Level Sensor"},
+                  {"const": "MultiLevelSwitch", "title": "Multi Level Switch"},
+                  {"const": "OnOffSwitch", "title": "On/Off Switch"},
+                  {"const": "PushButton", "title": "Push Button"},
+                  {"const": "SmartPlug", "title": "Smart Plug"},
+                  {"const": "SmokeSensor", "title": "Smoke Sensor"},
+                  {"const": "TemperatureSensor", "title": "Temperature Sensor"},
+                  {"const": "Thermostat", "title": "Thermostat"},
+                  {"const": "VideoCamera", "title": "Video Camera"}
+                ]
+              }
+            },
             "properties": {
               "title": "Thing Properties",
               "type": "array",
@@ -31,14 +68,74 @@
                     "type": "string"
                   },
                   "type": {
-                    "title": "Property Type",
+                    "title": "Property Primitive Type",
                     "type": "string",
-                    "enum": [
-                      "boolean",
-                      "integer",
-                      "number",
-                      "string"
+                    "enumValues": [
+                      {"const": "boolean", "title": "Boolean"},
+                      {"const": "integer", "title": "Integer"},
+                      {"const": "number", "title": "Number"},
+                      {"const": "string", "title": "String"}
+                    ],
+                    "default": "string"
+                  },
+                  "@type": {
+                    "title": "The property Semantic Type",
+                    "type": "string",
+                    "enumValues": [
+                      {"const": "AlarmProperty", "title": "Alarm"},
+                      {"const": "BarometricPressureProperty", "title": "Barometric Pressure"},
+                      {"const": "BooleanProperty", "title": "Boolean"},
+                      {"const": "BrightnessProperty", "title": "Brightness"},
+                      {"const": "ColorModeProperty", "title": "ColorMode"},
+                      {"const": "ColorProperty", "title": "Color"},
+                      {"const": "ColorTemperatureProperty", "title": "Color Temperature"},
+                      {"const": "ConcentrationProperty", "title": "Concentration"},
+                      {"const": "CurrentProperty", "title": "Current"},
+                      {"const": "DensityProperty", "title": "Density"},
+                      {"const": "FrequencyProperty", "title": "Frequency"},
+                      {"const": "HeatingCoolingProperty", "title": "Heating Cooling"},
+                      {"const": "HumidityProperty", "title": "Humidity"},
+                      {"const": "ImageProperty", "title": "Image"},
+                      {"const": "InstantaneousPowerFactorProperty", "title": "Instantaneous Power Factor"},
+                      {"const": "InstantaneousPowerProperty", "title": "Instantaneous Power"},
+                      {"const": "LeakProperty", "title": "Leak"},
+                      {"const": "LevelProperty", "title": "Level"},
+                      {"const": "LockedProperty", "title": "Locked"},
+                      {"const": "MotionProperty", "title": "Motion"},
+                      {"const": "OnOffProperty", "title": "On/Off"},
+                      {"const": "OpenProperty", "title": "Open"},
+                      {"const": "PushedProperty", "title": "Pushed"},
+                      {"const": "SmokeProperty", "title": "Smoke"},
+                      {"const": "TargetTemperatureProperty", "title": "Target Temperature"},
+                      {"const": "TemperatureProperty", "title": "Temperature"},
+                      {"const": "ThermostatModeProperty", "title": "ThermostatMode"},
+                      {"const": "VideoProperty", "title": "Video"},
+                      {"const": "VoltageProperty", "title": "Voltage"}
                     ]
+                  },
+                  "unit": {
+                    "title": "Property Unit",
+                    "type": "string",
+                    "enumValues": [
+                      {"const": "percent", "title": "Percent"},
+                      {"const": "second", "title": "Second"},
+                      {"const": "degree celsius", "title": "Degree Celsius"},
+                      {"const": "hectopascal", "title": "Hecto Pascal"},
+                      {"const": "kelvin", "title": "Kelvin"},
+                      {"const": "lux", "title": "Lux"},
+                      {"const": "volt", "title": "Volt"},
+                      {"const": "watt", "title": "Watt"}
+                    ]
+                  },
+                  "readOnly": {
+                    "title": "Read Only Property",
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "configuration": {
+                    "title": "Configuration Property",
+                    "type": "boolean",
+                    "default": false
                   }
                 }
               }

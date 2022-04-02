@@ -1,5 +1,5 @@
 local logger = require('jls.lang.logger')
-local tables = require('jls.util.tables')
+local Map = require('jls.util.Map')
 local Thing = require('lha.Thing')
 
 logger:info('generic extension')
@@ -27,17 +27,20 @@ local METADATA_BY_TYPE = {
   },
 }
 
-local function createThing(thingConfig)
-  local thing = Thing:new(thingConfig.title or 'Generic Thing', thingConfig.description or 'Generic Thing', {'GenericThing'})
-  for _, propertyConfig in ipairs(thingConfig.properties) do
-    local metadata = METADATA_BY_TYPE[propertyConfig.type]
-    if metadata then
-      local name = propertyConfig.name or 'value'
-      thing:addProperty(name, tables.merge({
-        title = propertyConfig.title or name,
-        description = propertyConfig.description
-      }, metadata))
+local function oneOf(...)
+  for _, value in ipairs({...}) do
+    if value ~= nil and value ~= '' and (type(value) ~= 'table' or next(value) ~= nil) then
+      return value
     end
+  end
+end
+
+local function createThing(thingConfig)
+  local thing = Thing:new(oneOf(thingConfig.title, 'Generic Thing'), oneOf(thingConfig.description, 'Generic Thing'), oneOf(thingConfig.sType, {'GenericThing'}))
+  for _, propertyConfig in ipairs(thingConfig.properties) do
+    local name = propertyConfig.name or 'value'
+    local metadata = Map.assign({title = name}, METADATA_BY_TYPE[propertyConfig.type], propertyConfig)
+    thing:addProperty(name, metadata)
   end
   return thing
 end
