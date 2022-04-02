@@ -167,9 +167,6 @@ Vue.component('app-menu', {
     homePage: String
   },
   template: '#menu-template'
-  /*'<section v-bind:id="id" class="menu" v-bind:class="{ hideLeft: app.menu !== id }"><header>' +
-    '<button v-on:click="app.menu = \'\'"><i class="fa fa-window-close"></i></button>' +
-    '<h1>{{ title }}</h1><div /></header><slot>Article</slot></section>'*/
 });
 
 Vue.component('app-dialog', {
@@ -178,10 +175,6 @@ Vue.component('app-dialog', {
   },
   props: ['id', 'title'],
   template: '#dialog-template'
-  /*'<section v-bind:id="id" class="page dialog" v-bind:class="{ hide: app.dialog !== id }">' +
-    '<header><div /><h1>{{ title }}</h1><div><slot name="bar-right">' +
-    '<button v-on:click="app.dialog = \'\'"><i class="fa fa-window-close"></i></button>' +
-    '</slot></div></header><slot>Article</slot></section>'*/
 });
 
 Vue.component('app-page', {
@@ -203,12 +196,6 @@ Vue.component('app-page', {
     }
   },
   template: '#page-template',
-  /*'<section v-bind:id="id" v-bind:class="[{page: true}, app.page === id ? \'\' : hideClass]">' +
-    '<header><div><button v-on:click="app.menu = \'menu\'" v-if="showMenu"><i class="fa fa-bars"></i></button>' +
-    '<button v-on:click="app.back()" v-if="!hideNav"><i class="fa fa-chevron-left"></i></button>' +
-    '<button v-on:click="app.toPage(\'main\')" v-if="!hideNav"><i class="fas fa-home"></i></button></div>' +
-    '<h1>{{ title }}</h1><div><slot name="bar-right"></slot></div>' +
-    '</header><slot>Article</slot></section>'*/
   created: function() {
     //console.log('created() app-page, this.app', this);
     this.app.pages[this.id] = this;
