@@ -55,6 +55,8 @@ extension:subscribeEvent('poll', function()
     executor:execute(command, true):next(function(code)
       thing:updatePropertyValue('reachable', code == 0)
       logger:info('executed "'..command..'" => '..tostring(code))
+    end, function(reason)
+      logger:info('execution failed '..tostring(reason))
     end)
   end
 end)
