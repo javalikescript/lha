@@ -462,7 +462,6 @@ local REST_SCRIPTS = {
         local manifest = {
           name = "New script",
           version = "1.0",
-          blocks = blocksFile:getName(),
           script = scriptFile:getName()
         }
         blocksFile:write('<xml xmlns="http://www.w3.org/1999/xhtml"></xml>')
@@ -1168,6 +1167,9 @@ return class.create(function(engine)
       data = self.dataHistory:getLiveTable()
     }
     if customConfig then
+      if logger:isLoggable(logger.FINE) then
+        logger:fine('customConfig: '..json.stringify(customConfig, 2))
+      end
       tables.merge(self.root.configuration, customConfig)
     end
     if defaultConfig then

@@ -58,7 +58,7 @@
       "type": "number"
     },
     "loglevel": {
-      "default": "WARN",
+      "default": "warn",
       "enum": [
         "error",
         "warn",
