@@ -90,7 +90,7 @@ new Vue({
       app.toPage('data-chart', this.thingId + '/' + propertyName);
     },
     disableThing: function() {
-      fetch('/engine/things/' + this.thingId, {method: 'DELETE'}).then(function() {
+      return fetch('/engine/things/' + this.thingId, {method: 'DELETE'}).then(function() {
         toaster.toast('Thing disabled');
         app.clearCache();
       });
@@ -119,7 +119,7 @@ new Vue({
         }
       }
       //console.info('onSave()', JSON.stringify(modifiedProps, undefined, 2));
-      fetch('/things/' + this.thingId + '/properties', {
+      return fetch('/things/' + this.thingId + '/properties', {
         method: 'PUT',
         body: JSON.stringify(modifiedProps)
       }).then(function() {
@@ -178,6 +178,7 @@ new Vue({
       for (var i = 0; i < this.things.length; i++) {
         this.things[i].toAdd = true;
       }
+      return this.onSave();
     },
     onSave: function() {
       var thingsToAdd = [];
@@ -187,15 +188,16 @@ new Vue({
           thingsToAdd.push(thing);
         }
       }
-      if (thingsToAdd.length > 0) {
-        fetch('/engine/things/', {
-          method: 'PUT',
-          body: JSON.stringify(thingsToAdd)
-        }).then(function() {
-          toaster.toast('Things added');
-          app.clearCache();
-        });
+      if (thingsToAdd.length === 0) {
+        return Promise.resolve();
       }
+      return fetch('/engine/things/', {
+        method: 'PUT',
+        body: JSON.stringify(thingsToAdd)
+      }).then(function() {
+        toaster.toast('Things saved');
+        app.clearCache();
+      });
     }
   }
 });
