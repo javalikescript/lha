@@ -18,16 +18,16 @@ local MAX_SUFFIX = SUFFIX_SEPARATOR..'max'
 -- finish the aggregation by enriching the first value
 local ValueAggregator = class.create(function(valueAggregator)
 
-  function valueAggregator:initialize(t, k)
+  local NO_VALUE = {}
+
+  function valueAggregator:initialize()
+    self.lastValue = NO_VALUE
     self:clear()
   end
-
-  local NO_VALUE = {}
 
   function valueAggregator:clear()
     self.changes = 0
     self.count = 0
-    self.lastValue = NO_VALUE
   end
 
   -- Copies the specified aggregation into this aggregation
