@@ -8,66 +8,7 @@
       <div class="bar">
         <span>{{ tile.title }}</span>
       </div>
-      <span class="tile-value">{{ tile.value }}</span>
+      <p class="tile-value">{{ tile.value }}</p>
     </div>
-    <!--
-    -->
-    <!--
-    <div class="tile">
-      <div class="bar">
-        <span>Title</span>
-      </div>
-      <div class="tile-content">
-        <i class="fas fa-running"></i>
-        <i class="fas fa-person"></i>
-        <br/>
-        <p>Description</p>
-      </div>
-    </div>
-    <div class="tile">
-      <div class="bar">
-        <span>Title</span>
-      </div>
-      <div class="tile-content">
-        <i class="fas fa-lightbulb"></i>
-        <i class="fas fa-lightbulb-off"></i>
-        <br/>
-        <p>Description</p>
-      </div>
-    </div>
-    <div class="tile">
-      <div class="bar">
-        <span>Title</span>
-      </div>
-      <span class="tile-value">20°C</span>
-      <div class="bar">
-        <div/>
-        <div>
-          <span>60%</span>
-          <span>+/-2</span>
-        </div>
-      </div>
-    </div>
-    <div class="tile">
-      <div class="bar">
-        <div>
-          <span>Title</span>
-        </div>
-        <div>
-          <button><i class="fas fa-info"></i></button>
-        </div>
-      </div>
-      <div class="tile-content">
-        <i class="fas fa-thermometer-half"></i>
-        <br/>
-        <p>Description</p>
-      </div>
-      <div class="bar">
-        <span>Max</span>
-        <span>Min</span>
-        <span>Value</span>
-      </div>
-    </div>
-    -->
   </article>
 </app-page>

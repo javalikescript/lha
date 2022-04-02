@@ -294,9 +294,11 @@ article.tiles, .tile-container {
   line-height: 2rem;
   padding: 0.4rem;
 }
-.tile span.tile-value, .tile p.tile-value {
+.tile p.tile-value {
   font-size: 5rem;
-  padding: 2rem;
+  line-height: 6rem;
+  padding: 1rem;
+  margin: 0;
 }
 .tile > .tile-content {
   height: 12rem;

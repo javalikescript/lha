@@ -7,26 +7,51 @@
   "schema": {
     "type": "object",
     "properties": {
-      "tiles": {
-        "title": "Tiles",
+      "things": {
+        "title": "Things",
         "type": "array",
         "items": {
+          "title": "Thing",
           "type": "object",
           "properties": {
             "title": {
               "title": "Title",
-              "type": "string",
-              "default": "My Tile"
+              "type": "string"
             },
             "type": {
-              "title": "The type of things",
+              "title": "The property type",
               "type": "string",
               "enumValues": [
                 {"const": "auto", "title": "Auto"},
-                {"const": "temperature", "title": "Temperature"},
-                {"const": "weather", "title": "Weather"},
-                {"const": "light", "title": "Light"},
-                {"const": "motion", "title": "Motion"}
+                {"const": "AlarmProperty", "title": "Alarm"},
+                {"const": "BarometricPressureProperty", "title": "Barometric Pressure"},
+                {"const": "BooleanProperty", "title": "Boolean"},
+                {"const": "BrightnessProperty", "title": "Brightness"},
+                {"const": "ColorModeProperty", "title": "ColorMode"},
+                {"const": "ColorProperty", "title": "Color"},
+                {"const": "ColorTemperatureProperty", "title": "Color Temperature"},
+                {"const": "ConcentrationProperty", "title": "Concentration"},
+                {"const": "CurrentProperty", "title": "Current"},
+                {"const": "DensityProperty", "title": "Density"},
+                {"const": "FrequencyProperty", "title": "Frequency"},
+                {"const": "HeatingCoolingProperty", "title": "Heating Cooling"},
+                {"const": "HumidityProperty", "title": "Humidity"},
+                {"const": "ImageProperty", "title": "Image"},
+                {"const": "InstantaneousPowerFactorProperty", "title": "Instantaneous Power Factor"},
+                {"const": "InstantaneousPowerProperty", "title": "Instantaneous Power"},
+                {"const": "LeakProperty", "title": "Leak"},
+                {"const": "LevelProperty", "title": "Level"},
+                {"const": "LockedProperty", "title": "Locked"},
+                {"const": "MotionProperty", "title": "Motion"},
+                {"const": "OnOffProperty", "title": "On/Off"},
+                {"const": "OpenProperty", "title": "Open"},
+                {"const": "PushedProperty", "title": "Pushed"},
+                {"const": "SmokeProperty", "title": "Smoke"},
+                {"const": "TargetTemperatureProperty", "title": "Target Temperature"},
+                {"const": "TemperatureProperty", "title": "Temperature"},
+                {"const": "ThermostatModeProperty", "title": "ThermostatMode"},
+                {"const": "VideoProperty", "title": "Video"},
+                {"const": "VoltageProperty", "title": "Voltage"}
               ],
               "default": "auto"
             },
@@ -34,13 +59,10 @@
               "title": "Group",
               "type": "string"
             },
-            "thingIds": {
-              "title": "Things",
-              "type": "array",
-              "items": {
-                "type": "string",
-                "enumVar": "thingIds"
-              }
+            "thingId": {
+              "title": "Thing Id",
+              "type": "string",
+              "enumVar": "thingIds"
             }
           }
         }
