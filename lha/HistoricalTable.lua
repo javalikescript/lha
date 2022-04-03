@@ -580,11 +580,15 @@ return class.create(function(historicalTable)
     return tt
   end
 
+  function historicalTable:clearAggregation()
+    removeTableKeys(self.liveTable, hasSuffix)
+  end
+
   function historicalTable:rollover()
     local currentTable, previousTable
     previousTable = self.previousTable
     currentTable = tables.deepCopy(self.liveTable)
-    removeTableKeys(self.liveTable, hasSuffix)
+    self:clearAggregation()
     self.previousTable = currentTable
     return currentTable, previousTable
   end
