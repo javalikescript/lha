@@ -149,7 +149,7 @@ htSource:forEachTable(fromTime, toTime, function(t, tTime, isFull)
   end
   if htDest then
     htDest:setLiveTable(dt)
-    htDest:save(isFull, false, tTime)
+    htDest:save(isFull, tTime)
   end
   lastTable = dt
 end)

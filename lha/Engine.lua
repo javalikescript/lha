@@ -147,29 +147,6 @@ local function getUpdateTime()
   return Date.now()
 end
 
-local function computeChanges(t, key)
-  local fullKey = key..HistoricalTable.CHANGES_SUFFIX
-  local previousValue = t[fullKey]
-  if previousValue then
-    t[fullKey] = previousValue + 1
-  else
-    t[fullKey] = 1
-  end
-end
-local function computeMin(t, key, value)
-  local fullKey = key..HistoricalTable.MIN_SUFFIX
-  local previousValue = t[fullKey]
-  if not previousValue or value < previousValue then
-    t[fullKey] = value
-  end
-end
-local function computeMax(t, key, value)
-  local fullKey = key..HistoricalTable.MAX_SUFFIX
-  local previousValue = t[fullKey]
-  if not previousValue or value > previousValue then
-    t[fullKey] = value
-  end
-end
 local function isValidValue(value)
   if value == nil then
     return false
@@ -238,25 +215,17 @@ local EngineThing = class.create(Thing, function(engineThing, super)
   function engineThing:updatePropertyValue(name, value)
     if isValidValue(value) then
       self.lastupdated = getUpdateTime()
-      if self:isArchiveData() then
-        local property = self:getProperty(name)
-        if property and not property:isConfiguration() then
-          local currentValue = property:getValue()
-          local path = 'data/'..self.thingId..'/'..name
-          local prev, t, key = tables.setPath(self.engine.root, path, value)
-          if currentValue ~= value then
-            self.engine:publishRootChange(path, value, currentValue)
-            local mt = property:getMetadata('type') -- type(value)
-            if mt == 'number' or mt == 'integer' then
-              -- if had current value and not first update since archive
-              if currentValue ~= nil and prev ~= nil then
-                computeMin(t, key, math.min(value, currentValue))
-                computeMax(t, key, math.max(value, currentValue))
-              end
-            elseif mt == 'boolean' or mt == 'string' then
-              computeChanges(t, key)
-            end
-          end
+      local property = self:getProperty(name)
+      if property then
+        local path = self.thingId..'/'..name
+        local prev
+        if self:isArchiveData() and not property:isConfiguration() then
+          prev = self.engine.dataHistory:aggregateValue(path, value)
+        else
+          prev = property:getValue()
+        end
+        if prev ~= value then
+          self.engine:publishRootChange('data/'..path, value, prev)
         end
       end
       super.updatePropertyValue(self, name, value)
@@ -538,9 +507,6 @@ local REST_ADMIN = {
     return 'In progress'
   end,
   ['gc?method=POST'] = function(exchange)
-    if not HttpExchange.methodAllowed(exchange, 'POST') then
-      return false
-    end
     runtime.gc()
     return 'Done'
   end,
@@ -565,9 +531,13 @@ local REST_ADMIN = {
       local engine = exchange:getAttribute('engine')
       local ts = Date.timestamp()
       local backup = File:new(engine:getTemporaryDirectory(), 'lha_backup.'..ts..'.zip')
+      engine.configHistory:saveJson()
+      engine.dataHistory:saveJson()
       ZipFile.zipTo(backup, engine:getWorkDirectory():listFiles(function(file)
         return file:getName() ~= 'tmp'
       end))
+      engine.configHistory:removeJson()
+      engine.dataHistory:removeJson()
       return backup:getName()
     end,
     ['deploy?method=POST'] = function(exchange)
@@ -623,13 +593,22 @@ local REST_ENGINE_HANDLERS = {
     end
     return descriptions
   end,
-  poll = function(exchange)
-    if not HttpExchange.methodAllowed(exchange, 'POST') then
-      return false
-    end
-    local engine = exchange:getAttribute('engine')
-    engine:publishEvent('poll')
+  ['poll?method=POST'] = function(exchange)
+    exchange.attributes.engine:publishEvent('poll')
     return 'Polled'
+  end,
+  ['publishEvent?method=POST'] = function(exchange)
+    local eventName = exchange:getRequest():getBody()
+    exchange.attributes.engine:publishEvent(eventName)
+    return 'Published'
+  end,
+  ['saveData?method=POST'] = function(exchange)
+    exchange.attributes.engine.dataHistory:save(false)
+    return 'Saved'
+  end,
+  ['saveHistory?method=POST'] = function(exchange)
+    exchange.attributes.engine.configHistory:save(false)
+    return 'Saved'
   end,
   properties = function(exchange)
     local engine = exchange:getAttribute('engine')
@@ -728,7 +707,7 @@ return class.create(function(engine)
     local configurationDir = File:new(workDir, 'configuration')
     logger:fine('configurationDir is '..configurationDir:getPath())
     createDirectoryOrExit(configurationDir)
-    self.configHistory = HistoricalTable:new(configurationDir, 'config', {keepTable = true})
+    self.configHistory = HistoricalTable:new(configurationDir, 'config')
 
     local dataDir = File:new(workDir, 'data')
     logger:fine('dataDir is '..dataDir:getPath())
@@ -766,11 +745,6 @@ return class.create(function(engine)
     return self.tmpDir
   end
 
-  function engine:archiveData(isFull)
-    self.dataHistory:save(isFull)
-    self.root.data = self.dataHistory:getLiveTable()
-  end
-
   function engine:createScheduler()
     local scheduler = Scheduler:new()
     local schedules = self.root.configuration.engine.schedule
@@ -783,19 +757,19 @@ return class.create(function(engine)
     -- data schedule
     scheduler:schedule(schedules.data, function()
       logger:info('Archiving data')
-      self:archiveData(false)
+      self.dataHistory:save(false)
     end)
     -- configuration schedule
     scheduler:schedule(schedules.configuration, function()
       logger:info('Archiving configuration')
-      self.configHistory:save(false, true)
-      self:archiveData(true)
+      self.configHistory:save(false)
+      self.dataHistory:save(true)
       self:publishEvent('refresh')
     end)
     -- clean schedule
     scheduler:schedule(schedules.clean, function()
       logger:info('Cleaning')
-      self.configHistory:save(true, true)
+      self.configHistory:save(true)
       self:publishEvent('clean')
     end)
     self.scheduler = scheduler

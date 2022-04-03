@@ -13,6 +13,47 @@ local CHANGES_SUFFIX = SUFFIX_SEPARATOR..'changes'
 local MIN_SUFFIX = SUFFIX_SEPARATOR..'min'
 local MAX_SUFFIX = SUFFIX_SEPARATOR..'max'
 
+local function computeChanges(t, key)
+  local fullKey = key..CHANGES_SUFFIX
+  local previousValue = t[fullKey]
+  if previousValue then
+    t[fullKey] = previousValue + 1
+  else
+    t[fullKey] = 1
+  end
+end
+
+local function computeMin(t, key, value)
+  local fullKey = key..MIN_SUFFIX
+  local previousValue = t[fullKey]
+  if not previousValue or value < previousValue then
+    t[fullKey] = value
+  end
+end
+
+local function computeMax(t, key, value)
+  local fullKey = key..MAX_SUFFIX
+  local previousValue = t[fullKey]
+  if not previousValue or value > previousValue then
+    t[fullKey] = value
+  end
+end
+
+local function hasSuffix(key)
+  return (string.find(key, SUFFIX_SEPARATOR, 2, true))
+end
+
+local function removeTableKeys(t, fn)
+  for key, value in pairs(t) do
+    if type(value) == 'table' then
+      removeTableKeys(value, fn)
+    elseif fn(key) then
+      t[key] = nil
+    end
+  end
+  return t
+end
+
 -- The value aggregator enables to aggregate values,
 -- slice aggregated values on specified time then
 -- finish the aggregation by enriching the first value
@@ -215,13 +256,9 @@ local AnyValueAggregator = class.create(function(anyValueAggregator)
 end)
 
 
-return class.create(function(historicalTable, _, HistoricalTable)
+local DEFAULT_FILE_MINUTES = 10080 -- one week
 
-  HistoricalTable.DEFAULT_FILE_MINUTES = 10080 -- one week
-
-  HistoricalTable.CHANGES_SUFFIX = CHANGES_SUFFIX
-  HistoricalTable.MIN_SUFFIX = MIN_SUFFIX
-  HistoricalTable.MAX_SUFFIX = MAX_SUFFIX
+return class.create(function(historicalTable)
 
   local HEADER_FORMAT = '>BI4I4' -- c3
 
@@ -232,7 +269,6 @@ return class.create(function(historicalTable, _, HistoricalTable)
     self.liveTable = options.table or {}
     self.previousTable = tables.deepCopy(self.liveTable)
     self:setUtc(options.utc)
-    self:setKeepTable(options.keepTable)
     self:setFileMinutes(options.fileMin)
     self.file = nil
     self.time = nil
@@ -246,20 +282,12 @@ return class.create(function(historicalTable, _, HistoricalTable)
     self.utc = value == true
   end
 
-  function historicalTable:isKeepTable()
-    return self.keepTable
-  end
-
-  function historicalTable:setKeepTable(value)
-    self.keepTable = value == true
-  end
-
   function historicalTable:getFileMinutes()
     return self.fileMin
   end
 
   function historicalTable:setFileMinutes(fileMin)
-    self.fileMin = fileMin or HistoricalTable.DEFAULT_FILE_MINUTES
+    self.fileMin = fileMin or DEFAULT_FILE_MINUTES
   end
 
   function historicalTable:getLiveTable()
@@ -281,6 +309,24 @@ return class.create(function(historicalTable, _, HistoricalTable)
 
   function historicalTable:getFilePattern()
     return '^'..self:getFileName('(%d+)')..'$'
+  end
+
+  function historicalTable:aggregateValue(path, value)
+    local prev, t, key = tables.setPath(self.liveTable, path, value)
+    if value ~= nil and value ~= prev then
+      if type(value) == 'number' then
+        if prev ~= nil then
+          computeMin(t, key, math.min(prev, value))
+          computeMax(t, key, math.max(prev, value))
+        end
+      else
+        computeChanges(t, key)
+      end
+      if logger:isLoggable(logger.INFO) then
+        logger:info('historicalTable:aggregateValue("'..path..'", '..tostring(value)..') '..json.stringify(t, 2))
+      end
+    end
+    return prev
   end
 
   function historicalTable:selectLatestFile()
@@ -359,6 +405,13 @@ return class.create(function(historicalTable, _, HistoricalTable)
       return nil, err
     end
     return t, time
+  end
+
+  function historicalTable:removeJson()
+    local jsonFile = self:getJsonFile()
+    if jsonFile:isFile() then
+      jsonFile:delete()
+    end
   end
 
   function historicalTable:loadJson(remove)
@@ -530,17 +583,13 @@ return class.create(function(historicalTable, _, HistoricalTable)
   function historicalTable:rollover()
     local currentTable, previousTable
     previousTable = self.previousTable
-    if self.keepTable then
-      currentTable = tables.deepCopy(self.liveTable)
-    else
-      currentTable = self.liveTable
-      self.liveTable = {}
-    end
+    currentTable = tables.deepCopy(self.liveTable)
+    removeTableKeys(self.liveTable, hasSuffix)
     self.previousTable = currentTable
     return currentTable, previousTable
   end
 
-  function historicalTable:save(isFull, withJson, time)
+  function historicalTable:save(isFull, time)
     if logger:isLoggable(logger.FINE) then
       logger:fine('historicalTable:save() '..self.name)
     end
@@ -563,9 +612,6 @@ return class.create(function(historicalTable, _, HistoricalTable)
         size = #data
       end
     end
-    if withJson then
-      self:saveJson(currentTable)
-    end
     if size > 8 then
       local deflater = Deflater:new()
       data = deflater:deflate(data, 'finish')
@@ -574,8 +620,6 @@ return class.create(function(historicalTable, _, HistoricalTable)
     end
     local header = 'LHA'..string.pack(HEADER_FORMAT, kind, time // 1000, size)
     local fd, err = FileDescriptor.openSync(file, 'a')
-    -- fd may be null
-    -- 2018-10-28T09:50:11 90 Scheduled failed due to "./lha/engine/HistoricalTable.lua:282: attempt to index a nil value (local 'fd')"
     if fd then
       fd:writeSync(header)
       if data then
@@ -586,5 +630,23 @@ return class.create(function(historicalTable, _, HistoricalTable)
       logger:warn('historicalTable:save() Cannot append file '..file:getPath()..' due to '..tostring(err))
     end
   end
+
+end, function(HistoricalTable)
+
+  HistoricalTable.DEFAULT_FILE_MINUTES = DEFAULT_FILE_MINUTES
+  HistoricalTable.SUFFIX_SEPARATOR = SUFFIX_SEPARATOR
+  HistoricalTable.CHANGES_SUFFIX = CHANGES_SUFFIX
+  HistoricalTable.MIN_SUFFIX = MIN_SUFFIX
+  HistoricalTable.MAX_SUFFIX = MAX_SUFFIX
+
+  HistoricalTable.ValueAggregator = ValueAggregator
+  HistoricalTable.BooleanAggregator = BooleanAggregator
+  HistoricalTable.NumberAggregator = NumberAggregator
+  HistoricalTable.StringAggregator = StringAggregator
+  HistoricalTable.AnyValueAggregator = AnyValueAggregator
+
+  HistoricalTable.computeChanges = computeChanges
+  HistoricalTable.computeMin = computeMin
+  HistoricalTable.computeMax = computeMax
 
 end)
