@@ -71,6 +71,10 @@ return require('jls.lang.class').create(function(hueBridge)
     self:closeWebSocket()
   end
 
+  function hueBridge:isWebSocketConnected()
+    return self.ws ~= nil
+  end
+
   function hueBridge:closeWebSocket()
     if self.ws then
       self.ws:close(false)
@@ -90,6 +94,7 @@ return require('jls.lang.class').create(function(hueBridge)
     webSocket.onClose = function()
       logger:info('Hue WebSocket closed')
       self.ws = nil
+      -- TODO Try to reconnect
     end
     webSocket.onTextMessage = function(_, payload)
       if logger:isLoggable(logger.FINER) then
@@ -333,29 +338,10 @@ return require('jls.lang.class').create(function(hueBridge)
     ['ZHAPressure'] = {'pressure'},
   }
 
-  function hueBridge:updateThing(thing, info, time, lastPollTime)
-    if info.type == 'ZLLPresence' or info.type == 'ZHAPresence' then
-      local infoState = info.state
-      if isValue(infoState.presence) then
-        local lastupdatedTime
-        if infoState.lastupdated and infoState.lastupdated ~= json.null then
-          lastupdatedTime = self:parseDateTime(infoState.lastupdated)
-        end
-        local updatedDuringLastPoll = lastupdatedTime and lastPollTime and lastupdatedTime >= lastPollTime and lastupdatedTime < time
-          -- presence True if info detects presence
-        -- lastupdated Last time the info state was updated, probably UTC
-        -- see https://developers.meethue.com/develop/hue-api/supported-devices/
-        if lastupdatedTime and lastPollTime then
-          thing:updatePropertyValue('presence', updatedDuringLastPoll)
-        else
-          thing:updatePropertyValue('presence', infoState.presence)
-        end
-      end
-    else
-      local names = namesByType[info.type]
-      if names then
-        updateValues(thing, info.state, names)
-      end
+  function hueBridge:updateThing(thing, info)
+    local names = namesByType[info.type]
+    if names then
+      updateValues(thing, info.state, names)
     end
   end
 
