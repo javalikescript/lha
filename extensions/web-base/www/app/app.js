@@ -338,7 +338,7 @@ var main = new Vue({
  * Engine Configuration
  ************************************************************/
  new Vue({
-  el: '#engineConfig',
+  el: '#engineSettings',
   data: {
     schema: {},
     config: {}
@@ -366,6 +366,14 @@ var main = new Vue({
       }).then(function() {
         toaster.toast('Engine configuration saved');
         app.clearCache();
+      });
+    },
+    stopServer: function() {
+      confirmation.ask('Stop the server?').then(function() {
+        fetch('/engine/admin/stop', { method: 'POST'}).then(function() {
+          app.toPage('main');
+          toaster.toast('Server stopped');
+        });
       });
     }
   }
