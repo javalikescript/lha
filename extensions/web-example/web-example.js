@@ -11,7 +11,7 @@ define(['./web-example.xml'], function(aPageTemplate) {
     name: 'Example'
   });
   
-  main.pages.push({
+  homePage.pages.push({
     id: 'example',
     name: 'Example'
   });
