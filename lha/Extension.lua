@@ -135,21 +135,22 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     if logger:isLoggable(logger.FINEST) then
       logger:finest('initializing configuration for extension '..self:getPrettyName())
     end
+    local configuration = self:getConfiguration()
     if self.manifest.config then
       -- we do not want to validate the config against the schema
-      tables.merge(self.configuration, self.manifest.config, true)
+      tables.merge(configuration, self.manifest.config, true)
     end
     if self.manifest.schema then
       local defaultValues, err = tables.getSchemaValue(self.manifest.schema, {}, true)
       if defaultValues then
-        tables.merge(self.configuration, defaultValues, true)
+        tables.merge(configuration, defaultValues, true)
       elseif logger:isLoggable(logger.WARN) then
         logger:warn('unable to get default values from schema, due to '..tostring(err))
         logger:warn('schema :'..json.stringify(self.manifest.schema, 2))
       end
     end
-    if next(self.configuration) == nil then
-      self.configuration.active = false
+    if next(configuration) == nil then
+      configuration.active = false
     end
   end
 
@@ -191,6 +192,17 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     end
     self:cleanExtension()
     self:loadExtension()
+  end
+
+  function extension:restartExtension()
+    if self:isActive() then
+      self:publishEvent('shutdown')
+    end
+    self:reloadExtension()
+    if self:isActive() then
+      self:publishEvent('startup')
+      self:publishEvent('things')
+    end
   end
 
   function extension:cleanExtension()
