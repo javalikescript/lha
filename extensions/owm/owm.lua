@@ -61,9 +61,16 @@ local OpenWeatherMap = class.create(function(openWeatherMap)
 
 end)
 
+
+
 local function createWeatherThing(title)
-  local thing = Thing:new(title or 'Weather', 'Weather Data', {'TemperatureSensor', 'MultiLevelSensor'})
-  thing:addTemperatureProperty():addRelativeHumidityProperty():addAtmosphericPressureProperty()
+  local thing = Thing:new(title or 'Weather', 'Weather Data', {
+    Thing.CAPABILITIES.TemperatureSensor,
+    Thing.CAPABILITIES.HumiditySensor,
+    Thing.CAPABILITIES.BarometricPressureSensor,
+    Thing.CAPABILITIES.MultiLevelSensor
+  })
+  thing:addPropertiesFromNames('temperature', 'humidity', 'pressure')
   thing:addProperty('cloud', {
     ['@type'] = 'LevelProperty',
     title = 'Cloudiness',

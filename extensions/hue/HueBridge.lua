@@ -1,24 +1,158 @@
 local logger = require('jls.lang.logger')
 local Promise = require('jls.lang.Promise')
+local protectedCall = require('jls.lang.protectedCall')
 local http = require('jls.net.http')
 local Url = require('jls.net.Url')
+local WebSocket = require('jls.net.http.ws').WebSocket
 local json = require('jls.util.json')
 local Date = require('jls.util.Date')
-local protectedCall = require('jls.lang.protectedCall')
-local WebSocket = require('jls.net.http.ws').WebSocket
+local Map = require('jls.util.Map')
 
 local Thing = require('lha.Thing')
 
+--[[
+  ZigBee Home Automation
+  Generic Devices
+    On/Off Switch
+    On/Off Output
+    Remote Control
+    Door Lock
+    Door Lock Controller
+    Simple Sensor
+    Smart Plug
+  Lighting Devices
+    On/Off Light
+    Dimmable Light
+    Colour Dimmable Light
+    On/Off Light Switch
+    Dimmer Switch
+    Colour Dimmer Switch
+    Light Sensor
+    Occupancy Sensor
+  ZigBee Light Link
+  Lighting Devices
+    On/Off Light
+    On/Off Plug-in Unit
+    Dimmable Light
+    Dimmable Plug-in Unit
+    Colour Light
+    Extended Colour Light
+    Colour Temperature Light
+    ZLL Device Device ID
+  Controller Devices
+    Colour Controller
+    Colour Scene Controller
+    Non-Colour Controller
+    Non-Colour Scene Controller
+    Control Bridge
+    On/Off Sensor
+]]
+
 local CONST = {
-  SENSORS = 'sensors',
-  GROUPS = 'groups',
-  LIGHTS = 'lights',
-  RULES = 'rules',
-  CONFIG = 'config',
-  RESOURCE_LINKS = 'resourcelinks',
-  CAPABILITIES = 'capabilities',
-  SCHEDULES = 'schedules'
+  sensors = 'sensors',
+  groups = 'groups',
+  lights = 'lights',
+  rules = 'rules',
+  config = 'config',
+  state = 'state',
+  resourcelinks = 'resourcelinks',
+  capabilities = 'capabilities',
+  schedules = 'schedules',
 }
+
+local DEVICE = {
+  ColorTemperatureLight = 'ColorTemperatureLight',
+  ExtendedColorLight = 'ExtendedColorLight',
+  DimmableLight = 'DimmableLight',
+  OnOffLight = 'OnOffLight',
+  LightLevelSensor = Thing.CAPABILITIES.LightLevelSensor,
+  MotionSensor = Thing.CAPABILITIES.MotionSensor,
+  TemperatureSensor = Thing.CAPABILITIES.TemperatureSensor,
+  HumiditySensor = Thing.CAPABILITIES.HumiditySensor,
+  BarometricPressureSensor = Thing.CAPABILITIES.BarometricPressureSensor,
+  PushButton = Thing.CAPABILITIES.PushButton,
+}
+
+-- see https://developers.meethue.com/develop/hue-api/supported-devices/
+-- type: Daylight, ZLLSwitch, Extended color light, Color temperature light
+-- On/off light, Dimmable light, Color light, ZGPSwitch
+-- CLIPGenericStatus, CLIPSwitch, CLIPOpenClose, CLIPPresence, CLIPTemperature, CLIPHumidity, CLIPLightlevel
+-- ZLL:  ZigBee Light Link, ZHA: ZigBee Home Automation
+local deviceByType = {
+  ['Color temperature light'] = DEVICE.ColorTemperatureLight,
+  ['Extended color light'] = DEVICE.ExtendedColorLight,
+  ['Dimmable light'] = DEVICE.DimmableLight,
+  ['Dimmable plug-in unit'] = DEVICE.DimmableLight,
+  ['On/Off light'] = DEVICE.OnOffLight, 
+  ['On/Off plug-in unit'] = DEVICE.OnOffLight,
+  ['ZLLLightLevel'] = DEVICE.LightLevelSensor,
+  ['ZHALightLevel'] = DEVICE.LightLevelSensor,
+  ['ZLLTemperature'] = DEVICE.TemperatureSensor,
+  ['ZHATemperature'] = DEVICE.TemperatureSensor,
+  ['ZLLPresence'] = DEVICE.MotionSensor,
+  ['ZHAPresence'] = DEVICE.MotionSensor,
+  ['ZLLSwitch'] = DEVICE.PushButton,
+  ['ZHASwitch'] = DEVICE.PushButton,
+  ['ZHAHumidity'] = DEVICE.HumiditySensor,
+  ['ZHAPressure'] = DEVICE.BarometricPressureSensor,
+  --['Daylight'] = 0,
+}
+
+local capabilitiesByDevice = {
+  [DEVICE.ColorTemperatureLight] = {Thing.CAPABILITIES.Light, Thing.CAPABILITIES.OnOffSwitch, Thing.CAPABILITIES.ColorControl},
+  [DEVICE.ExtendedColorLight] = {Thing.CAPABILITIES.Light, Thing.CAPABILITIES.OnOffSwitch, Thing.CAPABILITIES.ColorControl},
+  [DEVICE.DimmableLight] = {Thing.CAPABILITIES.Light, Thing.CAPABILITIES.OnOffSwitch},
+  [DEVICE.OnOffLight] = {Thing.CAPABILITIES.OnOffSwitch},
+  [DEVICE.LightLevelSensor] = {Thing.CAPABILITIES.LightSensor},
+  [DEVICE.TemperatureSensor] = {Thing.CAPABILITIES.TemperatureSensor},
+  [DEVICE.MotionSensor] = {Thing.CAPABILITIES.MotionSensor},
+  [DEVICE.PushButton] = {Thing.CAPABILITIES.PushButton},
+  [DEVICE.HumiditySensor] = {Thing.CAPABILITIES.HumiditySensor},
+  [DEVICE.BarometricPressureSensor] = {Thing.CAPABILITIES.BarometricPressureSensor},
+}
+
+local namesByDevice = {
+  [DEVICE.ColorTemperatureLight] = {'on', 'brightness', 'colorTemperature'},
+  [DEVICE.ExtendedColorLight] = {'on', 'brightness', 'colorTemperature', 'color'},
+  [DEVICE.DimmableLight] = {'on', 'brightness'},
+  [DEVICE.OnOffLight] = {'on'},
+  [DEVICE.LightLevelSensor] = {'lightlevel'},
+  [DEVICE.TemperatureSensor] = {'temperature'},
+  [DEVICE.MotionSensor] = {'presence', 'battery', 'enabled', 'sensitivity'},
+  [DEVICE.PushButton] = {'battery'},
+  [DEVICE.HumiditySensor] = {'humidity'},
+  [DEVICE.BarometricPressureSensor] = {'pressure'},
+}
+
+local titleByDevice = {
+  [DEVICE.LightLevelSensor] = 'Light Level',
+  [DEVICE.TemperatureSensor] = 'Temperature',
+  [DEVICE.MotionSensor] = 'Motion',
+  [DEVICE.PushButton] = 'Switch',
+  [DEVICE.HumiditySensor] = 'Relative Humidity',
+  [DEVICE.BarometricPressureSensor] = 'Atmospheric Pressure',
+}
+
+local categoryByName = {
+  on = CONST.state,
+  brightness = CONST.state,
+  colorTemperature = CONST.state,
+  color = CONST.state,
+  lightlevel = CONST.state,
+  presence = CONST.state,
+  humidity = CONST.state,
+  temperature = CONST.state,
+  pressure = CONST.state,
+  lastupdated = CONST.state,
+  buttonevent = CONST.state,
+  battery = CONST.config,
+  enabled = CONST.config,
+  reachable = CONST.config,
+  ledindication = CONST.config,
+  sensitivity = CONST.config,
+}
+
+local allNames = Map.keys(categoryByName)
 
 local BUTTON = {
   ON = 1000,
@@ -33,6 +167,151 @@ local BUTTON_EVENT = {
   SHORT_RELEASED = 2,
   LONG_RELEASED = 3
 }
+
+local function isValue(value)
+  return value ~= nil and value ~= json.null
+end
+
+local function computeBrightness(info)
+  local value = (info.state or {}).bri
+  if type(value) == 'number' then
+    -- Hue Brightness is 0-255
+    return math.floor(value * 100 / 255)
+  end
+end
+
+local function toPostBrightness(value)
+  return {bri = math.floor(value * 255 / 100)}
+end
+
+local function computeColorTemperature(info)
+  local value = (info.state or {}).ct
+  if type(value) == 'number' then
+    -- Mirek color temperature, M=1000000/T, Hue 2012 connected lamps are capable of 153 (6500K) to 500 (2000K)
+    return math.floor(1000000 / value)
+  end
+end
+
+local function toPostColorTemperature(value)
+  return {ct = math.floor(1000000 / value)}
+end
+
+local function computeColor(info)
+  local state = info.state
+  if state and isValue(state.hue) and isValue(state.sat) and isValue(state.bri) then
+    -- Hue has hue and sat properties
+    return Thing.hsvToRgbHex(state.hue / 65535, state.sat / 254, state.bri / 254)
+  end
+end
+
+local function toPostColor(value)
+  local h, s, v = Thing.rgbHexToHsv(value)
+  return {
+    hue = math.floor(h * 65535),
+    sat = math.floor(s * 254),
+    bri = math.floor(v * 254)
+  }
+end
+
+local function computeLightLevel(info)
+  local value = (info.state or {}).lightlevel
+  if type(value) == 'number' then
+    --[[
+      From ZigBee Cluster Library
+      u16IlluminanceTargetLevel is a mandatory attribute representing the illuminance level at the centre of the target band. 
+      The value of this attribute is calculated as 10000 x log10(Illuminance) where Illuminance is measured in Lux (lx) and can take values in the range 1 lx ≤Illuminance≤ 3.576x106 lx,
+      corresponding to attribute values in the range 0x0000 to 0xFFFE. The value 0xFFFF is used to indicate that the attribute is invalid.
+    ]]
+    -- ConBee examples: 9614=>9 0=>0
+    -- From Hue Dev: Light level in 10000 log10 (lux) +1 measured by info.
+    -- Logarithm scale used because the human eye adjusts to light levels and small changes at low lux levels are more noticeable than at high lux levels.
+    return value
+  end
+end
+
+local function computeIlluminance(info)
+  local value = (info.state or {}).lightlevel
+  if type(value) == 'number' then
+    return math.floor(10 ^ ((value - 1) / 10000))
+  end
+end
+
+local function computeTemperature(info)
+  local value = (info.state or {}).temperature
+  if type(value) == 'number' then
+    -- Current temperature in 0.01 degrees Celsius. (3000 is 30.00 degree)
+    return value / 100
+  end
+end
+
+local function computeHumidity(info)
+  local value = (info.state or {}).humidity
+  if type(value) == 'number' then
+    return value / 100
+  end
+end
+
+local function computeEnabled(info)
+  return (info.config or {}).on
+end
+
+local function toPostEnabled(value)
+  return {on = value}
+end
+
+local function getInfoProperty(info, name)
+  local category = categoryByName[name]
+  if category then
+    local t = info[category]
+    if t then
+      local value = t[name]
+      if isValue(value) then
+        return value
+      end
+    end
+  end
+end
+
+local function toPost(value, name)
+  return {[name] = value}
+end
+
+local computeFnByName = {
+  brightness = computeBrightness,
+  colorTemperature = computeColorTemperature,
+  color = computeColor,
+  lightlevel = computeLightLevel,
+  humidity = computeHumidity,
+  temperature = computeTemperature,
+  enabled = computeEnabled,
+}
+
+local toPostFnByName = {
+  brightness = toPostBrightness,
+  colorTemperature = toPostColorTemperature,
+  color = toPostColor,
+  enabled = toPostEnabled,
+}
+
+local function updateValue(thing, info, name)
+  local computeFn = computeFnByName[name] or getInfoProperty
+  local value = computeFn(info, name)
+  if isValue(value) then
+    thing:updatePropertyValue(name, value)
+  end
+end
+
+local function updateValues(thing, info, names)
+  for _, name in ipairs(names) do
+    updateValue(thing, info, name)
+  end
+end
+
+local function lazyUpdateValue(thing, info, name)
+  if thing:hasProperty(name) then
+    updateValue(thing, info, name)
+  end
+end
 
 return require('jls.lang.class').create(function(hueBridge)
 
@@ -61,9 +340,7 @@ return require('jls.lang.class').create(function(hueBridge)
       -- config.websocketnotifyall
       local tUrl = Url.parse(self.url)
       self.wsUrl = Url:new('ws', tUrl.host, config.websocketport):toString()
-      if self.onWebSocket and not self.ws then
-        self:startWebSocket()
-      end
+      self:checkWebSocket()
     end
   end
 
@@ -71,8 +348,39 @@ return require('jls.lang.class').create(function(hueBridge)
     self:closeWebSocket()
   end
 
-  function hueBridge:isWebSocketConnected()
-    return self.ws ~= nil
+  function hueBridge:startWebSocket()
+    local webSocket = Map.assign(WebSocket:new(self.wsUrl), {
+      onClose = function()
+        logger:info('Hue WebSocket closed')
+        self.ws = nil
+      end,
+      onTextMessage = function(webSocket, payload)
+        if logger:isLoggable(logger.FINER) then
+          logger:finer('Hue WebSocket received '..tostring(payload))
+        end
+        local status, info = protectedCall(json.decode, payload)
+        if status then
+          if type(info) == 'table' and info.t == 'event' then
+            status, info = protectedCall(self.onWebSocket, info)
+            if not status then
+              logger:warn('Hue WebSocket callback error "'..tostring(info)..'" with payload '..tostring(payload))
+              webSocket:close(false)
+            end
+          end
+        else
+          logger:warn('Hue WebSocket received invalid JSON payload '..tostring(payload))
+          webSocket:close(false)
+        end
+      end
+    })
+    self:closeWebSocket()
+    webSocket:open():next(function()
+      webSocket:readStart()
+      logger:info('Hue WebSocket connect on '..tostring(self.wsUrl))
+      self.ws = webSocket
+    end, function(reason)
+      logger:warn('Cannot open Hue WebSocket on '..tostring(self.wsUrl)..' due to '..tostring(reason))
+    end)
   end
 
   function hueBridge:closeWebSocket()
@@ -82,39 +390,14 @@ return require('jls.lang.class').create(function(hueBridge)
     end
   end
 
-  function hueBridge:startWebSocket()
-    self:closeWebSocket()
-    local webSocket = WebSocket:new(self.wsUrl)
-    webSocket:open():next(function()
-      webSocket:readStart()
-      logger:info('Hue WebSocket connect on '..tostring(self.wsUrl))
-    end, function(reason)
-      logger:warn('Cannot open Hue WebSocket on '..tostring(self.wsUrl)..' due to '..tostring(reason))
-    end)
-    webSocket.onClose = function()
-      logger:info('Hue WebSocket closed')
-      self.ws = nil
-      -- TODO Try to reconnect
+  function hueBridge:isWebSocketConnected()
+    return self.ws ~= nil
+  end
+
+  function hueBridge:checkWebSocket()
+    if self.onWebSocket and not self.ws and self.wsUrl then
+      self:startWebSocket()
     end
-    webSocket.onTextMessage = function(_, payload)
-      if logger:isLoggable(logger.FINER) then
-        logger:finer('Hue WebSocket received '..tostring(payload))
-      end
-      local status, info = protectedCall(json.decode, payload)
-      if status then
-        if type(info) == 'table' and info.t == 'event' then
-          status, info = protectedCall(self.onWebSocket, info)
-          if not status then
-            logger:warn('Hue WebSocket callback error "'..tostring(info)..'" with payload '..tostring(payload))
-            webSocket:close(false)
-          end
-        end
-      else
-        logger:warn('Hue WebSocket received invalid JSON payload '..tostring(payload))
-        webSocket:close(false)
-      end
-    end
-    self.ws = webSocket
   end
 
   function hueBridge:parseDateTime(dt)
@@ -189,7 +472,7 @@ return require('jls.lang.class').create(function(hueBridge)
   end
 
   function hueBridge:updateConfiguration()
-    return self:get(CONST.CONFIG):next(function(config)
+    return self:get(CONST.config):next(function(config)
       if config then
         logger:info('update bridge configuration')
         self:configure(config)
@@ -206,158 +489,34 @@ return require('jls.lang.class').create(function(hueBridge)
     })
   end
 
-  local function isValue(value)
-    return value ~= nil and value ~= json.null
-  end
-
-  local function computeBrightness(state)
-    if isValue(state.bri) then
-      -- Hue Brightness is 0-255
-      return math.floor(state.bri * 100 / 255)
-    end
-  end
-
-  local function computeColorTemperature(state)
-    if isValue(state.ct) then
-      -- Mirek color temperature, M=1000000/T, Hue 2012 connected lamps are capable of 153 (6500K) to 500 (2000K)
-      return math.floor(1000000 / state.ct)
-    end
-  end
-
-  local function computeColor(state)
-    if isValue(state.hue) and isValue(state.sat) and isValue(state.bri) then
-      -- Hue has hue and sat properties
-      return Thing.hsvToRgbHex(state.hue / 65535, state.sat / 254, state.bri / 254)
-    end
-  end
-
-  local function computeLightLevel(state)
-    if isValue(state.lightlevel) then
-      --[[
-        From ZigBee Cluster Library
-        u16IlluminanceTargetLevel is a mandatory attribute representing the illuminance level at the centre of the target band. 
-        The value of this attribute is calculated as 10000 x log10(Illuminance) where Illuminance is measured in Lux (lx) and can take values in the range 1 lx ≤Illuminance≤ 3.576x106 lx,
-        corresponding to attribute values in the range 0x0000 to 0xFFFE. The value 0xFFFF is used to indicate that the attribute is invalid.
-      ]]
-      -- ConBee examples: 9614=>9 0=>0
-      -- From Hue Dev: Light level in 10000 log10 (lux) +1 measured by info.
-      -- Logarithm scale used because the human eye adjusts to light levels and small changes at low lux levels are more noticeable than at high lux levels.  
-      return state.lightlevel
-    end
-  end
-
-  local function computeIlluminance(state)
-    if isValue(state.lightlevel) then
-      return math.floor(10 ^ ((state.lightlevel - 1) / 10000))
-    end
-  end
-
-  local function computeTemperature(state)
-    if isValue(state.temperature) then
-      -- Current temperature in 0.01 degrees Celsius. (3000 is 30.00 degree)
-      return state.temperature / 100
-    end
-  end
-
-  local function computeHumidity(state)
-    if isValue(state.humidity) then
-      return state.humidity / 100
-    end
-  end
-
-  local computeFnByName = {
-    brightness = computeBrightness,
-    colorTemperature = computeColorTemperature,
-    color = computeColor,
-    lightlevel = computeLightLevel,
-    humidity = computeHumidity,
-    temperature = computeTemperature,
-  }
-
-  local function updateValue(thing, state, name)
-    local computeFn = computeFnByName[name]
-    local value = computeFn and computeFn(state) or state[name]
-    if isValue(value) then
-      thing:updatePropertyValue(name, value)
-    end
-  end
-
-  local function updateValues(thing, state, names)
-    for _, name in ipairs(names) do
-      updateValue(thing, state, name)
-    end
-  end
-
-  local function lazyUpdateValue(thing, state, name)
-    if thing:hasProperty(name) then
-      updateValue(thing, state, name)
-    end
-  end
-
-  local function lazyUpdateValues(thing, state, names)
-    for _, name in ipairs(names) do
-      lazyUpdateValue(thing, state, name)
-    end
-  end
-
-  local allNames = {
-    'on',
-    'brightness',
-    'colorTemperature',
-    'color',
-    'lightlevel',
-    'presence',
-    'humidity',
-    'temperature',
-    'pressure',
-    'batteryLevel',
-    'enabled',
-  }
-
   function hueBridge:lazyUpdateThing(thing, info)
-    if info.state then
-      lazyUpdateValues(thing, info.state, allNames)
+    for _, name in ipairs(allNames) do
+      lazyUpdateValue(thing, info, name)
     end
   end
-
-  local namesByType = {
-    ['Color temperature light'] = {'on', 'brightness', 'colorTemperature'},
-    ['Extended color light'] = {'on', 'brightness', 'colorTemperature', 'color'},
-    ['Dimmable light'] = {'on', 'brightness'},
-    ['On/Off plug-in unit'] = {'on'},
-    ['On/Off light'] = {'on'},
-    ['ZLLLightLevel'] = {'lightlevel'},
-    ['ZHALightLevel'] = {'lightlevel'},
-    ['ZLLTemperature'] = {'temperature'},
-    ['ZHATemperature'] = {'temperature'},
-    ['ZLLPresence'] = {'presence'},
-    ['ZHAPresence'] = {'presence'},
-    --['ZLLSwitch'] = {''},
-    --['ZHASwitch'] = {''},
-    ['ZHAHumidity'] = {'humidity'},
-    ['ZHAPressure'] = {'pressure'},
-  }
 
   function hueBridge:updateThing(thing, info)
-    local names = namesByType[info.type]
-    if names then
-      updateValues(thing, info.state, names)
+    local alias = deviceByType[info.type]
+    if alias then
+      local names = namesByDevice[alias]
+      if names then
+        updateValues(thing, info, names)
+      end
     end
   end
 
   function hueBridge:setThingPropertyValue(thing, id, name, value)
-    if name == 'on' and thing:hasType('Light') then -- and thing:hasType('OnOffSwitch')
-      self:put(CONST.LIGHTS..'/'..id..'/state', {on = value})
+    local category = categoryByName[name]
+    local toPostFn = toPostFnByName(name) or toPost
+    local t = toPostFn(value, name)
+    local path
+    if thing:hasType(Thing.CAPABILITIES.OnOffSwitch) or thing:hasType(Thing.CAPABILITIES.Light) then
+      path = CONST.lights
+    elseif thing:hasType(Thing.CAPABILITIES.MotionSensor) then
+      path = CONST.sensors
     end
-    if name == 'brightness' and thing:hasType('Light') then
-      self:put(CONST.LIGHTS..'/'..id..'/state', {bri = math.floor(value * 255 / 100)})
-    end
-    if name == 'colorTemperature' and thing:hasType('ColorControl') then
-      self:put(CONST.LIGHTS..'/'..id..'/state', {ct = math.floor(1000000 / value)})
-    end
-    if name == 'color' and thing:hasType('ColorControl') then
-      local h, s, v = Thing.rgbHexToHsv(value)
-      self:put(CONST.LIGHTS..'/'..id..'/state', {hue = math.floor(h * 65535), sat = math.floor(s * 254), bri = math.floor(v * 254)})
+    if path and category and t then
+      self:put(path..'/'..id..'/'..category, t)
     end
   end
 
@@ -371,59 +530,45 @@ return require('jls.lang.class').create(function(hueBridge)
 end, function(HueBridge)
 
   HueBridge.CONST = CONST
+  HueBridge.DEVICE = DEVICE
+
+  local PROPERTY_METADATA_BY_NAME = {
+    sensitivity = {
+      ['@type'] = 'LevelProperty',
+      type = 'integer',
+      title = 'Sensitivity Level',
+      description = 'The sensor sensitivity',
+      configuration = true,
+    },
+  }
 
   function HueBridge.createThingForType(info)
-    -- see https://developers.meethue.com/develop/hue-api/supported-devices/
-    -- type: Daylight, ZLLSwitch, Extended color light, Color temperature light
-    -- On/off light, Dimmable light, Color light, ZGPSwitch
-    -- CLIPGenericStatus, CLIPSwitch, CLIPOpenClose, CLIPPresence, CLIPTemperature, CLIPHumidity, CLIPLightlevel
-    local infoType = info.type
-    if infoType == 'Color temperature light' then
-      local t = Thing:new(info.name or 'Color temperature light', 'Color temperature light', {'Light', 'OnOffSwitch', 'ColorControl'})
-      return t:addOnOffProperty():addBrightnessProperty():addColorTemperatureProperty()
-    elseif infoType == 'Extended color light' then
-      local t = Thing:new(info.name or 'Extended color light', 'Extended color light', {'Light', 'OnOffSwitch', 'ColorControl'})
-      return t:addOnOffProperty():addBrightnessProperty():addColorTemperatureProperty():addColorProperty()
-    elseif infoType == 'Dimmable light' then
-      local t = Thing:new(info.name or 'Dimmable light', 'Dimmable light', {'Light', 'OnOffSwitch'})
-      return t:addOnOffProperty():addBrightnessProperty():addColorTemperatureProperty()
-    elseif infoType == 'On/Off light' then
-      local t = Thing:new(info.name or 'On/Off light', 'On/Off light', {'Light', 'OnOffSwitch'})
-      return t:addOnOffProperty()
-    elseif infoType == 'On/Off plug-in unit' then
-      local t = Thing:new(info.name or 'On/Off plug-in unit', 'On/Off plug-in unit', {'OnOffSwitch'})
-      return t:addOnOffProperty()
-    elseif infoType == 'ZLLLightLevel' or infoType == 'ZHALightLevel' then
-      return Thing:new(info.name or 'Light Level', 'Light Level Sensor', {'MultiLevelSensor'}):addLightLevelProperty()
-    elseif infoType == 'ZLLTemperature' or infoType == 'ZHATemperature' then
-      return Thing:new(info.name or 'Temperature', 'Temperature Sensor', {'TemperatureSensor'}):addTemperatureProperty()
-    elseif infoType == 'ZLLPresence' or infoType == 'ZHAPresence' then
-      return Thing:new(info.name or 'Presence', 'Motion Sensor', {'MotionSensor'}):addPropertiesFromNames('presence', 'batteryLevel', 'enabled')
-    elseif infoType == 'ZLLSwitch' then
-      return Thing:new(info.name or 'Switch', 'Switch Button', {'PushButton'}):addProperty('on', {
-        ['@type'] = 'PushedProperty',
-        title = 'Switch Button',
-        type = 'boolean',
-        description = 'Switch Button',
-        readOnly = true
-      }, false)
-    elseif infoType == 'ZHAHumidity' then
-      return Thing:new(info.name or 'Relative Humidity', 'Humidity Sensor', {'HumiditySensor'}):addRelativeHumidityProperty()
-    elseif infoType == 'ZHAPressure' then
-      return Thing:new(info.name or 'Atmospheric Pressure', 'Pressure Sensor', {'BarometricPressureSensor'}):addAtmosphericPressureProperty()
-    elseif infoType == 'ZHASwitch' then
-      return Thing:new(info.name or 'Switch', 'Switch Button', {'PushButton'}):addProperty('on', {
-        ['@type'] = 'PushedProperty',
-        title = 'Switch Button',
-        type = 'boolean',
-        description = 'Switch Button',
-        readOnly = true
-      }, false):addEvent('press', {
-        ['@type'] = 'LongPressedEvent',
-        title = 'Long Press',
-        description = 'Indicates the button has been long-pressed'
-      })
+    local alias = deviceByType[info.type]
+    if not alias then
+      logger:warn('Unknown type "'..tostring(info.type)..'"')
+      return
     end
+    local capabilities = capabilitiesByDevice[alias]
+    if not capabilities then
+      logger:warn('Missing capabilities for "'..tostring(info.type)..'" ('..tostring(alias)..')')
+      return
+    end
+    local names = namesByDevice[alias]
+    if not capabilities then
+      logger:warn('Missing names for "'..tostring(info.type)..'" ('..tostring(alias)..')')
+      return
+    end
+    local title = titleByDevice[alias] or info.type
+    local t = Thing:new(info.name or title, title, capabilities)
+    for _, name in ipairs(names) do
+      local md = PROPERTY_METADATA_BY_NAME[name]
+      if md then
+        t:addPropertyFrom(name, md)
+      else
+        t:addPropertyFromName(name)
+      end
+    end
+    return t
   end
 
 end)

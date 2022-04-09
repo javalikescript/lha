@@ -9,40 +9,69 @@ local ThingEvent = require('lha.ThingEvent')
 -- Standard properties, see https://webthings.io/schemas/
 
 local CAPABILITIES = {
-  ALARM = 'Alarm',
-  AIR_QUALITY_SENSOR = 'AirQualitySensor',
-  BAROMETRIC_PRESSURE_SENSOR = 'BarometricPressureSensor',
-  BINARY_SENSOR = 'BinarySensor',
-  CAMERA = 'Camera',
-  COLOR_CONTROL = 'ColorControl',
-  COLOR_SENSOR = 'ColorSensor',
-  DOOR_SENSOR = 'DoorSensor',
-  ENERGY_MONITOR = 'EnergyMonitor',
-  HUMIDITY_SENSOR = 'HumiditySensor',
-  LEAK_SENSOR = 'LeakSensor',
-  LIGHT = 'Light',
-  LOCK = 'Lock',
-  MOTION_SENSOR = 'MotionSensor',
-  MULTI_LEVEL_SENSOR = 'MultiLevelSensor',
-  MULTI_LEVEL_SWITCH = 'MultiLevelSwitch',
-  ON_OFF_SWITCH = 'OnOffSwitch',
-  PUSH_BUTTON = 'PushButton',
-  SMART_PLUG = 'SmartPlug',
-  SMOKE_SENSOR = 'SmokeSensor',
-  TEMPERATURE_SENSOR = 'TemperatureSensor',
-  THERMOSTAT = 'Thermostat',
-  VIDEO_CAMERA = 'VideoCamera',
+  Alarm = 'Alarm',
+  AirQualitySensor = 'AirQualitySensor',
+  BarometricPressureSensor = 'BarometricPressureSensor',
+  BinarySensor = 'BinarySensor',
+  Camera = 'Camera',
+  ColorControl = 'ColorControl',
+  ColorSensor = 'ColorSensor',
+  DoorSensor = 'DoorSensor',
+  EnergyMonitor = 'EnergyMonitor',
+  HumiditySensor = 'HumiditySensor',
+  IlluminanceSensor = 'MultiLevelSensor',
+  LeakSensor = 'LeakSensor',
+  Light = 'Light',
+  LightLevelSensor = 'MultiLevelSensor',
+  Lock = 'Lock',
+  MotionSensor = 'MotionSensor',
+  MultiLevelSensor = 'MultiLevelSensor',
+  MultiLevelSwitch = 'MultiLevelSwitch',
+  OnOffSwitch = 'OnOffSwitch',
+  PushButton = 'PushButton',
+  SmartPlug = 'SmartPlug',
+  SmokeSensor = 'SmokeSensor',
+  TemperatureSensor = 'TemperatureSensor',
+  Thermostat = 'Thermostat',
+  VideoCamera = 'VideoCamera',
 }
 
-local PROPERTY_METADATA = {
-  ON_OFF = {
-    ['@type'] = 'OnOffProperty',
+local PROPERTY_TYPES = {
+  BarometricPressureProperty = 'BarometricPressureProperty',
+  BrightnessProperty = 'BrightnessProperty',
+  ColorProperty = 'ColorProperty',
+  ColorTemperatureProperty = 'ColorTemperatureProperty',
+  HumidityProperty = 'HumidityProperty',
+  IlluminanceProperty = 'LevelProperty',
+  LevelProperty = 'LevelProperty',
+  LightLevelProperty = 'LevelProperty',
+  MotionProperty = 'MotionProperty',
+  OnOffProperty = 'OnOffProperty',
+  PushedProperty = 'PushedProperty',
+  SmokeProperty = 'SmokeProperty',
+  TemperatureProperty = 'TemperatureProperty',
+}
+
+local UNIT_BY_PROPERTY_TYPE = {
+  BarometricPressureProperty = 'hectopascal',
+  BrightnessProperty = 'percent',
+  ColorTemperatureProperty = 'kelvin',
+  HumidityProperty = 'percent',
+  IlluminanceProperty = 'lux',
+  TemperatureProperty = 'degree celsius',
+}
+
+local AT_TYPE = '@type'
+
+local PROPERTY_METADATA_BY_NAME = {
+  on = {
+    [AT_TYPE] = PROPERTY_TYPES.OnOffProperty,
     type = 'boolean',
     title = 'On/Off',
     description = 'Whether the thing is turned on'
   },
-  BRIGHTNESS = {
-    ['@type'] = 'BrightnessProperty',
+  brightness = {
+    [AT_TYPE] = PROPERTY_TYPES.BrightnessProperty,
     type = 'integer',
     title = 'Brightness',
     description = 'The level of light from 0-100',
@@ -50,8 +79,8 @@ local PROPERTY_METADATA = {
     maximum = 100,
     unit = 'percent'
   },
-  COLOR_TEMPERATURE = {
-    ['@type'] = 'ColorTemperatureProperty',
+  colorTemperature = {
+    [AT_TYPE] = PROPERTY_TYPES.ColorTemperatureProperty,
     type = 'integer',
     title = 'Color temperature',
     description = 'The color temperature in Kelvin',
@@ -59,55 +88,55 @@ local PROPERTY_METADATA = {
     minimum = 2000,
     maximum = 6600
   },
-  COLOR = {
-    ['@type'] = 'ColorProperty',
+  color = {
+    [AT_TYPE] = PROPERTY_TYPES.ColorProperty,
     type = 'string',
     title = 'Color',
     description = 'The color as hexadecimal RGB color code'
   },
-  TEMPERATURE = {
-    ['@type'] = 'TemperatureProperty',
+  temperature = {
+    [AT_TYPE] = PROPERTY_TYPES.TemperatureProperty,
     type = 'number',
     title = 'Temperature',
     description = 'The temperature',
     readOnly = true,
     unit = 'degree celsius'
   },
-  MOTION = {
-    ['@type'] = 'MotionProperty',
+  presence = {
+    [AT_TYPE] = PROPERTY_TYPES.MotionProperty,
     type = 'boolean',
     title = 'Motion',
     description = 'Whether a presence is detected',
     readOnly = true
   },
-  RELATIVE_HUMIDITY = {
-    ['@type'] = 'HumidityProperty',
+  humidity = {
+    [AT_TYPE] = PROPERTY_TYPES.HumidityProperty,
     type = 'number',
     title = 'Relative Humidity',
     description = 'The relative humidity in percent',
     readOnly = true,
     unit = 'percent'
   },
-  ATMOSPHERIC_PRESSURE = {
-    ['@type'] = 'BarometricPressureProperty',
+  pressure = {
+    [AT_TYPE] = PROPERTY_TYPES.BarometricPressureProperty,
     type = 'number',
     title = 'Atmospheric Pressure',
     description = 'The atmospheric pressure in hectopascal',
     readOnly = true,
     minimum = 800,
     maximum = 1100,
-    unit = 'hPa'
+    unit = 'hectopascal'
   },
-  LIGHT_LEVEL = {
-    ['@type'] = 'LevelProperty',
+  lightlevel = {
+    [AT_TYPE] = PROPERTY_TYPES.LightLevelProperty,
     type = 'integer',
     title = 'Light Level',
     description = 'The light level in 10000 x log10(Illuminance)',
     minimum = 0,
     readOnly = true
   },
-  ILLUMINANCE = {
-    ['@type'] = 'LevelProperty',
+  illuminance = {
+    [AT_TYPE] = PROPERTY_TYPES.IlluminanceProperty,
     type = 'integer',
     title = 'Illuminance',
     description = 'The illuminance in lux',
@@ -115,22 +144,22 @@ local PROPERTY_METADATA = {
     readOnly = true,
     unit = 'lux'
   },
-  PUSHED = {
-    ['@type'] = 'PushedProperty',
+  pushed = {
+    [AT_TYPE] = PROPERTY_TYPES.PushedProperty,
     type = 'boolean',
     title = 'Push Button',
     description = 'Whether the button is pushed',
     readOnly = true
   },
-  SMOKE = {
-    ['@type'] = 'SmokeProperty',
+  smoke = {
+    [AT_TYPE] = PROPERTY_TYPES.SmokeProperty,
     type = 'boolean',
     title = 'Smoke',
     description = 'Whether smoke is detected',
     readOnly = true
   },
-  BATTERY_LEVEL = {
-    ['@type'] = 'LevelProperty',
+  battery = {
+    [AT_TYPE] = PROPERTY_TYPES.LevelProperty,
     type = 'number',
     title = 'Battery Level',
     description = 'The battery level in percent',
@@ -138,37 +167,14 @@ local PROPERTY_METADATA = {
     readOnly = true,
     unit = 'percent'
   },
-  ENABLED = {
-    ['@type'] = 'OnOffProperty',
+  enabled = {
+    [AT_TYPE] = PROPERTY_TYPES.OnOffProperty,
     type = 'boolean',
-    title = 'Thing Enabled',
+    title = 'Enabled',
     description = 'Whether the thing is enabled',
     configuration = true
   },
 }
-
-local PROPERTY_METADATA_BY_NAME = {
-  on = PROPERTY_METADATA.ON_OFF,
-  brightness = PROPERTY_METADATA.BRIGHTNESS,
-  colorTemperature = PROPERTY_METADATA.COLOR_TEMPERATURE,
-  color = PROPERTY_METADATA.COLOR,
-  temperature = PROPERTY_METADATA.TEMPERATURE,
-  presence = PROPERTY_METADATA.MOTION,
-  humidity = PROPERTY_METADATA.RELATIVE_HUMIDITY,
-  pressure = PROPERTY_METADATA.ATMOSPHERIC_PRESSURE,
-  lightlevel = PROPERTY_METADATA.LIGHT_LEVEL, -- TODO use camel case
-  illuminance = PROPERTY_METADATA.ILLUMINANCE,
-  pushed = PROPERTY_METADATA.PUSHED,
-  smoke = PROPERTY_METADATA.SMOKE,
-  batteryLevel = PROPERTY_METADATA.BATTERY_LEVEL,
-  enabled = PROPERTY_METADATA.ENABLED,
-}
-
-local PROPERTY_NAME_BY_METADATA = {}
-for name, md in pairs(PROPERTY_METADATA_BY_NAME) do
-  PROPERTY_NAME_BY_METADATA[md] = name
-end
-
 
 --- The Thing class represents a device.
 -- See https://iot.mozilla.org/wot/
@@ -366,7 +372,7 @@ return require('jls.lang.class').create(function(thing)
       title = self.title,
       description = self.description,
       ['@context'] = self.context,
-      ['@type'] = self.type,
+      [AT_TYPE] = self.type,
       properties = self:getPropertyDescriptions(),
       events = self:getEventDescriptions(),
       actions = {},
@@ -406,62 +412,6 @@ return require('jls.lang.class').create(function(thing)
       self:addPropertyFromName(name)
     end
     return self
-  end
-
-  --[[for name, md in pairs(PROPERTY_METADATA_BY_NAME) do
-    local method = 'add'..['@type']
-    thing[method] = function(self, title, description, initialValue)
-      return self:addProperty(name, copyPropertyMetadata(md, title, description), initialValue)
-    end
-  end]]
-
-  -- TODO remove or move to static
-  function thing:addOnOffProperty(title, description, initialValue)
-    return self:addPropertyFromName('on', title, description, initialValue)
-  end
-
-  function thing:addBrightnessProperty(title, description, initialValue)
-    return self:addPropertyFromName('brightness', title, description, initialValue)
-  end
-
-  function thing:addColorTemperatureProperty(title, description, initialValue)
-    return self:addPropertyFromName('colorTemperature', title, description, initialValue)
-  end
-
-  function thing:addColorProperty(title, description, initialValue)
-    return self:addPropertyFromName('color', title, description, initialValue)
-  end
-
-  function thing:addTemperatureProperty(title, description, initialValue)
-    return self:addPropertyFromName('temperature', title, description, initialValue)
-  end
-
-  function thing:addPresenceProperty(title, description, initialValue)
-    return self:addPropertyFromName('presence', title, description, initialValue)
-  end
-
-  function thing:addRelativeHumidityProperty(title, description, initialValue)
-    return self:addPropertyFromName('humidity', title, description, initialValue)
-  end
-
-  function thing:addPushedProperty(title, description, initialValue)
-    return self:addPropertyFromName('pushed', title, description, initialValue)
-  end
-
-  function thing:addSmokeProperty(title, description, initialValue)
-    return self:addPropertyFromName('smoke', title, description, initialValue)
-  end
-
-  function thing:addAtmosphericPressureProperty(title, description, initialValue)
-    return self:addPropertyFromName('pressure', title, description, initialValue)
-  end
-
-  function thing:addLightLevelProperty(title, description, initialValue)
-    return self:addPropertyFromName('lightlevel', title, description, initialValue)
-  end
-
-  function thing:addIlluminanceProperty(title, description, initialValue)
-    return self:addPropertyFromName('illuminance', title, description, initialValue)
   end
 
 end, function(Thing)
@@ -505,6 +455,8 @@ end, function(Thing)
   end
 
   Thing.CAPABILITIES = CAPABILITIES
-  Thing.PROPERTIES = PROPERTY_METADATA
+  Thing.PROPERTY_TYPES = PROPERTY_TYPES
+  Thing.PROPERTY_METADATA_BY_NAME = PROPERTY_METADATA_BY_NAME
+  Thing.UNIT_BY_PROPERTY_TYPE = UNIT_BY_PROPERTY_TYPE
 
 end)

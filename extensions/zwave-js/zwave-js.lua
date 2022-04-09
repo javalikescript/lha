@@ -52,7 +52,10 @@ end
 local function createThingFromNode(node)
   local productLabel = node.productLabel or node.label
   if productLabel == 'FGSD002' then
-    return Thing:new(getNodeName(node, 'Smoke Detector'), 'Smoke Sensor', {'SmokeSensor', 'TemperatureSensor'}):addSmokeProperty():addTemperatureProperty()
+    return Thing:new(getNodeName(node, 'Smoke Detector'), 'Smoke Sensor', {
+      Thing.CAPABILITIES.SmokeSensor,
+      Thing.CAPABILITIES.TemperatureSensor,
+    }):addPropertiesFromNames('smoke', 'temperature')
   end
 end
 

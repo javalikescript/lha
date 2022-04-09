@@ -86,14 +86,14 @@ function serialLineHandler:onData(line)
       thing = Thing:new(title)
       for propertyId, propertyName in ipairs(data.values) do
         if propertyName == 'humidity' then
-          thing:addType('MultiLevelSensor')
-          thing:addRelativeHumidityProperty()
+          thing:addType(Thing.CAPABILITIES.HumiditySensor)
+          thing:addPropertyFromName('humidity')
         elseif propertyName == 'temperature' then
-          thing:addType('TemperatureSensor')
-          thing:addTemperatureProperty()
+          thing:addType(Thing.CAPABILITIES.TemperatureSensor)
+          thing:addPropertyFromName('temperature')
         elseif propertyName == 'pressure' then
-          thing:addType('MultiLevelSensor')
-          thing:addAtmosphericPressureProperty()
+          thing:addType(Thing.CAPABILITIES.BarometricPressureSensor)
+          thing:addPropertyFromName('pressure')
         else
           thing:addProperty(propertyName, {
             ['@type'] = 'LevelProperty',

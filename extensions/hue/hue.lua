@@ -61,7 +61,7 @@ extension:subscribeEvent('poll', function()
     return
   end
   logger:info('Polling '..extension:getPrettyName()..' extension')
-  hueBridge:get(HueBridge.CONST.SENSORS):next(function(allSensors)
+  hueBridge:get(HueBridge.CONST.sensors):next(function(allSensors)
     local time = Date.now()
     if allSensors then
       for sensorId, sensor in pairs(allSensors) do
@@ -70,7 +70,7 @@ extension:subscribeEvent('poll', function()
       end
     end
     lastSensorPollTime = time
-    return hueBridge:get(HueBridge.CONST.LIGHTS)
+    return hueBridge:get(HueBridge.CONST.lights)
   end):next(function(allLights)
     local time = Date.now()
     if allLights then
@@ -87,6 +87,7 @@ extension:subscribeEvent('poll', function()
   end):catch(function(err)
     logger:warn('fail to get '..extension:getPrettyName()..' things, due to "'..tostring(err)..'"')
   end)
+  hueBridge:checkWebSocket()
 end)
 
 extension:subscribeEvent('refresh', function()
