@@ -1,14 +1,22 @@
 <app-page id="web-dashboard" title="Dashboard">
   <template slot="bar-right">
     <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
-    <button v-on:click="onAdd()" title="Add"><i class="fa fa-plus"></i></button>
+    <button v-on:click="app.toPage('extension', 'web-dashboard')" title="Configuration"><i class="fas fa-cog"></i></button>
   </template>
   <article class="tiles">
     <div class="tile" v-for="tile in tiles">
       <div class="bar">
         <span>{{ tile.title }}</span>
+        <div>
+          <button v-on:click="openHistoricalData(tile.paths)"><i class="fas fa-chart-line"></i></button>
+        </div>
       </div>
-      <p class="tile-value">{{ tile.value }}</p>
+      <p class="tile-value" v-if="tile.icon"><i :class="['fas', tile.value]"></i></p>
+      <p class="tile-value" v-if="!tile.icon">{{ tile.value }}</p>
+      <div class="bar">
+        <div/>
+        <span>{{ tile.unit }}</span>
+      </div>
     </div>
   </article>
 </app-page>
