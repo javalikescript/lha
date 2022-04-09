@@ -66,6 +66,7 @@ local ValueAggregator = class.create(function(valueAggregator)
     self:clear()
   end
 
+  -- Clear the aggregated values after computation
   function valueAggregator:clear()
     self.changes = 0
     self.count = 0
@@ -163,6 +164,23 @@ local NumberAggregator = class.create(ValueAggregator, function(numberAggregator
 
 end)
 
+local IntegerAggregator = class.create(NumberAggregator, function(integerAggregator, super)
+
+  function integerAggregator:compute(t)
+    super.compute(self, t)
+    if self.totalCount > 0 then
+      t.average = self.total // self.totalCount
+    end
+    t.min = self.min
+    t.max = self.max
+  end
+
+  function integerAggregator:finish(value)
+    value.type = 'integer'
+  end
+
+end)
+
 local BooleanAggregator = class.create(ValueAggregator, function(booleanAggregator, super)
 
   local BOOLEAN_VALUE_MAP = {
@@ -172,8 +190,13 @@ local BooleanAggregator = class.create(ValueAggregator, function(booleanAggregat
 
   function booleanAggregator:compute(t)
     super.compute(self, t)
-    t.changes = self.changes
-    t.index = BOOLEAN_VALUE_MAP[self.lastValue]
+    local changes = self.changes
+    local lastValue = self.lastValue
+    if changes and changes > 0 then
+      lastValue = true
+    end
+    t.changes = changes
+    t.index = BOOLEAN_VALUE_MAP[lastValue]
   end
 
   function booleanAggregator:finish(value)
@@ -217,7 +240,7 @@ local StringAggregator = class.create(ValueAggregator, function(stringAggregator
 
 end)
 
-local function guessAggregatorClass(valueType, default)
+local function guessAggregatorClass(valueType)
   if valueType == 'number' then
     return NumberAggregator
   elseif valueType == 'boolean' then
@@ -225,9 +248,9 @@ local function guessAggregatorClass(valueType, default)
   elseif valueType == 'string' then
     return StringAggregator
   elseif valueType == 'integer' then
-    return NumberAggregator
+    return IntegerAggregator
   end
-  return default or ValueAggregator
+  return nil
 end
 
 local AnyValueAggregator = class.create(function(anyValueAggregator)
@@ -239,7 +262,7 @@ local AnyValueAggregator = class.create(function(anyValueAggregator)
 
   function anyValueAggregator:aggregate(value, t, k)
     if value ~=nil and not self.vac then
-      self.vac = guessAggregatorClass(type(value), ValueAggregator)
+      self.vac = guessAggregatorClass(type(value)) or ValueAggregator
       self.va = self.vac:new():copy(self.va)
     end
     self.va:aggregate(value, t, k)
@@ -322,8 +345,8 @@ return class.create(function(historicalTable)
       else
         computeChanges(t, key)
       end
-      if logger:isLoggable(logger.INFO) then
-        logger:info('historicalTable:aggregateValue("'..path..'", '..tostring(value)..') '..json.stringify(t, 2))
+      if logger:isLoggable(logger.FINER) then
+        logger:finer('historicalTable:aggregateValue("'..path..'", '..tostring(value)..') '..json.stringify(t, 2))
       end
     end
     return prev
@@ -515,7 +538,7 @@ return class.create(function(historicalTable)
       logger:fine('historicalTable:loadValues('..tostring(fromTime)..', '..tostring(toTime)..', '..tostring(period)..', "'..tostring(path)..'")')
     end
     local values = {}
-    local AggregatorClass = guessAggregatorClass(valueType, AnyValueAggregator)
+    local AggregatorClass = guessAggregatorClass(valueType) or AnyValueAggregator
     local periodAggregator = AggregatorClass:new()
     self:forEachPeriod(fromTime, toTime, period, function(time)
       periodAggregator:slice(values, time)
@@ -531,13 +554,12 @@ return class.create(function(historicalTable)
     if logger:isLoggable(logger.FINE) then
       logger:fine('historicalTable:loadMultiValues('..tostring(fromTime)..', '..tostring(toTime)..', '..tostring(period)..', "'..tostring(#paths)..'")')
     end
-    types = types or {}
     local count = #paths
     local pathsValues = {}
     local pathsAggregator = {}
     for i = 1, count do
       pathsValues[i] = {}
-      local AggregatorClass = guessAggregatorClass(types[i], AnyValueAggregator)
+      local AggregatorClass = types and guessAggregatorClass(types[i]) or AnyValueAggregator
       pathsAggregator[i] = AggregatorClass:new()
     end
     self:forEachPeriod(fromTime, toTime, period, function(time)
