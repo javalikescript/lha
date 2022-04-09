@@ -1,23 +1,40 @@
 define(['./web-chart.xml'], function(pageXml) {
 
   function isInteger(value) {
-    return typeof value === 'number' && isFinite(value) && Math.floor(value) === value;
+    return (typeof value === 'number') && isFinite(value) && (Math.floor(value) === value);
   };
-  
+
+  function isFloat(value) {
+    return (typeof value === 'number') && isFinite(value) && (Math.floor(value) !== value);
+  };
+
+  function countDigits(value) {
+    var s = String(value);
+    var i = s.indexOf('.');
+    return i > 0 ? s.length - i - 1 : 0;
+  };
+
   var createNumberChartDataSets = function(dataPointSet, datasets, prefix) {
     datasets = datasets || [];
     prefix = prefix || '';
     var avgSerie = [];
     var minSerie = [];
     var maxSerie = [];
+    var maxDigits = 0;
     dataPointSet.forEach(function(item) {
-      var avg = item.average;
-      if ((typeof avg === 'number') && !isInteger(avg)) {
-        avg = Math.floor(avg * 100) / 100;
+      var digits = countDigits(item.min);
+      if (digits > maxDigits) {
+        maxDigits = digits;
       }
-      avgSerie.push(avg);
       minSerie.push(item.min);
       maxSerie.push(item.max);
+    });
+    dataPointSet.forEach(function(item) {
+      var avg = item.average;
+      if (isFloat(avg)) {
+        avg = avg.toFixed(maxDigits);
+      }
+      avgSerie.push(avg);
     });
     var hue = (Math.abs(hashString(prefix)) % 240) / 240;
     var maxColor = hsvToRgb(hue, 0.7, 0.8);
@@ -120,7 +137,7 @@ define(['./web-chart.xml'], function(pageXml) {
     if ('map' in firstItem) {
       return createMappedChartDataSets(dataPointSet, datasets, prefix, firstItem.map);
     }
-    if (firstItem.type === 'number') {
+    if ((firstItem.type === 'number') || (firstItem.type === 'integer')) {
       return createNumberChartDataSets(dataPointSet, datasets, prefix);
     }
     // TODO Remove
@@ -219,9 +236,9 @@ define(['./web-chart.xml'], function(pageXml) {
         if (path) {
           this.loadHistoricalData(path);
         }
+        console.log('onShow(' + path + ') path = "' + this.path + '"');
         var self = this;
         app.getThings().then(function(things) {
-          console.info('onShow() path = "' + self.path + '"');
           self.things = things;
         });
       },
