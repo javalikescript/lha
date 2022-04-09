@@ -14,6 +14,11 @@
         "type": "string",
         "default": "assets"
       },
+      "title": {
+        "title": "Web page title",
+        "type": "string",
+        "default": "Home"
+      },
       "theme": {
         "title": "User Interface Theme",
         "type": "string",

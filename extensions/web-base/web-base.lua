@@ -45,6 +45,7 @@ local function addContext(server, ...)
 end
 
 local function onWebSocketClose(self)
+  logger:fine('WebSocket closed')
   List.removeFirst(websockets, self)
 end
 
@@ -52,8 +53,12 @@ local batchDataChange = true
 local dataChangeEvent = nil
 
 local function onDataChange(value, previousValue, path)
+  logger:fine('onDataChange "'..tostring(path)..'": "'..tostring(value)..'"')
+  if #websockets == 0 then
+    return
+  end
   if batchDataChange then
-    if dataChangeEvent then
+    if not dataChangeEvent then
       event:setTimeout(function()
         local message = json.encode(dataChangeEvent)
         dataChangeEvent = nil
@@ -61,7 +66,6 @@ local function onDataChange(value, previousValue, path)
           websocket:sendTextMessage(message)
         end
       end)
-    else
       dataChangeEvent = {event = 'data-change'}
     end
     tables.setPath(dataChangeEvent, path, value)
@@ -157,10 +161,12 @@ extension:subscribeEvent('startup', function()
   end))
   addContext(server, '/ws/', Map.assign(WebSocketUpgradeHandler:new(), {
     onOpen = function(_, webSocket, exchange)
+      logger:fine('WebSocket openned')
       table.insert(websockets, webSocket)
       webSocket.onClose = onWebSocketClose
     end
   }))
+  logger:info('WebSocket available on /ws/')
 
 end)
 

@@ -45,7 +45,7 @@ new Vue({
     onSave: function() {
       if (this.extensionId && this.extension.config) {
         fetch('/engine/configuration/extensions/' + this.extensionId, {
-          method: 'POST',
+          method: 'PUT',
           body: JSON.stringify({
             value: this.extension.config
           })
@@ -106,7 +106,7 @@ new Vue({
         return Promise.reject();
       }
       return fetch('/engine/configuration/extensions/' + extensionId, {
-        method: 'POST',
+        method: 'PUT',
         body: JSON.stringify({
           value: this.extension.config
         })

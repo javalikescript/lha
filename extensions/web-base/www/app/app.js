@@ -1,3 +1,17 @@
+
+function setTheme(name) {
+  var body = document.getElementsByTagName('body')[0];
+  body.setAttribute('class', 'theme_' + name);
+}
+
+function formatNavigationPath(pageId, path) {
+  return '/' + pageId + '/' + (path ? path : '');
+}
+
+function parseNavigationPath(path) {
+  return path.match(/^\/([^\/]+)\/(.*)$/);
+}
+
 /************************************************************
  * Main application
  ************************************************************/
@@ -21,19 +35,22 @@ var app = new Vue({
     },
     navigateTo: function(path, noHistory) {
       if (this.path === path) {
-        return;
+        return true;
       }
-      var matches = path.match(/^\/([^\/]+)\/(.*)$/);
+      var matches = parseNavigationPath(path);
       if (matches) {
-        if (!noHistory) {
-          this.pageHistory.push(this.path);
-        }
-        this.path = path;
         var id = matches[1];
         var pagePath = matches[2];
-        //if (this.page === id) {}
-        this.selectPage(id, pagePath);
-        return true;
+        if (id in this.pages) {
+          if (!noHistory) {
+            this.pageHistory.push(this.path);
+          }
+          this.path = path;
+          this.menu = '';
+          this.page = id;
+          this.$emit('page-selected', id, pagePath);
+          return true;
+        }
       }
       return false;
     },
@@ -61,21 +78,34 @@ var app = new Vue({
       }
       return this;
     },
-    selectPage: function(id, path) {
-      this.menu = '';
-      this.page = id;
-      this.$emit('page-selected', id, path);
-    },
     showBack: function() {
       var l = this.pageHistory.length
-      return l > 0 && this.pageHistory[l - 1] !== 'main';
+      return l > 0;
     },
     back: function() {
       var path = this.pageHistory.pop();
       if (path) {
         this.navigateTo(path, true);
       } else {
-        this.toPage('main');
+        this.toPage('home');
+      }
+    },
+    onMessage: function(message) {
+      //console.log('onMessage', message);
+      if (message && (message.event === 'data-change')) {
+        var propsById = this.getFromCache('/engine/properties');
+        if (propsById) {
+          for (var thingId in message.data) {
+            var data = message.data[thingId];
+            var props = propsById[thingId];
+            if (props) {
+              for (var name in data) {
+                props[name] = data[name];
+              }
+            }
+          }
+          this.callPage(this.page, 'onDataChange');
+        }
       }
     },
     clearCache: function() {
@@ -299,10 +329,11 @@ var confirmation = new Vue({
 /************************************************************
  * Main
  ************************************************************/
-var main = new Vue({
-  el: '#main',
+var homePage = new Vue({
+  el: '#home',
   data: {
-    pages: []
+    pages: [],
+    title: 'Welcome'
   }
 });
 
@@ -340,6 +371,7 @@ var main = new Vue({
  new Vue({
   el: '#engineSettings',
   data: {
+    filename: '',
     schema: {},
     config: {}
   },
@@ -357,6 +389,36 @@ var main = new Vue({
         });
       });
     },
+    backup: function() {
+      var self = this;
+      fetch('/engine/admin/backup/create', {method: 'POST'}).then(function(response) {
+        return response.text();
+      }).then(function(filename) {
+        self.filename = filename;
+      });
+    },
+    selectFile: function(event) {
+      this.$refs.uploadInput.click();
+    },
+    uploadThenDeploy: function(event) {
+      var input = event.target;
+      if (input.files.length !== 1) {
+        return;
+      }
+      var file = input.files[0];
+      fetch('/engine/tmp/' + file.name, {
+        method: 'PUT',
+        headers: {
+          "Content-Type": "application/octet-stream"
+        },
+        body: file
+      }).then(function() {
+        return fetch('/engine/admin/backup/deploy', {
+          method: 'POST',
+          body: file.name
+        });
+      });
+    },
     onSave: function() {
       fetch('/engine/configuration/engine', {
         method: 'POST',
@@ -371,7 +433,7 @@ var main = new Vue({
     stopServer: function() {
       confirmation.ask('Stop the server?').then(function() {
         fetch('/engine/admin/stop', { method: 'POST'}).then(function() {
-          app.toPage('main');
+          app.toPage('home');
           toaster.toast('Server stopped');
         });
       });

@@ -219,7 +219,7 @@ Vue.component('json-item', {
         var index = parseInt(this.name, 10);
         if (index && (index >= 1) && (index <= this.pobj.length)) {
           this.pobj.splice(index - 1, 1);
-          this.$forceUpdate();
+          this.root.$forceUpdate();
         }
       }
     },

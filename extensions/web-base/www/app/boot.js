@@ -40,29 +40,49 @@
 /************************************************************
  * Route application using location hash
  ************************************************************/
- var onHashChange = function() {
-  var matches = window.location.hash.match(/^#(\/[^\/]+\/.*)$/);
+function getLocationPath() {
+  var matches = parseNavigationPath(window.location.hash.substring(1))
   if (matches) {
-    app.navigateTo(matches[1]);
-  } else {
-    app.toPage('main');
+    return formatNavigationPath(matches[1], matches[2]);
   }
-};
+  return formatNavigationPath('home');
+}
+
 app.$on('page-selected', function(id, path) {
   window.location.replace(window.location.pathname + '#' + formatNavigationPath(id, path));
 });
-window.addEventListener('hashchange', onHashChange);
+window.addEventListener('hashchange', function() {
+  app.navigateTo(getLocationPath());
+});
 
 var webBaseConfig = {};
 var startCountDown = 1;
+var webSocket = null;
+
+function setupWebSocket() {
+  if (!webSocket) {
+    webSocket = new WebSocket('ws://' + location.host + '/ws/');
+    webSocket.onmessage = function(event) {
+      //console.log('webSocket.onmessage', event);
+      if (event.data) {
+        app.onMessage(JSON.parse(event.data));  
+      }
+    };
+    webSocket.onclose = function() {
+      webSocket = null;
+    };
+  }
+}
 
 var countDownStart = function() {
   startCountDown--;
   if (startCountDown === 0) {
-    onHashChange();
+    countDownStart = undefined;
     if (webBaseConfig.theme) {
       setTheme(webBaseConfig.theme);
     }
+    app.navigateTo(getLocationPath());
+    setupWebSocket();
   }
 };
 
@@ -71,6 +91,10 @@ fetch('/engine/configuration/extensions/web-base').then(function(response) {
   return response.json();
 }).then(function(response) {
   webBaseConfig = response.value || {};
+  if (webBaseConfig.title) {
+    document.title = webBaseConfig.title;
+    homePage.title = webBaseConfig.title;
+  }
   countDownStart();
 }, function() {
   webBaseConfig = {};

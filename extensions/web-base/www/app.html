@@ -39,10 +39,10 @@
   <!--
     default menu
   -->
-  <app-menu id="menu" title="Menu" home-page="main">
+  <app-menu id="menu" title="Menu" home-page="home">
     <article class="content">
       <ul>
-        <li v-for="page in sortedPages" v-on:click="app.toPage(page.id)">{{ page.name }}</li>
+        <li v-for="page in sortedPages" v-on:click="app.toPage(page.id)" v-if="app.page !== page.id">{{ page.name }}</li>
       </ul>
     </article>
   </app-menu>
@@ -122,6 +122,7 @@
   </app-page>
   <app-page id="addThings" title="Add Things">
     <template slot="bar-right">
+      <button v-on:click="onSave().then(function(){ app.replacePage('things'); })" title="Enable Selected Things"><i class="far fa-save"></i></button>
       <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
     </template>
     <article class="cards">
@@ -133,7 +134,6 @@
         <p>{{ thing.description }}</p>
       </div>
       <section>
-        <button v-on:click="onSave().then(function(){ app.replacePage('things'); })"><i class="far fa-save"></i>&nbsp;Enable Selected</button>
         <button v-on:click="onAddAll().then(function(){ app.replacePage('things'); })"><i class="fa fa-plus"></i>&nbsp;Enable All</button>
         <button v-on:click="app.back()">Cancel</button>
       </section>
@@ -196,7 +196,7 @@
       <section>
         <p>{{ extension.info.name }}</p>
         <p>{{ extension.info.description }}</p>
-        <json v-if="hasSchema(extension.manifest.schema)" :name="'Configuration'" :obj="extension.config" :schema="extension.manifest.schema"></json>
+        <json v-if="schema" :name="'Configuration'" :obj="extension.config" :schema="schema"></json>
       </section>
       <section>
         <button v-on:click="onAdd().then(function(){ app.replacePage('extensions'); })"><i class="fa fa-plus"></i>&nbsp;Add</button>
@@ -232,12 +232,17 @@
     <page-article>
       <json :name="'Configuration'" :obj="config" :schema="schema"></json>
       <button v-on:click="onSave()"><i class="far fa-save"></i>&nbsp;Save</button>
+      <p>Backup and Restore</p>
+      <button v-on:click="backup"><i class="fas fa-box"></i>&nbsp;Create Backup</button>
+      <a v-if="filename" :href="'/engine/tmp/' + filename" download>{{filename}}</a>
+      <button v-on:click="selectFile"><i class="fas fa-box-open"></i>&nbsp;Deploy Backup</button>
+      <input v-on:change="uploadThenDeploy" type="file" accept=".zip" ref="uploadInput" style="display: none;" />
     </page-article>
   </app-page>
   <!--
     Main
   -->
-  <app-page id="main" title="Welcome" hide-back="true">
+  <app-page id="home" :title="title" hide-back="true">
     <template slot="bar-right">
       <button v-on:click="app.toPage('engineSettings')" title="Configuration"><i class="fas fa-cog"></i></button>
     </template>
@@ -290,7 +295,7 @@
     <json-item :name="name" :obj="obj" :schema="schema" :root="this"></json-item>
   </ul>
 </script>
-<script type="text/x-template" id="dialog-template">
+<script type="text/x-template" id="dialog-template" tabindex="-1">
   <section v-bind:id="id" class="page dialog" v-bind:class="{ hide: app.dialog !== id }">
     <header>
       <div />
@@ -304,7 +309,7 @@
     <slot>Article</slot>
   </section>
 </script>
-<script type="text/x-template" id="menu-template">
+<script type="text/x-template" id="menu-template" tabindex="-1">
   <section v-bind:id="id" class="menu" v-bind:class="{ hideLeft: app.menu !== id }">
     <header>
       <div>
@@ -317,7 +322,7 @@
   </section>
 </script>
 <script type="text/x-template" id="page-template">
-  <section v-bind:id="id" v-bind:class="[{page: true}, app.page === id ? '' : transitionClass]">
+  <section v-bind:id="id" v-bind:class="[{page: true}, app.page === id ? '' : transitionClass]" tabindex="-1">
     <header>
       <div>
         <button v-on:click="app.menu = menu" v-if="menu"><i class="fa fa-bars"></i></button>

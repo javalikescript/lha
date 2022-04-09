@@ -19,7 +19,7 @@ new Vue({
         for (var i = 0; i < self.things.length; i++) {
           var thing = self.things[i];
           var props = properties[thing.thingId];
-          var propNames = Object.keys(props);
+          var propNames = Object.keys(props); // filter config properties
           if (propNames.length === 1) {
             var propName = propNames[0];
             var propDef = thing.properties[propName];
@@ -104,7 +104,7 @@ new Vue({
     onEdit: function() {
       this.edit = !this.edit;
       if (this.edit) {
-        this.props = Object.assign({}, this.properties);
+        this.props = assignMap({}, this.properties);
       }
     },
     onSave: function() {

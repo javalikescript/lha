@@ -27,6 +27,16 @@ function swapMap(m) {
   return r;
 }
 
+function assignMap(m) {
+  for (var i = 1; i < arguments.length; i++) {
+    var n = arguments[i];
+    for (var k in n) {
+      m[k] = n[k];
+    }
+  }
+  return m;
+}
+
 function toMap(l, k) {
   if (Array.isArray(l)) {
     var m = {};
@@ -37,15 +47,6 @@ function toMap(l, k) {
     return m;
   }
   return l;
-}
-
-function setTheme(name) {
-  var body = document.getElementsByTagName('body')[0];
-  body.setAttribute('class', 'theme_' + name);
-}
-
-function formatNavigationPath(pageId, path) {
-  return '/' + pageId + '/' + (path ? path : '');
 }
 
 function hsvToRgb(h, s, v) {
