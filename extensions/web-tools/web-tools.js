@@ -1,12 +1,27 @@
-define(['./web-settings.xml'], function(settingsTemplate) {
+define(['./web-tools.xml'], function(toolsTemplate) {
 
-  var settingsVue = new Vue({
-    template: settingsTemplate,
+  var toolsVue = new Vue({
+    template: toolsTemplate,
     data: {
-      filename: '',
       logLevel: ''
     },
     methods: {
+      onShow: function() {
+        var page = this;
+        fetch('/engine/admin/getLogLevel').then(function(response) {
+          return response.text();
+        }).then(function(logLevel) {
+          page.logLevel = logLevel.toLowerCase();
+        });
+      },
+      applyLogLevel: function() {
+        var logLevel = this.logLevel;
+        if (logLevel) {
+          fetch('/engine/admin/setLogLevel', {method: 'POST', body: logLevel}).then(function() {
+            toaster.toast('Log Level updated to ' + logLevel);
+          });
+        }
+      },
       clearCache: function() {
         app.clearCache();
       },
@@ -47,57 +62,19 @@ define(['./web-settings.xml'], function(settingsTemplate) {
       stopServer: function() {
         confirmation.ask('Stop the server?').then(function() {
           fetch('/engine/admin/stop', { method: 'POST'}).then(function() {
-            app.toPage('main');
+            app.toPage('home');
             toaster.toast('Server stopped');
-          });
-        });
-      },
-      applyLogLevel: function() {
-        var logLevel = this.logLevel;
-        if (logLevel) {
-          fetch('/engine/admin/setLogLevel', {method: 'POST', body: logLevel}).then(function() {
-            toaster.toast('Log Level updated to ' + logLevel);
-          });
-        }
-      },
-      backup: function() {
-        var self = this;
-        fetch('/engine/admin/backup/create', {method: 'POST'}).then(function(response) {
-          return response.text();
-        }).then(function(filename) {
-          self.filename = filename;
-        });
-      },
-      selectFile: function(event) {
-        this.$refs.uploadInput.click();
-      },
-      uploadThenDeploy: function(event) {
-        var input = event.target;
-        if (input.files.length !== 1) {
-          return;
-        }
-        var file = input.files[0];
-        fetch('/engine/tmp/' + file.name, {
-          method: 'PUT',
-          headers: {
-            "Content-Type": "application/octet-stream"
-          },
-          body: file
-        }).then(function() {
-          return fetch('/engine/admin/backup/deploy', {
-            method: 'POST',
-            body: file.name
           });
         });
       }
     }
   });
   
-  addPageComponent(settingsVue);
+  addPageComponent(toolsVue);
 
   menu.pages.push({
-    id: 'settings',
-    name: 'Settings'
+    id: 'tools',
+    name: 'Tools'
   });
 
 });

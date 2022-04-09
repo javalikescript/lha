@@ -1,6 +1,6 @@
 {
-  "name": "Web Settings",
-  "description": "Expose web settings",
+  "name": "Web Tools",
+  "description": "Expose additional web tools",
   "dependencies": ["web-base"],
   "version": "1.0",
   "script": "../web-base/web-ext.lua"
