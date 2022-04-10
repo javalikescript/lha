@@ -112,6 +112,13 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
           this.processThings(config, things, properties);
         }));
       },
+      toggleFullScreen: function() {
+        if( window.innerHeight == screen.height) {
+          document.exitFullscreen();
+        } else {
+          document.body.requestFullscreen();
+        }
+      },
       onDataChange: function() {
         console.log('onDataChange');
         Promise.all([

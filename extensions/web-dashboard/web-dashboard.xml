@@ -1,7 +1,8 @@
 <app-page id="web-dashboard" title="Dashboard">
   <template slot="bar-right">
-    <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
     <button v-on:click="app.toPage('extension', 'web-dashboard')" title="Configuration"><i class="fas fa-cog"></i></button>
+    <button v-on:click="toggleFullScreen()" title="Refresh"><i class="fas fa-expand-alt"></i></button>
+    <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
   </template>
   <article class="tiles">
     <div class="tile" v-for="tile in tiles">
