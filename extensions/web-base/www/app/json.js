@@ -103,9 +103,13 @@ function browseJsonSchema(schema, fn) {
   }
 }
 
+function copyObject(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
+
 function computeJsonSchema(schema, things) {
   if (hasSchema(schema)) {
-    schema = JSON.parse(JSON.stringify(schema));
+    schema = copyObject(schema);
     browseJsonSchema(schema, function(s) {
       if ('enumVar' in s) {
         if (s.enumVar === 'thingIds') {
@@ -243,13 +247,37 @@ Vue.component('json-item', {
         console.error('Cannot add item', this.obj, this.schema);
       }
     },
-    removeItem: function() {
+    getItemIndex: function() {
       if (Array.isArray(this.pobj)) {
         var index = parseInt(this.name, 10);
         if (index && (index >= 1) && (index <= this.pobj.length)) {
-          this.pobj.splice(index - 1, 1);
-          this.root.$forceUpdate();
+          return index - 1;
         }
+      }
+      return -1;
+    },
+    removeItem: function() {
+      var index = this.getItemIndex();
+      if (index !== -1) {
+        this.pobj.splice(index, 1);
+        this.root.$forceUpdate();
+      }
+    },
+    canMove: function(delta) {
+      var index = this.getItemIndex();
+      if (index !== -1) {
+        var newIndex = index + delta;
+        return (newIndex >= 0) && (newIndex < this.pobj.length)
+      }
+      return false;
+    },
+    moveItem: function(delta) {
+      var index = this.getItemIndex();
+      if (index !== -1) {
+        var newIndex = index + delta;
+        var items = this.pobj.splice(index, 1);
+        this.pobj.splice(newIndex, 0, items[0]);
+        this.root.$forceUpdate();
       }
     },
     toggle: function() {

@@ -263,11 +263,13 @@
 </body>
 <script type="text/x-template" id="json-item-template">
   <li class="json">
-    <div @click="toggle">
+    <div>
       <div>
         <i class="fa fa-chevron-right" v-if="!open"></i>
-        <span>{{ label }}:</span>
+        <span v-on:click="toggle">{{ label }}:</span>
         <i class="fa fa-trash" v-if="isRemovable" v-on:click="removeItem"></i>
+        <i class="fas fa-angle-up" v-if="canMove(-1)" v-on:click="moveItem(-1)"></i>
+        <i class="fas fa-angle-down" v-if="canMove(1)" v-on:click="moveItem(1)"></i>
       </div>
       <input v-if="hasStringValue && !hasEnumValues" v-model="value" type="text" placeholder="String Value">
       <input v-if="hasNumberValue && !hasEnumValues" v-model="value" type="number" placeholder="Number Value">
