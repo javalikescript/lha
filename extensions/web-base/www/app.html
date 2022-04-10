@@ -280,7 +280,7 @@
       </select>
     </div>
     <ul class="json-properties" v-show="open" v-if="hasProperties">
-      <li is="json-item" v-for="n in propertyNames" :key="n" :name="n" :pobj="obj" :obj="getProperty(n)" :schema="schema.properties[n]" :root="root"></li>
+      <li is="json-item" v-for="n in propertyNames" :key="n" :name="n" :pobj="obj" :obj="obj[n]" :schema="schema.properties[n]" :root="root"></li>
     </ul>
     <ul class="json-items" v-show="open" v-if="isList">
       <li is="json-item" v-for="(so, i) in obj" :key="i" :name="String(i + 1)" :pobj="obj" :obj="so" :schema="schema.items" :root="root"></li>

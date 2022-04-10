@@ -12,8 +12,38 @@ function newJsonItem(type) {
       return [];
     case 'object':
       return {};
-    }
-    return undefined;
+  }
+  return undefined;
+}
+
+function normalizeJsonType(type) {
+  return type === 'integer' ? 'number' : type;
+}
+
+function areJsonTypeCompatible(a, b) {
+  return (a === b) || ((a === 'number') && (b === 'integer')) || ((a === 'integer') && (b === 'number'));
+}
+
+function getJsonType(obj) {
+  if (obj === null) {
+    return 'undefined';
+  }
+  if (Array.isArray(obj)) {
+    return 'array';
+  }
+  var type = typeof obj;
+  switch(type) {
+    case 'string':
+    case 'number': // integer
+    case 'boolean':
+    case 'object':
+      return type;
+  }
+  return 'undefined';
+}
+
+function isJsonType(obj, type) {
+  return getJsonType(obj) === normalizeJsonType(type);
 }
 
 function parseJsonItemValue(type, value, optional) {
@@ -95,6 +125,24 @@ function computeJsonSchema(schema, things) {
   return false;
 }
 
+function populateJson(schema, obj) {
+  if (schema && schema.type) {
+    if (!isJsonType(obj, schema.type)) {
+      obj = newJsonItem(schema.type);
+    }
+    if ((schema.type === 'object') && schema.properties) {
+      for (var k in schema.properties) {
+        obj[k] = populateJson(schema.properties[k], obj[k]);
+      }
+    } else if ((schema.type === 'array') && schema.items) {
+      for (var i = 0; i < obj.length; i++) {
+        obj[i] = populateJson(schema.items, obj[i]);
+      }
+    }
+  }
+  return obj;
+}
+
 Vue.component('json-item', {
   props: ['name', 'obj', 'pobj', 'schema', 'root'],
   data: function() {
@@ -125,6 +173,9 @@ Vue.component('json-item', {
     },
     hasBooleanValue: function() {
       return this.schema && (this.schema.type === 'boolean');
+    },
+    hasProperties: function() {
+      return this.schema && (this.schema.type === 'object') && (typeof this.schema.properties === 'object');
     },
     propertyNames: function() {
       var names = [];
@@ -179,35 +230,13 @@ Vue.component('json-item', {
     },
     isRemovable: function() {
       return Array.isArray(this.pobj);
-    },
-    hasProperties: function() {
-      if (this.schema && (this.schema.type === 'object') && (typeof this.schema.properties === 'object')) {
-        for (var name in this.schema.properties) {
-          var ss = this.schema.properties[name];
-          if (!(name in this.obj)) {
-            this.obj[name] = newJsonItem(ss.type);
-          }
-        }
-        return true;
-      }
-      return false;
     }
   },
   methods: {
-    getProperty: function(name) { 
-      if (!(name in this.obj)) {
-        if (name in this.schema.properties) {
-          this.obj[name] = newJsonItem(this.schema.properties[name].type);
-        } else {
-          this.obj[name] = '';
-        }
-      }
-      return this.obj[name];
-    },
     addItem: function() {
       if (this.schema && (this.schema.type === 'array') && (typeof this.schema.items === 'object') && Array.isArray(this.obj)) {
         console.log('addItem()', this.obj, this.schema);
-        var item = newJsonItem(this.schema.items.type);
+        var item = populateJson(this.schema.items);
         this.obj.push(item);
         this.$forceUpdate();
       } else {
@@ -233,5 +262,22 @@ Vue.component('json-item', {
 
 Vue.component('json', {
   props: ['name', 'obj', 'schema'],
-  template: '#json-template'
+  template: '#json-template',
+  methods: {
+    refresh: function() {
+      //console.log('refresh()', this.schema, this.obj);
+      if ((typeof this.schema === 'object') && (typeof this.obj === 'object')) {
+        populateJson(this.schema, this.obj);
+        //console.log('populateJson() ' + JSON.stringify(this.obj, undefined, 2));
+      }
+    }
+  },
+  watch: { 
+    obj: {
+      handler(newValue) {
+        this.refresh();
+      },
+      immediate: true
+    }
+  }
 });
