@@ -41,4 +41,18 @@ function utils.requireJson(name)
   return json.decode(file:readAll())
 end
 
+function utils.removeEmptyPaths(t)
+  local c = 0
+  for k, v in pairs(t) do
+    c = c + 1
+    if type(v) == 'table' then
+      if utils.removeEmptyPaths(v) == 0 then
+        t[k] = nil
+        c = c - 1
+      end
+    end
+  end
+  return c
+end
+
 return utils

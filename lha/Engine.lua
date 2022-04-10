@@ -190,25 +190,27 @@ return class.create(function(engine)
   end
 
   function engine:setRootValues(path, value, publish, clean)
-    if type(value) == 'table' then
-      local valuesByPath = tables.mapValuesByPath(value, path)
-      if clean then
-        local currentValue = tables.getPath(self.root, path)
-        if type(currentValue) == 'table' then
-          local currentValuesByPath = tables.mapValuesByPath(currentValue, path)
-          for p in pairs(currentValuesByPath) do
-            if not valuesByPath[p] then
-              self:setRootValue(p, nil, publish)
-              -- if table is nil remove
-            end
+    if type(value) ~= 'table' then
+      return self:setRootValue(path, value, publish)
+    end
+    local valuesByPath = tables.mapValuesByPath(value, path)
+    local currentValue
+    if clean then
+      currentValue = tables.getPath(self.root, path)
+      if type(currentValue) == 'table' then
+        local currentValuesByPath = tables.mapValuesByPath(currentValue, path)
+        for p in pairs(currentValuesByPath) do
+          if not valuesByPath[p] then
+            self:setRootValue(p, nil, publish)
           end
         end
       end
-      for p, v in pairs(valuesByPath) do
-        self:setRootValue(p, v, publish)
-      end
-    else
-      self:setRootValue(path, value, publish)
+    end
+    for p, v in pairs(valuesByPath) do
+      self:setRootValue(p, v, publish)
+    end
+    if type(currentValue) == 'table' then
+      utils.removeEmptyPaths(currentValue)
     end
   end
 
