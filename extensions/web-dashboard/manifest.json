@@ -57,10 +57,6 @@
               ],
               "default": "auto"
             },
-            "group": {
-              "title": "Group",
-              "type": "string"
-            },
             "thingIds": {
               "title": "Things",
               "type": "array",
