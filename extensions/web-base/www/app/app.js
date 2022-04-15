@@ -5,11 +5,15 @@ function setTheme(name) {
 }
 
 function formatNavigationPath(pageId, path) {
-  return '/' + pageId + '/' + (path ? path : '');
+  return '/' + pageId + '/' + (path ? encodeURIComponent(path) : '');
 }
 
 function parseNavigationPath(path) {
-  return path.match(/^\/([^\/]+)\/(.*)$/);
+  var matches = path.match(/^\/([^\/]+)\/(.*)$/);
+  if (matches) {
+    matches[2] = decodeURIComponent(matches[2]);
+  }
+  return matches
 }
 
 /************************************************************
@@ -47,8 +51,9 @@ var app = new Vue({
           }
           this.path = path;
           this.menu = '';
+          var previousId = this.page !== id ? this.page : '';
           this.page = id;
-          this.$emit('page-selected', id, pagePath);
+          this.$emit('page-selected', id, pagePath, previousId);
           return true;
         }
       }
@@ -138,7 +143,7 @@ var app = new Vue({
     },
     fetchWithCache: function(path, fn, text) {
       return this.getWithCache(path, function() {
-        return fetch(path).then(function(response) {
+        return fetch(path).then(rejectIfNotOk).then(function(response) {
           return text ? response.text() : response.json();
         }).then(function(value) {
           return fn ? fn(value) : value;
@@ -188,6 +193,7 @@ var app = new Vue({
  ************************************************************/
 
 Vue.component('app-menu', {
+  template: '#menu-template',
   data: function() {
       return {app: app};
   },
@@ -195,19 +201,19 @@ Vue.component('app-menu', {
     id: String,
     title: String,
     homePage: String
-  },
-  template: '#menu-template'
+  }
 });
 
 Vue.component('app-dialog', {
+  template: '#dialog-template',
   data: function() {
       return {app: app};
   },
-  props: ['id', 'title'],
-  template: '#dialog-template'
+  props: ['id', 'title']
 });
 
 Vue.component('app-page', {
+  template: '#page-template',
   data: function() {
       return {app: app};
   },
@@ -225,17 +231,18 @@ Vue.component('app-page', {
       default: 'hideRight'
     }
   },
-  template: '#page-template',
   created: function() {
     //console.log('created() app-page, this.app', this);
     this.app.pages[this.id] = this;
     var page = this;
-    app.$on('page-selected', function(id, path) {
+    app.$on('page-selected', function(id, path, previousId) {
+      if ((page.id === previousId) && (page.$parent) && (typeof page.$parent.onHide === 'function')) {
+        page.$parent.onHide();
+      }
       if ((page.id === id) && (page.$parent) && (typeof page.$parent.onShow === 'function')) {
-        //console.log('page-article, on page-selected', article);
         page.$parent.onShow(path);
       }
-    })
+    });
   }
 });
 
@@ -249,13 +256,7 @@ Vue.component('page-article', {
 var menu = new Vue({
   el: '#menu',
   data: {
-    pages: [{
-      id: 'things',
-      name: 'Things'
-    }, {
-      id: 'extensions',
-      name: 'Extensions'
-    }]
+    pages: []
   },
   computed: {
     sortedPages: function() {
@@ -334,6 +335,13 @@ var homePage = new Vue({
   data: {
     pages: [],
     title: 'Welcome'
+  },
+  computed: {
+    sortedPages: function() {
+      var pages = [].concat(this.pages);
+      pages.sort(compareByName);
+      return pages;
+    }
   }
 });
 
@@ -448,7 +456,27 @@ new Vue({
   el: '#pages'
 });
 
-function addPageComponent(vue) {
+function registerPageVue(vue, icon) {
+  if (vue && vue.$children && (vue.$children.length > 0)) {
+    var page = vue.$children[0];
+    if (page.id && page.title) {
+      menu.pages.push({
+        id: page.id,
+        name: page.title
+      });
+      homePage.pages.push({
+        id: page.id,
+        name: page.title,
+        icon: icon
+      });
+    }
+  }
+}
+
+function addPageComponent(vue, menuIcon) {
   var component = vue.$mount();
   document.getElementById('pages').appendChild(component.$el);
+  if (menuIcon) {
+    registerPageVue(vue, typeof menuIcon === 'string' ? menuIcon : undefined);
+  }
 }

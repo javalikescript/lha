@@ -346,11 +346,6 @@ define(['./web-chart.xml'], function(pageXml) {
     }
   });
   
-  addPageComponent(vue);
-  
-  menu.pages.push({
-    id: 'data-chart',
-    name: 'Chart'
-  });
+  addPageComponent(vue, 'fa-chart-line');
 
 });

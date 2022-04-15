@@ -4,16 +4,6 @@ define(['./web-example.xml'], function(aPageTemplate) {
     template: aPageTemplate
   });
 
-  addPageComponent(aVue);
+  addPageComponent(aVue, true);
 
-  menu.pages.push({
-    id: 'example',
-    name: 'Example'
-  });
-  
-  homePage.pages.push({
-    id: 'example',
-    name: 'Example'
-  });
-  
 });

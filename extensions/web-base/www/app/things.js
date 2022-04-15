@@ -1,4 +1,4 @@
-new Vue({
+var thingsVue = new Vue({
   el: '#things',
   data: {
     edit: false,
@@ -19,7 +19,10 @@ new Vue({
         for (var i = 0; i < self.things.length; i++) {
           var thing = self.things[i];
           var props = properties[thing.thingId];
-          var propNames = Object.keys(props); // filter config properties
+          var propNames = Object.keys(props).filter(function(propName) {
+            var propDef = thing.properties[propName];
+            return propDef && !propDef.configuration;
+          });
           if (propNames.length === 1) {
             var propName = propNames[0];
             var propDef = thing.properties[propName];
@@ -201,3 +204,5 @@ new Vue({
     }
   }
 });
+
+registerPageVue(thingsVue, 'fa-circle');

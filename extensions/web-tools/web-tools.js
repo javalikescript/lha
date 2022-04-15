@@ -70,11 +70,6 @@ define(['./web-tools.xml'], function(toolsTemplate) {
     }
   });
   
-  addPageComponent(toolsVue);
-
-  menu.pages.push({
-    id: 'tools',
-    name: 'Tools'
-  });
+  addPageComponent(toolsVue, 'fa-tools');
 
 });

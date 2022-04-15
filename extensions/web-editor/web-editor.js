@@ -18,11 +18,6 @@ define(function() {
       }
   });
 
-  addPageComponent(aVue);
-
-  menu.pages.push({
-    id: 'editor',
-    name: 'Editor'
-  });
+  addPageComponent(aVue, true);
   
 });

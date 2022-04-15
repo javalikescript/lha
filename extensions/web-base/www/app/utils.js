@@ -94,3 +94,34 @@ function parseBoolean(value) {
   }
   return false;
 }
+
+function toggleFullScreen() {
+  if (document.fullscreenElement) {
+    document.exitFullscreen();
+  } else {
+    document.body.requestFullscreen();
+  }
+}
+
+function endsWith(value, search, length) {
+  if ((length === undefined) || (length > this.length)) {
+    length = value.length;
+  }
+  return value.substring(length - search.length, length) === search;
+}
+
+function extname(path, invert) {
+  var slashIndex = path.lastIndexOf('/');
+  var dotIndex = path.lastIndexOf('.');
+  if (invert) {
+    return dotIndex <= slashIndex ? path : path.substring(0, dotIndex);
+  }
+  return dotIndex <= slashIndex ? '' : path.substring(dotIndex + 1);
+}
+
+function rejectIfNotOk(response) {
+  if (response.ok) {
+    return response;
+  }
+  return Promise.reject(response.statusText);
+}

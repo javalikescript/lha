@@ -113,7 +113,8 @@
             </div>
           </div>
           <div>
-            <button v-if="property.type !== 'string'" v-on:click="openHistoricalData(name)"><i class="fas fa-chart-line"></i>&nbsp;History</button>
+            <!-- TODO also check thing.archiveData -->
+            <button v-if="!property.configuration" v-on:click="openHistoricalData(name)"><i class="fas fa-chart-line"></i>&nbsp;History</button>
           </div>
         </div>
         <p>{{ property.description }}</p>
@@ -247,7 +248,10 @@
       <button v-on:click="app.toPage('engineSettings')" title="Configuration"><i class="fas fa-cog"></i></button>
     </template>
     <article class="tiles">
-      <div class="tile" v-for="page in pages" v-on:click="app.toPage(page.id)"><span>{{ page.name }}</span></div>
+      <div class="tile" v-for="page in sortedPages" v-on:click="app.toPage(page.id)">
+        <span>{{ page.name }}</span>
+        <p class="tile-value" v-if="page.icon"><i :class="['fas', page.icon]"></i></p>
+      </div>
     </article>
   </app-page>
 </div>
@@ -327,11 +331,15 @@
   <section v-bind:id="id" v-bind:class="[{page: true}, app.page === id ? '' : transitionClass]" tabindex="-1">
     <header>
       <div>
-        <button v-on:click="app.menu = menu" v-if="menu"><i class="fa fa-bars"></i></button>
-        <button v-on:click="app.back()" v-if="!hideBack"><i class="fa fa-chevron-left"></i></button>
-        <button v-on:click="app.toPage(homePage)" v-if="homePage"><i class="fas fa-home"></i></button>
+        <slot name="bar-left">
+          <button v-on:click="app.menu = menu" v-if="menu"><i class="fa fa-bars"></i></button>
+          <button v-on:click="app.back()" v-if="!hideBack"><i class="fa fa-chevron-left"></i></button>
+          <button v-on:click="app.toPage(homePage)" v-if="homePage"><i class="fas fa-home"></i></button>
+        </slot>
       </div>
-      <h1>{{ title }}</h1>
+      <slot name="bar-middle">
+        <h1>{{ title }}</h1>
+      </slot>
       <div>
         <slot name="bar-right"></slot>
       </div>

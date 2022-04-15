@@ -1,4 +1,4 @@
-new Vue({
+var extensionsVue =new Vue({
   el: '#extensions',
   data: {
     extensions: []
@@ -137,3 +137,5 @@ new Vue({
     }
   }
 });
+
+registerPageVue(extensionsVue, 'fa-plus-circle');
