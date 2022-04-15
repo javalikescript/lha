@@ -26,6 +26,30 @@
               "title": "The permissions",
               "type": "string",
               "default": "rwl"
+            },
+            "useWebDAV": {
+              "title": "Use WebDAV",
+              "type": "boolean",
+              "default": false
+            }
+          }
+        }
+      },
+      "proxies": {
+        "title": "The resources to proxy",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "title": "The URL path",
+              "type": "string",
+              "pattern": "^[%a%d_%-]+$",
+              "default": "share"
+            },
+            "url": {
+              "title": "The resource URL",
+              "type": "string"
             }
           }
         }
