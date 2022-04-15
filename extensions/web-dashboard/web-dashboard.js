@@ -51,10 +51,6 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
     return unitAlias[unit] || unit || '';
   }
 
-  function isEmpty(obj) {
-    return ((obj === null) || (obj === undefined)) || (Array.isArray(obj) && (obj.length === 0)) || (Object.keys(obj).length === 0);
-  }
-
   function formatValue(value, type) {
     // format the value to 6 characters max
     var valueType = typeof value;

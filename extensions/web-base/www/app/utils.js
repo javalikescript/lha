@@ -19,6 +19,10 @@ function apply(to, fn) {
   };
 }
 
+function isEmpty(obj) {
+  return ((obj === null) || (obj === undefined)) || (Array.isArray(obj) && (obj.length === 0)) || (Object.keys(obj).length === 0);
+}
+
 function swapMap(m) {
   var r = {};
   for (var k in m) {
