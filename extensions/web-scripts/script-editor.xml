@@ -1,4 +1,12 @@
 <app-page id="scriptsEditor" title="Scripts Editor">
+  <template slot="bar-middle">
+    <h1 v-if="newName === false" v-on:click="newName = name">{{ name }}</h1>
+    <div v-else>
+      <input v-model="newName" type="text" placeholder="Script name">
+      <button v-on:click="onRename()" title="Apply"><i class="fas fa-check"></i></button>
+      <button v-on:click="newName = false" title="Cancel"><i class="fa fa-window-close"></i></button>
+    </div>
+  </template>
   <template slot="bar-right">
     <button v-on:click="onDelete" title="Delete"><i class="fa fa-trash"></i></button>
     <button v-on:click="onSave" title="Save"><i class="far fa-save"></i></button>

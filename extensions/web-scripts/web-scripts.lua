@@ -72,6 +72,16 @@ local REST_SCRIPTS = {
     end,
     reload = function(exchange)
       exchange.attributes.extension:restartExtension()
+    end,
+    ['name?method=PUT'] = function(exchange)
+      local name = exchange:getRequest():getBody()
+      local ext = exchange:getAttribute('extension')
+      local extensionDir = ext:getDir()
+      local manifestFile = File:new(extensionDir, 'manifest.json')
+      --local manifest = json.decode(manifestFile:readAll())
+      ext.manifest.name = name
+      manifestFile:write(json.encode(ext.manifest))
+      return 'Renamed'
     end
   },
 }

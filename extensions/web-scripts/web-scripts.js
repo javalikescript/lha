@@ -258,6 +258,8 @@ define(['requirePath', './scripts.xml', './script-editor.xml'], function(require
     template: scriptEditorTemplate,
     data: {
       scriptId: '',
+      newName: false,
+      name: '',
       things: [],
       savedContent: null,
       workspace: null
@@ -299,6 +301,17 @@ define(['requirePath', './scripts.xml', './script-editor.xml'], function(require
           });
         }
       },
+      onRename: function () {
+        var self = this;
+        return fetch('/engine/scripts/' + this.scriptId + '/name', {
+          method: 'PUT',
+          body: this.newName
+        }).then(function() {
+          self.name = self.newName;
+          self.newName = false;
+          toaster.toast('Renamed');
+        });
+      },
       onSave: function() {
         var scriptId = this.scriptId;
         console.log('scriptsEditor.onSave(), scriptId is "' + scriptId + '"');
@@ -310,30 +323,37 @@ define(['requirePath', './scripts.xml', './script-editor.xml'], function(require
         var code = exportToLua(workspace);
         var xmlText = exportToXml(workspace);
         // save
-        fetch('/engine/scriptFiles/' + scriptId + '/blocks.xml', {
-          method: 'PUT',
-          body: xmlText
-        }).then(function() {
-          return fetch('/engine/scriptFiles/' + scriptId + '/script.lua', {
+        return Promise.all([
+          fetch('/engine/scriptFiles/' + scriptId + '/blocks.xml', {
+            method: 'PUT',
+            body: xmlText
+          }),
+          fetch('/engine/scriptFiles/' + scriptId + '/script.lua', {
             method: 'PUT',
             body: code
-          });
-        }).then(function() {
+          })
+        ]).then(function() {
           toaster.toast('Saved');
         });
       },
       refresh: function() {
         var workspace = this.workspace;
-        if (workspace) {
-          return fetch('/engine/scriptFiles/' + this.scriptId + '/blocks.xml').then(function(response) {
-            return response.text();
-          }).then(function(xmlText) {
-            workspace.clear();
-            var xml = Blockly.Xml.textToDom(xmlText);
-            Blockly.Xml.domToWorkspace(xml, workspace);
-          });
+        if (!workspace) {
+          return Promise.reject('workspace not initialized');
         }
-        return Promise.reject('workspace not initialized');
+        return Promise.all([
+          fetch('/engine/scriptFiles/' + this.scriptId + '/blocks.xml').then(function(response) {
+            return response.text();
+          }),
+          fetch('/engine/scriptFiles/' + this.scriptId + '/manifest.json').then(function(response) {
+            return response.json();
+          })
+        ]).then(apply(this, function(xmlText, manifest) {
+          workspace.clear();
+          var xml = Blockly.Xml.textToDom(xmlText);
+          Blockly.Xml.domToWorkspace(xml, workspace);
+          this.name = manifest.name;
+        }));
       }
     }
   });
@@ -381,11 +401,6 @@ define(['requirePath', './scripts.xml', './script-editor.xml'], function(require
   });
 
   addPageComponent(scriptsEditorVue);
-  addPageComponent(scriptsVue);
+  addPageComponent(scriptsVue, 'fa-scroll');
 
-  menu.pages.push({
-    id: 'scripts',
-    name: 'Scripts'
-  });
-  
 });
