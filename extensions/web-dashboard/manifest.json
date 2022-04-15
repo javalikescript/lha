@@ -22,7 +22,6 @@
               "title": "The property type",
               "type": "string",
               "enumValues": [
-                {"const": "auto", "title": "Auto"},
                 {"const": "BarometricPressureProperty", "title": "Barometric Pressure"},
                 {"const": "BooleanProperty", "title": "Boolean"},
                 {"const": "HumidityProperty", "title": "Humidity"},

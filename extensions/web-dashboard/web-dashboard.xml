@@ -5,15 +5,15 @@
     <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
   </template>
   <article class="tiles">
-    <div class="tile" v-for="tile in tiles">
+    <div class="tile" v-on:click="onTileClicked(tile)" v-for="tile in tiles">
       <div class="bar">
         <span>{{ tile.title }}</span>
         <div>
-          <button v-on:click="openHistoricalData(tile.paths)"><i class="fas fa-chart-line"></i></button>
+          <button v-if="tile.paths.length > 0" v-on:click="openHistoricalData(tile.paths)"><i class="fas fa-chart-line"></i></button>
         </div>
       </div>
-      <p class="tile-value" v-if="tile.icon"><i :class="['fas', tile.value]"></i></p>
-      <p class="tile-value" v-if="!tile.icon">{{ tile.value }}</p>
+      <p class="tile-value" v-if="typeof tile.value === 'boolean'"><i :class="['fas', formatValue(tile)]"></i></p>
+      <p class="tile-value" v-else>{{ formatValue(tile) }}</p>
       <div class="bar">
         <div/>
         <span>{{ tile.unit }}</span>

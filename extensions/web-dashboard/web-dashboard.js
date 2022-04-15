@@ -86,6 +86,32 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
     return Math.round((Math.pow(10, value / 10000) - 1) * 100) / 100;
   }
 
+  function forEachPropertyType(things, type, fn, thingIds) {
+    if (isEmpty(thingIds)) {
+      thingIds = Object.keys(things);
+    }
+    for (var i = 0; i < thingIds.length; i++) {
+      var thingId = thingIds[i];
+      var thing = things[thingId];
+      if (!thing) {
+        continue;
+      }
+      var property = undefined;
+      var propertyName = undefined;
+      for (var name in thing.properties) {
+        property = thing.properties[name];
+        var propType = property['@type'];
+        if (propType === type) {
+          propertyName = name;
+          break;
+        }
+      }
+      if (propertyName) {
+        fn(thing, thingId, property, propertyName);
+      }
+    }
+  }
+
   var extensionId = 'web-dashboard';
   var extensionName = 'Dashboard';
 
@@ -112,13 +138,6 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
           this.processThings(config, things, properties);
         }));
       },
-      toggleFullScreen: function() {
-        if( window.innerHeight == screen.height) {
-          document.exitFullscreen();
-        } else {
-          document.body.requestFullscreen();
-        }
-      },
       onDataChange: function() {
         console.log('onDataChange');
         Promise.all([
@@ -136,52 +155,17 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
           for (var i = 0; i < tilesDef.length; i++) {
             var tileDef = tilesDef[i];
             var type = tileDef.type;
-            var title = tileDef.title || tileDef.type;
-            var unit = undefined;
             var values = [];
             var paths = [];
-            var thingIds = tileDef.thingIds;
-            if (isEmpty(thingIds)) {
-              thingIds = Object.keys(things);
-            }
-            for (var j = 0; j < thingIds.length; j++) {
-              var thingId = thingIds[j];
-              var thing = things[thingId];
-              if (!thing) {
-                continue;
-              }
-              if ((type === 'auto') || !isValidValue(type)) {
-                var thingType = thing['@type'][0];
-                type = typeByCapability[thingType];
-              }
-              if (!type) {
-                continue;
-              }
-              if (!isValidValue(title) && (thingIds.length === 1) && isValidValue(thing.title)) {
-                title = thing.title;
-              }
-              var propertyName = undefined;
-              for (var propName in thing.properties) {
-                var prop = thing.properties[propName];
-                var propType = prop['@type'];
-                if (propType === type) {
-                  propertyName = propName;
-                  if (!isValidValue(unit) && (thingIds.length === 1) && isValidValue(prop.unit)) {
-                    unit = prop.unit;
-                  }
-                  break;
-                }
-              }
-              if (!propertyName) {
-                continue;
+            forEachPropertyType(things, type, function(thing, thingId, property, propertyName) {
+              if (thing.archiveData && !property.configuration) {
+                paths.push(thingId + '/' + propertyName);
               }
               var props = properties[thingId];
               if (props && isValidValue(props[propertyName])) {
                 values.push(props[propertyName]);
               }
-              paths.push(thingId + '/' + propertyName);
-              //console.log('thing', JSON.stringify(thing, undefined, 2), JSON.stringify(props, undefined, 2));
-            }
+            }, tileDef.thingIds);
             var value = undefined;
             if (values.length > 0) {
               var valueType = typeof values[0];
@@ -192,16 +176,12 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
               }
             }
             console.log('value: ' + value + ', type: ' + type, values);
-            if (unitByType[type]) {
-              unit = unitByType[type];
-            }
             var tile = assignMap({}, tileDef, {
-              title: oneOf(title, type, 'n/a'),
+              title: oneOf(tileDef.title, type, 'n/a'),
               paths: paths,
               count: values.length,
-              value: formatValue(value, type),
-              icon: (typeof value === 'boolean'),
-              unit: formatUnit(unit)
+              value: value,
+              unit: formatUnit(unitByType[type])
             });
             //console.log('tile', JSON.stringify(tile, undefined, 2), JSON.stringify(tileDef, undefined, 2));
             tiles.push(tile);
@@ -209,6 +189,33 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
         }
         //console.log('tiles', JSON.stringify(tiles, undefined, 2));
         this.tiles = tiles;
+      },
+      formatValue: function(tile) {
+        return formatValue(tile.value, tile.type);
+      },
+      onTileClicked: function(tile) {
+        //console.log('onTileClicked() ' + tile.value + ' (' + (typeof tile.value) + ')');
+        if (typeof tile.value !== 'boolean') {
+          return Promise.reject('Unsupported value');
+        }
+        app.getThingsById().then(function(things) {
+          var promises = [];
+          tile.value = !tile.value;
+          forEachPropertyType(things, tile.type, function(thing, thingId, property, propertyName) {
+            if (!property.readOnly) {
+              var valueByName = {};
+              valueByName[propertyName] = tile.value;
+              promises.push(fetch('/things/' + thingId + '/properties', {
+                method: 'PUT',
+                body: JSON.stringify(valueByName)
+              }));
+            }
+          }, tile.thingIds);
+          return Promise.all(promises);
+        }).then(function() {
+          toaster.toast('Things updated');
+          //app.clearCache();
+        });
       },
       openHistoricalData: function(paths) {
         console.log('paths: ' + paths);
@@ -224,16 +231,6 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
     }
   });
 
-  addPageComponent(dashboardVue);
-
-  menu.pages.push({
-    id: extensionId,
-    name: extensionName
-  });
-  
-  homePage.pages.push({
-    id: extensionId,
-    name: extensionName
-  });
+  addPageComponent(dashboardVue, 'fa-columns');
   
 });
