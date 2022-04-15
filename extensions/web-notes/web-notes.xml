@@ -1,0 +1,12 @@
+<app-page id="notes" title="Notes">
+  <template slot="bar-right">
+    <button v-on:click="app.toPage('draw')" title="Open draw"><i class="fas fa-paint-brush"></i></button>
+    <button v-on:click="app.toPage('note', 'New note.txt')" title="Create new note"><i class="fa fa-plus"></i></button>
+    <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
+  </template>
+  <article class="tiles">
+    <div class="tile" v-on:click="app.toPage('note', note.name)" v-for="note in notes">
+      <p>{{ note.name }}</p>
+    </div>
+  </article>
+</app-page>

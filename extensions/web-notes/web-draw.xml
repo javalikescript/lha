@@ -1,0 +1,10 @@
+<app-page id="draw" title="Draw">
+  <template slot="bar-right">
+    <button v-on:click="toggleFullScreen()" title="Refresh"><i class="fas fa-expand-alt"></i></button>
+    <button v-on:click="clear()" title="Delete"><i class="fa fa-trash"></i></button>
+    <button v-on:click="app.back()" title="Close"><i class="fa fa-window-close"></i></button>
+  </template>
+  <article class="content">
+    <canvas id="draw-canvas" style="display: block; border: none; margin: 0px; padding: 0px;"></canvas>
+  </article>
+</app-page>

@@ -1,0 +1,20 @@
+<app-page id="note" title="Note">
+  <template slot="bar-middle">
+    <h1 v-if="newName === false" v-on:click="newName = extname(name, true)">{{ name }}</h1>
+    <div v-else>
+      <input v-model="newName" type="text" placeholder="Note name">
+      <button v-on:click="onRename()" title="Apply"><i class="fas fa-check"></i></button>
+      <button v-on:click="newName = false" title="Cancel"><i class="fa fa-window-close"></i></button>
+    </div>
+  </template>
+  <template slot="bar-right">
+    <button v-on:click="toggleFullScreen()" title="Refresh"><i class="fas fa-expand-alt"></i></button>
+    <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
+    <button v-on:click="onDelete().then(function(){ app.back(); })" title="Delete"><i class="fa fa-trash"></i></button>
+    <button v-on:click="onSave()" title="Save"><i class="far fa-save"></i></button>
+    <button v-on:click="app.back()" title="Close"><i class="fa fa-window-close"></i></button>
+  </template>
+  <article class="content">
+    <textarea v-model="text" spellcheck="false" wrap="off" style="height:  100%; width:  100%; border: none; margin: 0px; padding: 0px; resize: none; font-size: 2rem;" placeholder="Enter your note here"></textarea>
+  </article>
+</app-page>
