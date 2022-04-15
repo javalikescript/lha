@@ -58,7 +58,12 @@ return {
   end,
   ['{+}'] = function(exchange, name)
     local engine = exchange:getAttribute('engine')
-    exchange:setAttribute('thing', engine.things[name])
+    local thing = engine.things[name]
+    if thing then
+      exchange:setAttribute('thing', thing)
+    else
+      error('Thing not found '..tostring(name))
+    end
   end,
   ['{thingId}'] = REST_THING,
 }

@@ -365,33 +365,45 @@ return class.create(function(engine)
   end
 
   -- Adds a thing to this engine.
-  function engine:addDiscoveredThing(extensionId, discoveryKey)
-    logger:info('addDiscoveredThing("'..tostring(extensionId)..'", "'..tostring(discoveryKey)..'")')
+  function engine:addDiscoveredThing(extensionId, discoveryKey, keepDescription)
+    logger:fine('addDiscoveredThing("'..tostring(extensionId)..'", "'..tostring(discoveryKey)..'")')
     local extension = self:getExtensionById(extensionId)
     local discoveredThing = extension and extension:getDiscoveredThingByKey(discoveryKey)
-    if discoveredThing then
-      local thingConfiguration, thingId = self:getThingByDiscoveryKey(extensionId, discoveryKey)
-      if thingConfiguration and thingId then
-        thingConfiguration.description = discoveredThing:asThingDescription()
-        if not thingConfiguration.active then
-          thingConfiguration.active = true
-          thingConfiguration.archiveData = false
-        end
-      else
-        thingId = self:generateId()
-        thingConfiguration = {
-          extensionId = extensionId,
-          discoveryKey = discoveryKey,
-          description = discoveredThing:asThingDescription(),
-          active = true,
-          archiveData = false
-        }
-      end
-      self.root.configuration.things[thingId] = thingConfiguration
-      local thing = self:loadThing(thingId, thingConfiguration)
-      -- TODO retrieve property values
-      --self:publishEvent('things')
+    if not discoveredThing then
+      logger:info('The thing "'..tostring(extensionId)..'", "'..tostring(discoveryKey)..'" has not been discovered')
+      return
     end
+    local thing, thingId, thingConfiguration = self:getThingByDiscoveryKey(extensionId, discoveryKey)
+    if thing then
+      logger:info('The thing "'..tostring(thingId)..'" is already available')
+      return
+    end
+    if thingId and thingConfiguration then
+      if thingConfiguration.active then
+        logger:info('The thing "'..tostring(thingId)..'" is already active')
+        return
+      end
+      thingConfiguration.active = true
+      if not keepDescription then
+        thingConfiguration.description = discoveredThing:asThingDescription()
+      end
+    else
+      thingId = self:generateId()
+      thingConfiguration = {
+        extensionId = extensionId,
+        discoveryKey = discoveryKey,
+        description = discoveredThing:asThingDescription(),
+        active = true,
+        archiveData = false
+      }
+    end
+    self.root.configuration.things[thingId] = thingConfiguration
+    thing = self:loadThing(thingId, thingConfiguration)
+    for name, value in pairs(discoveredThing:getPropertyValues()) do
+      thing:setPropertyValue(name, value)
+    end
+    logger:info('The thing "'..tostring(thingId)..'" has been added')
+    --self:publishEvent('things')
   end
 
   function engine:refreshThingDescription(thingId)
@@ -417,28 +429,38 @@ return class.create(function(engine)
     return thing
   end
 
+  function engine:cleanThings(allInactive)
+    local things = self.root.configuration.things
+    for thingId, thingConfiguration in pairs(things) do
+      local extensionId = thingConfiguration.extensionId
+      local discoveryKey = thingConfiguration.discoveryKey
+      if not thingConfiguration.active then
+        local toRemove = false
+        if allInactive then
+          toRemove = true
+        else
+          for tId, tConf in pairs(things) do
+            if tId ~= thingId and tConf.extensionId == extensionId and tConf.discoveryKey == discoveryKey then
+              toRemove = true
+              break
+            end
+          end
+        end
+        if toRemove then
+          logger:info('thing "'..tostring(thingId)..'" ('..tostring(extensionId)..'/'..tostring(discoveryKey)..') removed')
+          things[thingId] = nil
+        end
+      end
+    end
+  end
+
   function engine:loadThings()
     -- Load the things available in the configuration
     self.things = {}
+    self:cleanThings(false)
     for thingId, thingConfiguration in pairs(self.root.configuration.things) do
-      local extension = self:getExtensionById(thingConfiguration.extensionId)
-      local discoveredThing = extension and extension:getDiscoveredThingByKey(thingConfiguration.discoveryKey)
       if thingConfiguration.active then
-        local thing = self:loadThing(thingId, thingConfiguration)
-        if discoveredThing then
-          -- TODO provide a full update and check if the thing is still compatible
-          local updated = false
-          for name, property in pairs(discoveredThing:getProperties()) do
-            if not thing:getProperty(name) then
-              thing:addProperty(name, property)
-              updated = true
-            end
-          end
-          if updated then
-            thingConfiguration.description = thing:asThingDescription()
-            logger:info('thing "'..tostring(thingId)..'" ('..tostring(thingConfiguration.extensionId)..'/'..tostring(thingConfiguration.discoveryKey)..') updated')
-          end
-        end
+        self:loadThing(thingId, thingConfiguration)
       end
     end
   end
@@ -446,7 +468,7 @@ return class.create(function(engine)
   function engine:getThingsByExtensionId(extensionId)
     local things = {}
     for thingId, thingConfiguration in pairs(self.root.configuration.things) do
-      if thingConfiguration.active and thingConfiguration.extensionId == extensionId then
+      if thingConfiguration.active and thingConfiguration.extensionId == extensionId and thingConfiguration.discoveryKey then
         local thing = self.things[thingId]
         if thing then
           things[thingConfiguration.discoveryKey] = thing
@@ -459,7 +481,7 @@ return class.create(function(engine)
   function engine:getThingByDiscoveryKey(extensionId, discoveryKey)
     for thingId, thingConfiguration in pairs(self.root.configuration.things) do
       if thingConfiguration.extensionId == extensionId and thingConfiguration.discoveryKey == discoveryKey then
-        return self.things[thingId], thingId
+        return self.things[thingId], thingId, thingConfiguration
       end
     end
     return nil
