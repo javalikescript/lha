@@ -655,6 +655,8 @@ return class.create(function(historicalTable)
     else
       logger:warn('historicalTable:save() Cannot append file '..file:getPath()..' due to '..tostring(err))
     end
+    -- clean JSON file to avoid loading old values after a crash
+    self:removeJson()
   end
 
 end, function(HistoricalTable)
