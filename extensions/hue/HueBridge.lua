@@ -507,7 +507,7 @@ return require('jls.lang.class').create(function(hueBridge)
 
   function hueBridge:setThingPropertyValue(thing, id, name, value)
     local category = categoryByName[name]
-    local toPostFn = toPostFnByName(name) or toPost
+    local toPostFn = toPostFnByName[name] or toPost
     local t = toPostFn(value, name)
     local path
     if thing:hasType(Thing.CAPABILITIES.OnOffSwitch) or thing:hasType(Thing.CAPABILITIES.Light) then
