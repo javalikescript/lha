@@ -196,21 +196,24 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
         }
         app.getThingsById().then(function(things) {
           var promises = [];
-          tile.value = !tile.value;
+          var newValue = !tile.value;
           forEachPropertyType(things, tile.type, function(thing, thingId, property, propertyName) {
             if (!property.readOnly) {
               var valueByName = {};
-              valueByName[propertyName] = tile.value;
+              valueByName[propertyName] = newValue;
               promises.push(fetch('/things/' + thingId + '/properties', {
                 method: 'PUT',
                 body: JSON.stringify(valueByName)
               }));
             }
           }, tile.thingIds);
-          return Promise.all(promises);
-        }).then(function() {
-          toaster.toast('Things updated');
-          //app.clearCache();
+          if (promises.length > 0) {
+            tile.value = newValue;
+            return Promise.all(promises).then(function() {
+              toaster.toast('Things updated');
+              //app.clearCache();
+            });
+          }
         });
       },
       openHistoricalData: function(paths) {

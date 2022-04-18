@@ -400,7 +400,7 @@ return class.create(function(engine)
     self.root.configuration.things[thingId] = thingConfiguration
     thing = self:loadThing(thingId, thingConfiguration)
     for name, value in pairs(discoveredThing:getPropertyValues()) do
-      thing:setPropertyValue(name, value)
+      thing:updatePropertyValue(name, value)
     end
     logger:info('The thing "'..tostring(thingId)..'" has been added')
     --self:publishEvent('things')
