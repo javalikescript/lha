@@ -1,5 +1,5 @@
 local logger = require('jls.lang.logger')
-local HTTP_CONST = require('jls.net.http').CONST
+local HTTP_CONST = require('jls.net.http.HttpMessage').CONST
 local HttpExchange = require('jls.net.http.HttpExchange')
 local json = require('jls.util.json')
 local tables = require('jls.util.tables')

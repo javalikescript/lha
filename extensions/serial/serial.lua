@@ -1,12 +1,11 @@
 local extension = ...
 
 local logger = require('jls.lang.logger')
---local system = require('jls.lang.system')
-local streams = require('jls.io.streams')
+local StreamHandler = require('jls.io.streams.StreamHandler')
+local ChunkedStreamHandler = require('jls.io.streams.ChunkedStreamHandler')
 local json = require('jls.util.json')
 local Serial = require('jls.io.Serial')
---local tables = require('jls.util.tables')
-local TableList = require('jls.util.TableList')
+local List = require('jls.util.List')
 local Thing = require('lha.Thing')
 
 local COMMAND = {
@@ -34,7 +33,7 @@ local maxId = -1
 local serialThings = {}
 local allThings = {}
 
-local serialLineHandler = streams.StreamHandler:new()
+local serialLineHandler = StreamHandler:new()
 function serialLineHandler:onData(line)
   if logger:isLoggable(logger.FINE) then
     logger:fine('handleSerialLine("'..tostring(line)..'")')
@@ -110,7 +109,7 @@ function serialLineHandler:onData(line)
     local thing = serialThings[thingId]
     if thing then
       if logger:isLoggable(logger.FINE) then
-        logger:fine('serial looking for thing properties "'..tostring(TableList.concat(thing:getPropertyNames(), '", "'))..'"')
+        logger:fine('serial looking for thing properties "'..tostring(List.concat(thing:getPropertyNames(), '", "'))..'"')
       end
       for propertyName in pairs(thing:getProperties()) do
         local value = data[propertyName]
@@ -147,7 +146,7 @@ function serialLineHandler:onError(err)
 end
 
 extension:subscribeEvent('startup', function()
-  local bsHandler = streams.ChunkedStreamHandler:new(serialLineHandler, '\r\n', 256)
+  local bsHandler = ChunkedStreamHandler:new(serialLineHandler, '\r\n', 256)
   local configuration = extension:getConfiguration()
   if serial then
     logger:warn('serial extension already started')

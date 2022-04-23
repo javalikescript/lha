@@ -1,5 +1,5 @@
 local tables = require('jls.util.tables')
-local TableList = require('jls.util.TableList')
+local List = require('jls.util.List')
 local color = require('jls.util.color')
 local hex = require('jls.util.hex')
 
@@ -254,7 +254,7 @@ return require('jls.lang.class').create(function(thing)
   end
 
   function thing:hasType(type)
-    return TableList.indexOf(self.type, type) ~= nil
+    return List.indexOf(self.type, type) ~= nil
   end
 
   --- Adds a property to this thing.

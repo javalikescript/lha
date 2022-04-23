@@ -3,7 +3,7 @@ local extension = ...
 local logger = require('jls.lang.logger')
 local class = require('jls.lang.class')
 local Promise = require('jls.lang.Promise')
-local http = require('jls.net.http')
+local HttpClient = require('jls.net.http.HttpClient')
 local json = require('jls.util.json')
 local Thing = require('lha.Thing')
 
@@ -27,7 +27,7 @@ local OpenWeatherMap = class.create(function(openWeatherMap)
   end
 
   function openWeatherMap:httpRequest(path, method, body)
-    local client = http.Client:new({
+    local client = HttpClient:new({
       method = method or 'GET',
       url = self:getUrl(path),
       body = body

@@ -2,7 +2,7 @@ local extension = ...
 
 local logger = require('jls.lang.logger')
 local File = require('jls.io.File')
-local http = require('jls.net.http')
+local HTTP_CONST = require('jls.net.http.HttpMessage').CONST
 local FileHttpHandler = require('jls.net.http.handler.FileHttpHandler')
 local RestHttpHandler = require('jls.net.http.handler.RestHttpHandler')
 local HttpExchange = require('jls.net.http.HttpExchange')
@@ -13,7 +13,7 @@ local REST_SCRIPTS = {
     local request = exchange:getRequest()
     local method = string.upper(request:getMethod())
     local engine = exchange:getAttribute('engine')
-    if method == http.CONST.METHOD_GET then
+    if method == HTTP_CONST.METHOD_GET then
       local list = {}
       for _, ext in ipairs(engine.extensions) do
         if ext:getType() == 'script' then
@@ -21,7 +21,7 @@ local REST_SCRIPTS = {
         end
       end
       return list
-    elseif method == http.CONST.METHOD_PUT then
+    elseif method == HTTP_CONST.METHOD_PUT then
       if engine.scriptsDir:isDirectory() then
         local scriptId = engine:generateId()
         local scriptDir = File:new(engine.scriptsDir, scriptId)
@@ -58,7 +58,7 @@ local REST_SCRIPTS = {
       local method = string.upper(request:getMethod())
       local engine = exchange:getAttribute('engine')
       local ext = exchange:getAttribute('extension')
-      if method == http.CONST.METHOD_DELETE and ext:getType() == 'script' then
+      if method == HTTP_CONST.METHOD_DELETE and ext:getType() == 'script' then
         local extensionDir = ext:getDir()
         if ext:isActive() then
           ext:publishEvent('shutdown')

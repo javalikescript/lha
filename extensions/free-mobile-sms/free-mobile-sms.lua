@@ -3,7 +3,7 @@ local extension = ...
 local logger = require('jls.lang.logger')
 local class = require('jls.lang.class')
 local Promise = require('jls.lang.Promise')
-local http = require('jls.net.http')
+local HttpClient = require('jls.net.http.HttpClient')
 local Url = require('jls.net.Url')
 
 -- Helper classes and functions
@@ -40,13 +40,13 @@ local FreeMobileSms = class.create(function(freeMobileSms)
   function freeMobileSms:sendMessage(msg)
     local client
     if self.usePost then
-      client = http.Client:new({
+      client = HttpClient:new({
         method = 'POST',
         url = self:getUrl(),
         body = msg
       })
     else
-      client = http.Client:new({
+      client = HttpClient:new({
         method = 'GET',
         url = self:getMessageUrl(msg)
       })

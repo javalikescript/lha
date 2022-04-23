@@ -4,7 +4,7 @@ local protectedCall = require('jls.lang.protectedCall')
 local File = require('jls.io.File')
 local json = require('jls.util.json')
 local tables = require('jls.util.tables')
-local TableList = require('jls.util.TableList')
+local List = require('jls.util.List')
 local Scheduler = require('jls.util.Scheduler')
 local system = require('jls.lang.system')
 
@@ -181,7 +181,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
 
   function extension:fireExtensionEvent(...)
     if logger:isLoggable(logger.INFO) then
-      logger:info('extension:fireExtensionEvent('..TableList.concat(table.pack(...), ', ')..')')
+      logger:info('extension:fireExtensionEvent('..List.concat(table.pack(...), ', ')..')')
     end
     self.engine:publishExtensionsEvent(self, ...)
   end
@@ -231,7 +231,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
   end
 
   function extension:forgetValue(watcher)
-    TableList.removeFirst(self.watchers, watcher)
+    List.removeFirst(self.watchers, watcher)
     if #self.watchers == 0 then
       self:unsubscribeEvent('change', self.changeFn)
     end

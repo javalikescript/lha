@@ -1,7 +1,7 @@
 local logger = require('jls.lang.logger')
 local Promise = require('jls.lang.Promise')
 local protectedCall = require('jls.lang.protectedCall')
-local http = require('jls.net.http')
+local HttpClient = require('jls.net.http.HttpClient')
 local Url = require('jls.net.Url')
 local WebSocket = require('jls.net.http.ws').WebSocket
 local json = require('jls.util.json')
@@ -416,7 +416,7 @@ return require('jls.lang.class').create(function(hueBridge)
   end
 
   function hueBridge:httpRequest(method, path, body)
-    local client = http.Client:new({
+    local client = HttpClient:new({
       method = method,
       url = self.url..path,
       body = body
