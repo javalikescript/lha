@@ -1,9 +1,24 @@
 define(['./web-tools.xml'], function(toolsTemplate) {
 
+  function insertTab(e) {
+    if (e.key == 'Tab') {
+      e.preventDefault();
+      var start = this.selectionStart;
+      var end = this.selectionEnd;
+      this.value = this.value.substring(0, start) + '\t' + this.value.substring(end);
+      this.selectionStart = this.selectionEnd = start + 1;
+    }
+  }
+
   var toolsVue = new Vue({
     template: toolsTemplate,
     data: {
-      logLevel: ''
+      logLevel: '',
+      lua: '',
+      out: ''
+    },
+    mounted: function() {
+      this.$refs.lua.addEventListener('keydown', insertTab);
     },
     methods: {
       onShow: function() {
@@ -21,6 +36,15 @@ define(['./web-tools.xml'], function(toolsTemplate) {
             toaster.toast('Log Level updated to ' + logLevel);
           });
         }
+      },
+      execute: function() {
+        var page = this;
+        page.out = '';
+        fetch('/engine/tools/execute', {method: 'POST', body: this.lua}).then(function(response) {
+          return response.text();
+        }).then(function(out) {
+          page.out = out;
+        });
       },
       clearCache: function() {
         app.clearCache();
