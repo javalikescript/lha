@@ -215,9 +215,10 @@
     <page-article>
       <p>Information</p>
       <dl>
-        <dt><label>CPU Time</label></dt><dd><span v-html="clock">na</span></dd>
-        <dt><label>Memory size</label></dt><dd><span v-html="memory">na</span></dd>
-        <dt><label>Server Time</label></dt><dd><span v-html="time">na</span></dd>
+        <template v-for="(value, name) in infos">
+          <dt><label>{{ name }}</label></dt>
+          <dd><span>{{ value }}</span></dd>
+        </template>
       </dl>
     </page-article>
   </app-page>

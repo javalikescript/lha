@@ -351,9 +351,7 @@ var homePage = new Vue({
  new Vue({
   el: '#engineInfo',
   data: {
-    clock: '...',
-    memory: '...',
-    time: '...'
+    infos: {}
   },
   methods: {
     onShow: function() {
@@ -361,12 +359,11 @@ var homePage = new Vue({
       fetch('/engine/admin/info').then(function(response) {
         return response.json();
       }).then(function(data) {
-        //console.log('fetch(admin/info)', data);
-        page.clock = data.clock;
-        page.memory = data.memory;
+        console.log('fetch(admin/info)', data);
         var clientTime = Math.round(Date.now() / 1000);
-        var delta = clientTime - data.time;
-        page.time = '' + data.time + ' (' + delta + ')';
+        var serverTime = data['Server Time'];
+        data['Delta Time'] = clientTime - serverTime;
+        page.infos = data;
         toaster.toast('Refreshed');
       });
     }

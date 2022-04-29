@@ -7,6 +7,7 @@ local RestHttpHandler = require('jls.net.http.handler.RestHttpHandler')
 local HttpExchange = require('jls.net.http.HttpExchange')
 local json = require('jls.util.json')
 local Date = require('jls.util.Date')
+local Map = require('jls.util.Map')
 local ZipFile = require('jls.util.zip.ZipFile')
 
 local utils = require('lha.utils')
@@ -89,6 +90,7 @@ local REST_ADMIN = {
   ['restart?method=POST'] = function(exchange)
     event:setTimeout(function()
       exchange.attributes.engine:stop()
+      runtime.gc()
       exchange.attributes.engine:start()
     end, 100)
     return 'In progress'
@@ -105,20 +107,17 @@ local REST_ADMIN = {
     return 'Done'
   end,
   info = function(exchange)
-    --local engine = exchange:getAttribute('engine')
-    --local ip, port = engine:getHTTPServer():getAddress()
+    local engine = exchange:getAttribute('engine')
+    local httpServer = engine:getHTTPServer()
+    --local ip, port = httpServer:getAddress()
     return {
-      clock = os.clock(),
-      memory = math.floor(collectgarbage('count') * 1024),
-      time = Date.now() // 1000
+      ['CPU Time'] = os.clock(),
+      ['Server Time'] = os.time(),
+      ['Lua Memory Size'] = math.floor(collectgarbage('count') * 1024),
+      ['Lua Registry Entries'] = Map.size(debug.getregistry()),
+      ['Loaded Packages'] = Map.size(package.loaded),
+      ['HTTP Clients'] = Map.size(httpServer.pendings),
     }
-  end,
-  mem = function(exchange)
-    local report = ''
-    require('jls.util.memprof').printReport(function(data)
-      report = data
-    end, false, false, 'csv')
-    return report
   end,
   backup = {
     ['create?method=POST'] = function(exchange)
