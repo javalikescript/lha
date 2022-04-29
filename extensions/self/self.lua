@@ -4,7 +4,6 @@ local Thing = require('lha.Thing')
 --local ThingProperty = require('lha.ThingProperty')
 local logger = require('jls.lang.logger')
 local loader = require('jls.lang.loader')
-local memprof = require('jls.util.memprof')
 local File = require('jls.io.File')
 local Date = require('jls.util.Date')
 local luv = loader.tryRequire('luv')
@@ -180,22 +179,4 @@ extension:subscribeEvent('poll', function()
     --local rusage = getRUsage(luv.getrusage())
   end
   lastClock = clock
-end)
-
-local engine = extension:getEngine()
-local reportFile = File:new(engine:getTemporaryDirectory(), 'memprof.csv')
-if reportFile:exists() then
-  local ts = Date.timestamp(Date.now(), true)
-  local backupReportFile = File:new(engine:getTemporaryDirectory(), 'memprof.'..ts..'.csv')
-  logger:info('Renaming memory report file "'..reportFile:getPath()..'" to "'..backupReportFile:getPath()..'"')
-  reportFile:renameTo(backupReportFile)
-end
-
-extension:subscribeEvent('refresh', function()
-  logger:info('refresh self extension')
-  if configuration.memory.enabled then
-    memprof.printReport(function(data)
-      reportFile:write(data, true)
-    end, false, false, configuration.memory.format)
-  end
 end)

@@ -5,29 +5,5 @@
   "script": "self.lua",
   "config": {
     "active": true
-  },
-  "schema": {
-    "type": "object",
-    "properties": {
-      "memory": {
-        "type": "object",
-        "properties": {
-          "enabled": {
-            "title": "Generate Lua memory report",
-            "type": "boolean",
-            "default": true
-          },
-          "format": {
-            "title": "Memory report format",
-            "type": "string",
-            "enum": [
-              "csv",
-              "json"
-            ],
-            "default": "csv"
-          }
-        }
-      }
-    }
   }
 }
