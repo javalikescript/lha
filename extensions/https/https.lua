@@ -79,6 +79,12 @@ extension:subscribeEvent('startup', function()
   end
 end)
 
+extension:subscribeEvent('poll', function()
+  if httpSecureServer then
+    httpSecureServer:closePendings(3600)
+  end
+end)
+
 extension:subscribeEvent('shutdown', function()
   logger:info('shutdown MQTT Broker extension')
   closeServer()

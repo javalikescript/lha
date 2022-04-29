@@ -88,6 +88,7 @@ return class.create(function(engine)
     local schedules = self.root.configuration.engine.schedule
     -- poll things schedule
     scheduler:schedule(schedules.poll, function()
+      self.server:closePendings(3600)
       logger:info('Polling things')
       -- TODO Clean data
       self:publishEvent('poll')
@@ -548,6 +549,12 @@ end, function(Engine)
       emptyPath = 'work',
       helpPath = 'help',
       disableSchemaDefaults = true,
+      aliases = {
+        h = 'help',
+        w = 'work',
+        p = 'port',
+        ll = 'loglevel',
+      },
       schema = utils.requireJson('lha.schema')
     })
     local defaultConfig = options.config
