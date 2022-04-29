@@ -197,23 +197,26 @@ end
 ------------------------------------------------------------
 
 local function sendWebSocket(command, options)
-  webSocket.zwMsgId = webSocket.zwMsgId + 1
-  local messageId = 'lha-zwave-js-'..tostring(webSocket.zwMsgId)
-  logger:finest('sendWebSocket('..tostring(command)..') '..messageId)
-  local message = {
-    command = command,
-    messageId = messageId
-  }
-  if options then
-    Map.assign(message, options)
+  if webSocket then
+    webSocket.zwMsgId = webSocket.zwMsgId + 1
+    local messageId = 'lha-zwave-js-'..tostring(webSocket.zwMsgId)
+    logger:finest('sendWebSocket('..tostring(command)..') '..messageId)
+    local message = {
+      command = command,
+      messageId = messageId
+    }
+    if options then
+      Map.assign(message, options)
+    end
+    local textMsg = json.encode(message)
+    logger:finer('message: '..textMsg)
+    return webSocket:sendTextMessage(textMsg):next(function()
+      local promise, cb = Promise.createWithCallback()
+      webSocket.zwMsgCb[messageId] = cb
+      return promise
+    end)
   end
-  local textMsg = json.encode(message)
-  logger:finer('message: '..textMsg)
-  return webSocket:sendTextMessage(textMsg):next(function()
-    local promise, cb = Promise.createWithCallback()
-    webSocket.zwMsgCb[messageId] = cb
-    return promise
-  end)
+  return Promise.reject()
 end
 
 local function startWebSocket(wsConfig)
@@ -228,7 +231,8 @@ local function startWebSocket(wsConfig)
     logger:warn('Cannot open Z-Wave JS WebSocket on '..tostring(wsConfig.url)..' due to '..tostring(reason))
   end)
   webSocket.onClose = function()
-    logger:info('Z-Wave JS WebSocket closed')
+    logger:warn('Z-Wave JS WebSocket closed')
+    webSocket = nil
   end
   webSocket.onTextMessage = function(_, payload)
     if logger:isLoggable(logger.FINEST) then
@@ -262,6 +266,8 @@ local function startWebSocket(wsConfig)
             onZWaveNode(node)
           end
         end)
+      else
+        logger:warn('Z-Wave JS WebSocket unsupported message type '..tostring(message.type))
       end
     else
       logger:warn('Z-Wave WebSocket received invalid JSON payload '..tostring(payload))
@@ -279,8 +285,13 @@ extension:subscribeEvent('things', function()
 end)
 
 extension:subscribeEvent('poll', function()
-  -- TODO poll nodes
-  --onZWaveNode(node)
+  local configuration = extension:getConfiguration()
+  if webSocket then
+    -- TODO poll nodes
+    --onZWaveNode(node)
+  elseif configuration.websocket and configuration.websocket.enable then
+    startWebSocket(configuration.websocket)
+  end
 end)
 
 extension:subscribeEvent('startup', function()
