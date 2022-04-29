@@ -44,16 +44,18 @@ local function addContext(server, ...)
   table.insert(contexts, context)
 end
 
-local function onWebSocketClose(self)
-  logger:fine('WebSocket closed')
-  List.removeFirst(websockets, self)
+local function onWebSocketClose(webSocket)
+  logger:fine('WebSocket closed '..tostring(webSocket))
+  List.removeFirst(websockets, webSocket)
 end
 
 local batchDataChange = true
 local dataChangeEvent = nil
 
 local function onDataChange(value, previousValue, path)
-  logger:fine('onDataChange "'..tostring(path)..'": "'..tostring(value)..'"')
+  if logger:isLoggable(logger.FINE) then
+    logger:fine('onDataChange() "'..tostring(path)..'": "'..tostring(value)..'" '..tostring(#websockets))
+  end
   if #websockets == 0 then
     return
   end
@@ -101,11 +103,12 @@ function extension:unregisterAddon(name)
 end
 
 function extension:registerAddonExtension(ext, script)
+  local configuration = extension:getConfiguration()
   if script == true then
     script = ext:getId()..'.js'
   end
   self:registerAddon(ext:getId(), {
-    handler = AddonFileHttpHandler:new(ext:getDir()),
+    handler = AddonFileHttpHandler:new(ext:getDir()):setCacheControl(configuration.cache),
     script = script or 'main.js' -- TODO change to init
   })
 end
@@ -136,11 +139,13 @@ extension:subscribeEvent('startup', function()
   local wwwDir = File:new(extension:getDir(), 'www')
 
   cleanup(server)
-  addContext(server, '/(.*)', FileHttpHandler:new(wwwDir, 'r', 'app.html'))
+  addContext(server, '/(.*)', FileHttpHandler:new(wwwDir, 'r', 'app.html'):setCacheControl(configuration.cache))
   addContext(server, '/static/(.*)', assetsHandler)
   addContext(server, '/addon/([^/]*)/?(.*)', HttpHandler:new(function(self, exchange)
     local name, path = exchange:getRequestArguments()
-    logger:fine('add-on handler "'..tostring(name)..'" / "'..tostring(path)..'"')
+    if logger:isLoggable(logger.FINE) then
+      logger:fine('add-on handler "'..tostring(name)..'" / "'..tostring(path)..'"')
+    end
     if name == '' then
       local list = {}
       for id, addon in pairs(addons) do
@@ -153,7 +158,9 @@ extension:subscribeEvent('startup', function()
     else
       local addon = addons[name]
       if addon and addon.handler then
-        logger:fine('calling add-on "'..tostring(name)..'" handler')
+        if logger:isLoggable(logger.FINE) then
+          logger:fine('calling add-on "'..tostring(name)..'" handler')
+        end
         return addon.handler:handle(exchange)
       end
       HttpExchange.notFound(exchange)
@@ -161,7 +168,9 @@ extension:subscribeEvent('startup', function()
   end))
   addContext(server, '/ws/', Map.assign(WebSocketUpgradeHandler:new(), {
     onOpen = function(_, webSocket, exchange)
-      logger:fine('WebSocket openned')
+      if logger:isLoggable(logger.FINE) then
+        logger:fine('WebSocket openned '..tostring(webSocket))
+      end
       table.insert(websockets, webSocket)
       webSocket.onClose = onWebSocketClose
     end
