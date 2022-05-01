@@ -166,6 +166,7 @@
       <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
       <!-- fa fa-minus -->
       <button v-on:click="onDisable().then(function(){ app.back(); })" title="Disable"><i class="fa fa-trash"></i></button>
+      <button v-on:click="onSave()" title="Save"><i class="fas fa-save"></i></button>
       <button v-on:click="onReload" title="Reload"><i class="fas fa-redo"></i></button>
     </template>
     <article class="content">
