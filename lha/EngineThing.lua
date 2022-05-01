@@ -55,6 +55,7 @@ return class.create(Thing, function(engineThing, super)
   function engineThing:setPropertyValue(name, value)
     local property = self:getProperty(name)
     if not property or property:isReadOnly() then
+      logger:warn('Cannot update property "'..name..'"')
       return
     end
     if self.setterFn then

@@ -270,7 +270,11 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
       local thing = self.engine:getThingById(thingId)
       if thing then
         return thing:getPropertyValue(propertyName)
+      else
+        logger:warn('unknown thing for id "'..tostring(thingId)..'"')
       end
+    else
+      logger:warn('invalid path "'..tostring(path)..'"')
     end
     return nil
   end
@@ -281,7 +285,11 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
       local thing = self.engine:getThingById(thingId)
       if thing then
         thing:setPropertyValue(propertyName, value)
+      else
+        logger:warn('unknown thing for id "'..tostring(thingId)..'"')
       end
+    else
+      logger:warn('invalid path "'..tostring(path)..'"')
     end
   end
 
@@ -446,7 +454,8 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
       if logger:isLoggable(logger.FINEST) then
         logger:finest('loading extension '..self:getPrettyName())
       end
-      local scriptFn, err = loadfile(scriptFile:getPath())
+      local env = setmetatable({}, { __index = _G })
+      local scriptFn, err = loadfile(scriptFile:getPath(), 't', env)
       if not scriptFn or err then
         logger:warn('Cannot load extension "'..self:getPrettyName()..'" from script "'..scriptFile:getPath()..'" due to '..tostring(err))
       else
