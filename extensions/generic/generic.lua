@@ -1,3 +1,5 @@
+local extension = ...
+
 local logger = require('jls.lang.logger')
 local Map = require('jls.util.Map')
 local Thing = require('lha.Thing')
@@ -46,6 +48,9 @@ local function createThing(thingConfig)
 end
 
 local function formatKey(index, thingConfig)
+  if thingConfig and thingConfig.id and thingConfig.id ~= '' then
+    return thingConfig.id
+  end
   return '#'..tostring(index)
 end
 
@@ -68,8 +73,6 @@ local function discoverThings(extension)
     end
   end
 end
-
-local extension = ...
 
 extension:subscribeEvent('startup', function()
   logger:info('startup generic extension')

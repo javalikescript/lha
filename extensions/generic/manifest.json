@@ -20,6 +20,10 @@
               "title": "Thing Description",
               "type": "string"
             },
+            "id": {
+              "title": "Thing Id",
+              "type": "string"
+            },
             "@type": {
               "title": "Thing Types",
               "type": "array",
