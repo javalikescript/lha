@@ -135,7 +135,7 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
         }));
       },
       onDataChange: function() {
-        console.log('onDataChange');
+        //console.log('onDataChange');
         Promise.all([
           app.getThingsById(),
           app.getPropertiesByThingId()
@@ -171,7 +171,7 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
                 value = values.indexOf(true) >= 0;
               }
             }
-            console.log('value: ' + value + ', type: ' + type, values);
+            //console.log('value: ' + value + ', type: ' + type, values);
             var tile = assignMap({}, tileDef, {
               title: oneOf(tileDef.title, type, 'n/a'),
               paths: paths,
@@ -191,7 +191,7 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
       },
       onTileClicked: function(tile) {
         //console.log('onTileClicked() ' + tile.value + ' (' + (typeof tile.value) + ')');
-        if (typeof tile.value !== 'boolean') {
+        if ((typeof tile.value !== 'boolean') && (tile.value !== undefined)) {
           return Promise.reject('Unsupported value');
         }
         app.getThingsById().then(function(things) {
@@ -217,7 +217,7 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
         });
       },
       openHistoricalData: function(paths) {
-        console.log('paths: ' + paths);
+        //console.log('paths: ' + paths);
         if (paths.length === 1) {
           app.toPage('data-chart', paths[0]);
         } else {

@@ -22,9 +22,11 @@
               "title": "The property type",
               "type": "string",
               "enumValues": [
+                {"const": "AlarmProperty", "title": "Alarm"},
                 {"const": "BarometricPressureProperty", "title": "Barometric Pressure"},
                 {"const": "BooleanProperty", "title": "Boolean"},
                 {"const": "HumidityProperty", "title": "Humidity"},
+                {"const": "LeakProperty", "title": "Leak"},
                 {"const": "LevelProperty", "title": "Level"},
                 {"const": "LockedProperty", "title": "Locked"},
                 {"const": "MotionProperty", "title": "Motion"},
@@ -34,7 +36,6 @@
                 {"const": "TemperatureProperty", "title": "Temperature"}
               ],
               "enumValues-NotUsed": [
-                {"const": "AlarmProperty", "title": "Alarm"},
                 {"const": "BrightnessProperty", "title": "Brightness"},
                 {"const": "ColorModeProperty", "title": "Color Mode"},
                 {"const": "ColorProperty", "title": "Color"},
@@ -47,7 +48,6 @@
                 {"const": "ImageProperty", "title": "Image"},
                 {"const": "InstantaneousPowerFactorProperty", "title": "Instantaneous Power Factor"},
                 {"const": "InstantaneousPowerProperty", "title": "Instantaneous Power"},
-                {"const": "LeakProperty", "title": "Leak"},
                 {"const": "PushedProperty", "title": "Pushed"},
                 {"const": "TargetTemperatureProperty", "title": "Target Temperature"},
                 {"const": "ThermostatModeProperty", "title": "Thermostat Mode"},
