@@ -377,6 +377,11 @@ define(['requirePath', './scripts.xml', './script-editor.xml'], function(require
           self.scripts = scripts;
         });
       },
+      pollScript: function (script) {
+        fetch('/engine/extensions/' + script.id + '/poll', {method: 'POST'}).then(function() {
+          toaster.toast('Script polled');
+        });
+      },
       reloadScript: function (script) {
         fetch('/engine/scripts/' + script.id + '/reload', {method: 'POST'}).then(function() {
           toaster.toast('Script reloaded');
@@ -384,11 +389,9 @@ define(['requirePath', './scripts.xml', './script-editor.xml'], function(require
       },
       activateScript: function (script) {
         //console.log('activateScript()' + script.active);
-        fetch('/engine/configuration/extensions/' + script.id + '/active', {
-          method: 'POST',
-          body: JSON.stringify({
-            value: !script.active
-          })
+        var activate = !script.active;
+        return fetch('/engine/extensions/' + script.id + '/' + (activate ? 'enable' : 'disable'), {method: 'POST'}).then(function() {
+          toaster.toast('Script ' + (activate ? 'enabled' : 'disabled'));
         });
       },
       newScript: function () {
