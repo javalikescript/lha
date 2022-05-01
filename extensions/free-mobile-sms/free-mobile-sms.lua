@@ -5,6 +5,7 @@ local class = require('jls.lang.class')
 local Promise = require('jls.lang.Promise')
 local HttpClient = require('jls.net.http.HttpClient')
 local Url = require('jls.net.Url')
+local Thing = require('lha.Thing')
 
 -- Helper classes and functions
 
@@ -14,7 +15,7 @@ local FreeMobileSms = class.create(function(freeMobileSms)
     apiUrl = apiUrl or 'https://smsapi.free-mobile.fr/sendmsg'
     self.user = user or ''
     self.url = apiUrl..'?user='..Url.encodeURIComponent(self.user)..'&pass='..Url.encodeURIComponent(pass)
-    self.usePost = true
+    self.usePost = false
   end
 
   function freeMobileSms:getUser()
@@ -85,10 +86,30 @@ function extension:sendSMS(msg)
   return Promise.reject('Extension not started')
 end
 
---[[
-  extension:watchDataValue(extension:getPath('sms'), function(value, previousValue, path)
-    extension:sendSMS(value):catch(function(reason)
+local function onMessage(property, value)
+  value = type(value) == 'string' and string.match(value, '^%s*(.-)%s*$') or ''
+  if fms and value ~= '' then
+    fms:sendMessage(value):catch(function(reason)
       logger:warn('Unable to send SMS, due to '..tostring(reason))
     end)
-  end)
-]]
+  end
+end
+
+local function createThing(targetName)
+  return Thing:new('FreeMobileSms', 'FreeMobileSms Message', {'Message'}):addProperty('message', {
+    ['@type'] = 'MessageProperty',
+    title = 'Message',
+    type = 'string',
+    description = 'Send the message'
+  }, '')
+end
+
+local thing, watcher
+
+extension:subscribeEvent('things', function()
+  thing = extension:syncDiscoveredThingByKey('lua', createThing)
+  local p = thing:getProperty('message')
+  if p then
+    p.setValue = onMessage
+  end
+end)
