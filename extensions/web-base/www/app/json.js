@@ -234,6 +234,9 @@ Vue.component('json-item', {
     },
     isRemovable: function() {
       return Array.isArray(this.pobj);
+    },
+    hasContent: function() {
+      return this.schema && ((this.schema.type === 'array') || (this.schema.type === 'object'));
     }
   },
   methods: {
