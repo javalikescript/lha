@@ -239,7 +239,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
 
   function extension:addWatcher(watcher)
     table.insert(self.watchers, watcher)
-    if #self.watchers > 0 then
+    if #self.watchers == 1 then
       self:subscribeEvent('change', self.changeFn)
     end
     return watcher
