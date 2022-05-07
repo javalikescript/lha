@@ -229,9 +229,26 @@ define(['requirePath', './scripts.xml', './script-editor.xml'], function(require
       var path = block.getFieldValue('PATH');
       var newValue = Blockly.Lua.variableDB_.getName(block.getFieldValue('NEW_VALUE'), Blockly.Variables.NAME_TYPE);
       //var oldValue = Blockly.Lua.variableDB_.getName(block.getFieldValue('OLD_VALUE'), Blockly.Variables.NAME_TYPE);
-      var oldValue = '_';
-      code = "script:watchValue('data/" + path + "', function(" + newValue + ", " + oldValue + ")\n" + code + "end)\n";
+      code = "script:watchValue('data/" + path + "', function(" + newValue + ")\n" + code + "end)\n";
       return code;
+    };
+    Blockly.Blocks['lha_to_string'] = {
+      init: function() {
+        this.jsonInit({
+          "message0": "To String %1",
+          "args0": [{
+            "type": "input_value",
+            "name": "VALUE"
+          }],
+          "output": null,
+          "colour": lhaStatementColor
+        });
+      }
+    };
+    Blockly.Lua['lha_to_string'] = function(block) {
+      var value = Blockly.Lua.valueToCode(block, 'VALUE', Blockly.JavaScript.ORDER_NONE);
+      var code = "tostring(" + value + ")";
+      return [code, Blockly.JavaScript.ORDER_MEMBER];
     };
     // Registers action buttons
     workspace.registerButtonCallback('refresh', function() {

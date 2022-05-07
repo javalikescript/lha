@@ -18,6 +18,7 @@
     <block type="lha_get_data"></block>
     <block type="lha_set_data"></block>
     <block type="lha_log"></block>
+    <block type="lha_to_string"></block>
   </category>
   <sep></sep>
   <category name="Logic" colour="%{BKY_LOGIC_HUE}">
