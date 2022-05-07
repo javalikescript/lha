@@ -39,19 +39,10 @@ local FreeMobileSms = class.create(function(freeMobileSms)
   ]]
 
   function freeMobileSms:sendMessage(msg)
-    local client
-    if self.usePost then
-      client = HttpClient:new({
-        method = 'POST',
-        url = self:getUrl(),
-        body = msg
-      })
-    else
-      client = HttpClient:new({
-        method = 'GET',
-        url = self:getMessageUrl(msg)
-      })
-    end
+    local client = HttpClient:new({
+      method = self.usePost and 'POST' or 'GET',
+      url = self:getMessageUrl(msg)
+    })
     return client:connect():next(function()
       logger:info('Sending message: "'..tostring(msg)..'"')
       return client:sendReceive()
