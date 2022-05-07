@@ -8,7 +8,7 @@
     </div>
   </template>
   <template slot="bar-right">
-    <button v-on:click="onDelete" title="Delete"><i class="fa fa-trash"></i></button>
+    <button v-on:click="onDelete().then(function(){ app.replacePage('scripts'); })" title="Delete"><i class="fa fa-trash"></i></button>
     <button v-on:click="onSave" title="Save"><i class="far fa-save"></i></button>
   </template>
   <article class="content">
