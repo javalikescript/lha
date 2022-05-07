@@ -71,10 +71,10 @@ extension:subscribeEvent('startup', function()
       local fn, err = load(table.concat({
         'local b, engine = ...',
         'print = function(v, ...)',
-          'b:append(v)',
+          'b:append(tostring(v))',
           'if ... then',
             'for _, w in ipairs({...}) do',
-              'b:append("\\t"):append(w)',
+              'b:append("\\t"):append(tostring(w))',
             'end',
           'end',
           'b:append("\\n")',
