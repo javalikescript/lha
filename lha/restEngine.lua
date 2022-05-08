@@ -124,6 +124,7 @@ local REST_ADMIN = {
       local engine = exchange:getAttribute('engine')
       local ts = Date.timestamp()
       local backup = File:new(engine:getTemporaryDirectory(), 'lha_backup.'..ts..'.zip')
+      engine:saveThingValues()
       engine.configHistory:saveJson()
       engine.dataHistory:saveJson()
       ZipFile.zipTo(backup, engine:getWorkDirectory():listFiles(function(file)
@@ -131,6 +132,7 @@ local REST_ADMIN = {
       end))
       engine.configHistory:removeJson()
       engine.dataHistory:removeJson()
+      engine:getThingValuesFile():delete()
       return backup:getName()
     end,
     ['deploy?method=POST'] = function(exchange)

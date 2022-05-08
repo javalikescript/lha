@@ -338,6 +338,12 @@ return require('jls.lang.class').create(function(thing)
     return props
   end
 
+  function thing:setPropertyValues(values)
+    for name, value in pairs(values) do
+      self:updatePropertyValue(name, value)
+    end
+  end
+
   function thing:getPropertyNames()
     local names = {}
     for name in pairs(self.properties) do

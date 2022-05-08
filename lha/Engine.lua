@@ -9,6 +9,7 @@ local RestHttpHandler = require('jls.net.http.handler.RestHttpHandler')
 local Scheduler = require('jls.util.Scheduler')
 local tables = require('jls.util.tables')
 local List = require('jls.util.List')
+local json = require('jls.util.json')
 
 local HistoricalTable = require('lha.HistoricalTable')
 local IdGenerator = require('lha.IdGenerator')
@@ -455,6 +456,33 @@ return class.create(function(engine)
     end
   end
 
+  function engine:getThingValuesFile()
+    return File:new(self.workDir, 'things.json')
+  end
+
+  function engine:loadThingValues()
+    local file = self:getThingValuesFile()
+    if file:isFile() then
+      local t = json.decode(file:readAll())
+      for thingId, values in pairs(t) do
+        local thing = self.things[thingId]
+        if thing then
+          thing:setPropertyValues(values)
+        end
+      end
+      file:delete()
+    end
+  end
+
+  function engine:saveThingValues()
+    local t = {}
+    for thingId, thing in pairs(self.things) do
+      t[thingId] = thing:getPropertyValues()
+    end
+    local file = self:getThingValuesFile()
+    file:write(json.stringify(t, 2))
+  end
+
   function engine:loadThings()
     -- Load the things available in the configuration
     self.things = {}
@@ -527,6 +555,7 @@ return class.create(function(engine)
     self:startHeartbeat()
     self:loadExtensions()
     self:loadThings()
+    self:loadThingValues()
     self:publishEvent('startup')
     self:publishEvent('things')
   end
@@ -539,6 +568,7 @@ return class.create(function(engine)
     self:publishEvent('shutdown')
     self.configHistory:saveJson()
     self.dataHistory:saveJson()
+    self:saveThingValues()
   end
 
 end, function(Engine)

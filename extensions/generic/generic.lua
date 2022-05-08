@@ -74,10 +74,6 @@ local function discoverThings(extension)
   end
 end
 
-extension:subscribeEvent('startup', function()
-  logger:info('startup generic extension')
-end)
-
 extension:subscribeEvent('things', function()
   logger:info('looking for generic things')
   discoverThings(extension)
