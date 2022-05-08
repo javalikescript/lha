@@ -236,9 +236,9 @@
       <json :name="'Configuration'" :obj="config" :schema="schema"></json>
       <button v-on:click="onSave()"><i class="far fa-save"></i>&nbsp;Save</button>
       <p>Backup and Restore</p>
-      <button v-on:click="backup"><i class="fas fa-box"></i>&nbsp;Create Backup</button>
+      <button v-on:click="backup" :disabled="working"><i class="fas fa-box"></i>&nbsp;Create Backup</button>
       <a v-if="filename" :href="'/engine/tmp/' + filename" download>{{filename}}</a>
-      <button v-on:click="selectFile"><i class="fas fa-box-open"></i>&nbsp;Deploy Backup</button>
+      <button v-on:click="selectFile" :disabled="working"><i class="fas fa-box-open"></i>&nbsp;Deploy Backup</button>
       <input v-on:change="uploadThenDeploy" type="file" accept=".zip" ref="uploadInput" style="display: none;" />
     </page-article>
   </app-page>

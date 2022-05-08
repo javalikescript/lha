@@ -378,7 +378,8 @@ var homePage = new Vue({
   data: {
     filename: '',
     schema: {},
-    config: {}
+    config: {},
+    working: false
   },
   methods: {
     onShow: function() {
@@ -396,10 +397,14 @@ var homePage = new Vue({
     },
     backup: function() {
       var self = this;
+      self.working = true;
       fetch('/engine/admin/backup/create', {method: 'POST'}).then(function(response) {
         return response.text();
       }).then(function(filename) {
         self.filename = filename;
+        toaster.toast('Backup created');
+      }).finally(function() {
+        self.working = false;
       });
     },
     selectFile: function(event) {
@@ -410,6 +415,7 @@ var homePage = new Vue({
       if (input.files.length !== 1) {
         return;
       }
+      self.working = true;
       var file = input.files[0];
       fetch('/engine/tmp/' + file.name, {
         method: 'PUT',
@@ -418,10 +424,16 @@ var homePage = new Vue({
         },
         body: file
       }).then(function() {
+        toaster.toast('Backup uploaded');
         return fetch('/engine/admin/backup/deploy', {
           method: 'POST',
           body: file.name
         });
+      }).then(function() {
+        toaster.toast('Backup deployed');
+        window.location.reload();
+      }).finally(function() {
+        self.working = false;
       });
     },
     onSave: function() {
