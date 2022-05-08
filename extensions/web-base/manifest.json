@@ -15,7 +15,7 @@
         "default": "assets"
       },
       "cache": {
-        "title": "Cache control duration, 0 to disable",
+        "title": "Cache control duration for assets, 0 to disable",
         "type": "integer",
         "default": 86400
       },

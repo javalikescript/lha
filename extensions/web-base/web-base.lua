@@ -108,7 +108,7 @@ function extension:registerAddonExtension(ext, script)
     script = ext:getId()..'.js'
   end
   self:registerAddon(ext:getId(), {
-    handler = AddonFileHttpHandler:new(ext:getDir()):setCacheControl(configuration.cache),
+    handler = AddonFileHttpHandler:new(ext:getDir()),
     script = script or 'main.js' -- TODO change to init
   })
 end
@@ -128,7 +128,7 @@ extension:subscribeEvent('startup', function()
   local assetsHandler
   if assets:isDirectory() then
     logger:info('Using assets directory "'..assets:getPath()..'"')
-    assetsHandler = FileHttpHandler:new(assets)
+    assetsHandler = FileHttpHandler:new(assets):setCacheControl(configuration.cache)
   elseif assets:isFile() and string.find(assets:getPathName(), '%.zip$') then
     logger:info('Using assets file "'..assets:getPath()..'"')
     assetsHandler = ZipFileHttpHandler:new(assets)
@@ -139,7 +139,7 @@ extension:subscribeEvent('startup', function()
   local wwwDir = File:new(extension:getDir(), 'www')
 
   cleanup(server)
-  addContext(server, '/(.*)', FileHttpHandler:new(wwwDir, 'r', 'app.html'):setCacheControl(configuration.cache))
+  addContext(server, '/(.*)', FileHttpHandler:new(wwwDir, 'r', 'app.html'))
   addContext(server, '/static/(.*)', assetsHandler)
   addContext(server, '/addon/([^/]*)/?(.*)', HttpHandler:new(function(self, exchange)
     local name, path = exchange:getRequestArguments()
