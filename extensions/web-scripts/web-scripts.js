@@ -232,6 +232,55 @@ define(['requirePath', './scripts.xml', './script-editor.xml'], function(require
       code = "script:watchValue('data/" + path + "', function(" + newValue + ")\n" + code + "end)\n";
       return code;
     };
+    Blockly.Blocks['lha_timer'] = {
+      init: function() {
+        this.jsonInit({
+          "message0": "Register timer %1",
+          "args0": [{
+            "type": "field_input",
+            "name": "NAME",
+            "text": "my timer"
+          }],
+          "message1": "In %1 seconds do %2",
+          "args1": [{
+            "type": "field_input",
+            "name": "VALUE",
+            "text": "1"
+          }, {
+            "type": "input_statement",
+            "name": "DO"
+          }],
+          "previousStatement": null,
+          "nextStatement": null,
+          "colour": lhaEventColor
+        });
+      }
+    };
+    Blockly.Lua['lha_timer'] = function(block) {
+      var name = block.getFieldValue('NAME');
+      var value = block.getFieldValue('VALUE');
+      var code = Blockly.Lua.statementToCode(block, 'DO');
+      return "script:setTimer(function()\n" + code + "end, " + value + " * 1000, '" + name + "')\n";
+    };
+    Blockly.Blocks['lha_clear_timer'] = {
+      init: function() {
+        this.jsonInit({
+          "message0": "Clear timer %1",
+          "args0": [{
+            "type": "field_input",
+            "name": "NAME",
+            "text": "my timer"
+          }],
+          "previousStatement": null,
+          "nextStatement": null,
+          "colour": lhaEventColor
+        });
+      }
+    };
+    Blockly.Lua['lha_clear_timer'] = function(block) {
+      var name = block.getFieldValue('NAME');
+      return "script:clearTimer('" + name + "')\n";
+    };
     Blockly.Blocks['lha_to_string'] = {
       init: function() {
         this.jsonInit({
@@ -248,6 +297,20 @@ define(['requirePath', './scripts.xml', './script-editor.xml'], function(require
     Blockly.Lua['lha_to_string'] = function(block) {
       var value = Blockly.Lua.valueToCode(block, 'VALUE', Blockly.JavaScript.ORDER_NONE);
       var code = "tostring(" + value + ")";
+      return [code, Blockly.JavaScript.ORDER_MEMBER];
+    };
+    Blockly.Blocks['lha_time'] = {
+      init: function() {
+        this.jsonInit({
+          "message0": "Get time",
+          "args0": [],
+          "output": null,
+          "colour": lhaStatementColor
+        });
+      }
+    };
+    Blockly.Lua['lha_time'] = function(block) {
+      var code = "os.time()";
       return [code, Blockly.JavaScript.ORDER_MEMBER];
     };
     // Registers action buttons

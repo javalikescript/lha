@@ -1,5 +1,6 @@
 local logger = require('jls.lang.logger')
 local loader = require('jls.lang.loader')
+local event = require('jls.lang.event')
 local protectedCall = require('jls.lang.protectedCall')
 local File = require('jls.io.File')
 local json = require('jls.util.json')
@@ -55,6 +56,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
         end
       end
     end
+    self.timers = {}
     self:connectConfiguration()
   end
 
@@ -211,6 +213,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     end
     self.scheduler:removeAllSchedules()
     self:unsubscribeAllEvents()
+    self:clearTimers()
     self.watchers = {}
   end
 
@@ -228,6 +231,33 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
       self:unsubscribeEvent('heartbeat', self.scheduleFn)
     end
     return scheduleId
+  end
+
+  function extension:setTimer(fn, delay, id)
+    local timerId = event:setTimeout(function()
+      self.timers[id] = nil
+      fn()
+    end, delay)
+    id = id or timerId
+    self:clearTimer(id)
+    self.timers[id] = timerId
+    return id
+  end
+
+  function extension:clearTimer(id)
+    local timerId = self.timers[id]
+    if timerId then
+      event:clearTimeout(id)
+      self.timers[id] = nil
+    end
+  end
+
+  function extension:clearTimers()
+    local timers = self.timers
+    self.timers = {}
+    for _, id in pairs(timers) do
+      event:clearTimeout(id)
+    end
   end
 
   function extension:forgetValue(watcher)
