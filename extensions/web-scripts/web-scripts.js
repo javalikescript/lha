@@ -66,34 +66,16 @@ define(['requirePath', './scripts.xml', './script-editor.xml'], function(require
       };
     }
     // Register custom blocks
-    Blockly.Blocks['lha_poll'] = {
-      init: function() {
-        this.jsonInit({
-          "message0": "On polling",
-          "message1": "do %1",
-          "args1": [{
-            "type": "input_statement",
-            "name": "DO"
-          }],
-          "colour": lhaEventColor
-        });
-      }
-    };
-    Blockly.Lua['lha_poll'] = function(block) {
-      var code = Blockly.Lua.statementToCode(block, 'DO');
-      code = "script:subscribeEvent('poll', function()\n" + code + "end)\n";
-      return code;
-    };
     Blockly.Blocks['lha_event'] = {
       init: function() {
         this.jsonInit({
-          "message0": "On %1",
+          "message0": "on %1",
           "args0": [{
             "type": "field_dropdown",
             "name": "EVENT",
             "options": [
               [ "startup", "startup" ],
-              [ "poll", "poll" ],
+              [ "poll", "polling" ],
               [ "shutdown", "shutdown" ]
             ]
           }],
@@ -115,18 +97,18 @@ define(['requirePath', './scripts.xml', './script-editor.xml'], function(require
     Blockly.Blocks['lha_log'] = {
       init: function() {
         this.jsonInit({
-          "message0": "Log %1 %2",
+          "message0": "log %1 %2",
           "args0": [{
             "type": "field_dropdown",
             "name": "LEVEL",
             "options": [
-              [ "ERROR", "ERROR" ],
-              [ "WARN", "WARN" ],
-              [ "INFO", "INFO" ],
-              [ "CONFIG", "CONFIG" ],
-              [ "FINE", "FINE" ],
-              [ "FINER", "FINER" ],
-              [ "FINEST", "FINEST" ]
+              [ "error", "ERROR" ],
+              [ "warn", "WARN" ],
+              [ "info", "INFO" ],
+              [ "config", "CONFIG" ],
+              [ "fine", "FINE" ],
+              [ "finer", "FINER" ],
+              [ "finest", "FINEST" ]
             ]
           }, {
             "type": "input_value",
@@ -148,7 +130,7 @@ define(['requirePath', './scripts.xml', './script-editor.xml'], function(require
     Blockly.Blocks['lha_schedule'] = {
       init: function() {
         this.jsonInit({
-          "message0": "Every %1",
+          "message0": "every %1",
           "args0": [{
             "type": "field_input",
             "name": "VALUE",
@@ -172,7 +154,7 @@ define(['requirePath', './scripts.xml', './script-editor.xml'], function(require
     Blockly.Blocks['lha_get_data'] = {
       init: function() {
         this.jsonInit({
-          "message0": "Get %1",
+          "message0": "get %1",
           "args0": [dataPathField],
           "output": null,
           "colour": lhaStatementColor
@@ -187,7 +169,7 @@ define(['requirePath', './scripts.xml', './script-editor.xml'], function(require
     Blockly.Blocks['lha_set_data'] = {
       init: function() {
         this.jsonInit({
-          "message0": "Set %1 %2",
+          "message0": "set %1 %2",
           "args0": [dataPathField, {
             "type": "input_value",
             "name": "VALUE"
@@ -207,13 +189,13 @@ define(['requirePath', './scripts.xml', './script-editor.xml'], function(require
     Blockly.Blocks['lha_watch_data'] = {
       init: function() {
         this.jsonInit({
-          "message0": "Watch %1",
+          "message0": "watch %1",
           "args0": [dataPathField],
           "message1": "new: %1",
           "args1": [{
             "type": "field_variable",
             "name": "NEW_VALUE",
-            "variable": null
+            "variable": "value"
           }],
           "message2": "do %1",
           "args2": [{
@@ -235,37 +217,48 @@ define(['requirePath', './scripts.xml', './script-editor.xml'], function(require
     Blockly.Blocks['lha_timer'] = {
       init: function() {
         this.jsonInit({
-          "message0": "Register timer %1",
+          "message0": "set timer %1",
           "args0": [{
             "type": "field_input",
             "name": "NAME",
             "text": "my timer"
           }],
-          "message1": "In %1 seconds do %2",
+          "message1": "in %1 %2",
           "args1": [{
             "type": "field_input",
             "name": "VALUE",
             "text": "1"
           }, {
+            "type": "field_dropdown",
+            "name": "SECONDS",
+            "options": [
+              [ "seconds", "1" ],
+              [ "minutes", "60" ],
+              [ "hours", "3600" ]
+            ]
+          }],
+          "message2": "do %1",
+          "args2": [{
             "type": "input_statement",
             "name": "DO"
           }],
           "previousStatement": null,
           "nextStatement": null,
-          "colour": lhaEventColor
+          "colour": lhaStatementColor
         });
       }
     };
     Blockly.Lua['lha_timer'] = function(block) {
       var name = block.getFieldValue('NAME');
       var value = block.getFieldValue('VALUE');
+      var millis = parseInt(block.getFieldValue('SECONDS'), 10);
       var code = Blockly.Lua.statementToCode(block, 'DO');
-      return "script:setTimer(function()\n" + code + "end, " + value + " * 1000, '" + name + "')\n";
+      return "script:setTimer(function()\n" + code + "end, " + (value * millis) + ", '" + name + "')\n";
     };
     Blockly.Blocks['lha_clear_timer'] = {
       init: function() {
         this.jsonInit({
-          "message0": "Clear timer %1",
+          "message0": "clear timer %1",
           "args0": [{
             "type": "field_input",
             "name": "NAME",
@@ -273,7 +266,7 @@ define(['requirePath', './scripts.xml', './script-editor.xml'], function(require
           }],
           "previousStatement": null,
           "nextStatement": null,
-          "colour": lhaEventColor
+          "colour": lhaStatementColor
         });
       }
     };
@@ -284,7 +277,7 @@ define(['requirePath', './scripts.xml', './script-editor.xml'], function(require
     Blockly.Blocks['lha_to_string'] = {
       init: function() {
         this.jsonInit({
-          "message0": "To String %1",
+          "message0": "to String %1",
           "args0": [{
             "type": "input_value",
             "name": "VALUE"
@@ -302,7 +295,7 @@ define(['requirePath', './scripts.xml', './script-editor.xml'], function(require
     Blockly.Blocks['lha_time'] = {
       init: function() {
         this.jsonInit({
-          "message0": "Get time",
+          "message0": "get time",
           "args0": [],
           "output": null,
           "colour": lhaStatementColor
