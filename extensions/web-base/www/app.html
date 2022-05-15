@@ -240,6 +240,7 @@
       <a v-if="filename" :href="'/engine/tmp/' + filename" download>{{filename}}</a>
       <button v-on:click="selectFile" :disabled="working"><i class="fas fa-box-open"></i>&nbsp;Deploy Backup</button>
       <input v-on:change="uploadThenDeploy" type="file" accept=".zip" ref="uploadInput" style="display: none;" />
+      <button v-on:click="stopServer()" :disabled="working"><i class="fas fa-power-off"></i>&nbsp;Stop the Server</button>
     </page-article>
   </app-page>
   <!--
