@@ -184,6 +184,20 @@ var app = new Vue({
     },
     getPropertiesByThingId: function() {
       return this.fetchWithCache('/engine/properties');
+    },
+    getEnumsById: function() {
+      var enumsById = {};
+      return this.getThings().then(function(things) {
+        var thingIds = things.map(function(thing) {
+          return {
+            const: thing.thingId,
+            title: thing.title + ' - ' + thing.description
+          };
+        });
+        thingIds.sort(compareByTitle);
+        enumsById.thingIds = thingIds;
+        return enumsById;
+      });
     }
   }
 });

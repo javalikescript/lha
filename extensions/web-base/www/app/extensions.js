@@ -65,10 +65,10 @@ new Vue({
         return response.json();
       }).then(function(extension) {
         self.extension = extension;
-        return app.getThings();
-      }).then(function(things) {
+        return app.getEnumsById();
+      }).then(function(enumsById) {
         if (self.extension && self.extension.manifest && self.extension.manifest.schema) {
-          self.schema = computeJsonSchema(self.extension.manifest.schema, things);
+          self.schema = populateJsonSchema(self.extension.manifest.schema, enumsById);
         }
         //console.log('extension', self.extension, 'schema', JSON.stringify(self.schema, undefined, 2));
       });
@@ -127,10 +127,10 @@ new Vue({
         return response.json();
       }).then(function(extension) {
         self.extension = extension;
-        return app.getThings();
-      }).then(function(things) {
+        return app.getEnumsById();
+      }).then(function(enumsById) {
         if (self.extension && self.extension.manifest && self.extension.manifest.schema) {
-          self.schema = computeJsonSchema(self.extension.manifest.schema, things);
+          self.schema = populateJsonSchema(self.extension.manifest.schema, enumsById);
         }
         //console.log('extension', self.extension, 'schema', self.schema);
       });

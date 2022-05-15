@@ -107,19 +107,14 @@ function copyObject(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
 
-function computeJsonSchema(schema, things) {
+function populateJsonSchema(schema, enumsById) {
   if (hasSchema(schema)) {
     schema = copyObject(schema);
     browseJsonSchema(schema, function(s) {
       if ('enumVar' in s) {
-        if (s.enumVar === 'thingIds') {
-          s.enumValues = things.map(function(thing) {
-            return {
-              const: thing.thingId,
-              title: thing.title + ' - ' + thing.description
-            };
-          });
-          s.enumValues.sort(compareByTitle);
+        var enumValues = enumsById[s.enumVar];
+        if (enumValues) {
+          s.enumValues = enumValues;
         }
         delete s.enumVar;
       }
