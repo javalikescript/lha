@@ -32,6 +32,32 @@
           {"const": "ms", "title": "Windows"}
         ],
         "default": "light"
+      },
+      "links": {
+        "title": "The links",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "title": "Tile title",
+              "type": "string"
+            },
+            "url": {
+              "title": "URL",
+              "type": "string"
+            },
+            "icon": {
+              "title": "Tile icon",
+              "type": "string",
+              "enumValues": [
+                {"const": "fa-link", "title": "Link"},
+                {"const": "fa-bookmark", "title": "Bookmark"}
+              ],
+              "default": "fa-link"
+            }
+          }
+        }
       }
     }
   }

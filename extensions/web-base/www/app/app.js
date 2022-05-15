@@ -347,14 +347,28 @@ var confirmation = new Vue({
 var homePage = new Vue({
   el: '#home',
   data: {
-    pages: [],
+    tiles: [],
     title: 'Welcome'
   },
+  methods: {
+    onTile: function(tile) {
+      if (tile) {
+        if (tile.id) {
+          app.toPage(tile.id);
+        } else if (tile.url) {
+          window.open(tile.url,'_blank');
+        }
+      }
+    }
+  },
   computed: {
-    sortedPages: function() {
-      var pages = [].concat(this.pages);
-      pages.sort(compareByName);
-      return pages;
+    sortedTiles: function() {
+      var tiles = [].concat(this.tiles);
+      if (typeof webBaseConfig === 'object') {
+        tiles = tiles.concat(webBaseConfig.links);
+      }
+      tiles.sort(compareByName);
+      return tiles;
     }
   }
 });
@@ -487,7 +501,7 @@ function registerPageVue(vue, icon) {
         id: page.id,
         name: page.title
       });
-      homePage.pages.push({
+      homePage.tiles.push({
         id: page.id,
         name: page.title,
         icon: icon
