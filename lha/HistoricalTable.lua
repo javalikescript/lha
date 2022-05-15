@@ -595,11 +595,9 @@ return class.create(function(historicalTable)
     return self:getJsonFile():isFile()
   end
 
-  function historicalTable:saveJson(t)
-    local tt = t or tables.deepCopy(self.liveTable)
+  function historicalTable:saveJson()
     local jsonFile = self:getJsonFile()
-    jsonFile:write(json.stringify(tt, 2))
-    return tt
+    jsonFile:write(json.stringify(self.liveTable, 2))
   end
 
   function historicalTable:clearAggregation()

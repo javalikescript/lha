@@ -1,6 +1,6 @@
 {
   "name": "Generic Things",
-  "description": "Declare custom things",
+  "description": "Declare virtual things",
   "version": "1.0",
   "script": "generic.lua",
   "schema": {
