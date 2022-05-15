@@ -247,7 +247,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
   function extension:clearTimer(id)
     local timerId = self.timers[id]
     if timerId then
-      event:clearTimeout(id)
+      event:clearTimeout(timerId)
       self.timers[id] = nil
     end
   end
