@@ -135,7 +135,8 @@
         <p>{{ thing.description }}</p>
       </div>
       <section>
-        <button v-on:click="onAddAll().then(function(){ app.replacePage('things'); })"><i class="fa fa-plus"></i>&nbsp;Enable All</button>
+        <button v-on:click="onSave().then(function(){ app.replacePage('things'); })"><i class="fa fa-plus"></i>&nbsp;Enable Selected</button>
+        <button v-on:click="onAddAll().then(function(){ app.replacePage('things'); })"><i class="far fa-plus-square"></i>&nbsp;Enable All</button>
         <button v-on:click="app.back()">Cancel</button>
       </section>
     </article>
