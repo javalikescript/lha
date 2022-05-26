@@ -1,14 +1,16 @@
 lha is a light home automation application
 
-> :warning: The project is still experimental.
+## Overview
 
-The application could be run on small computers such as the Raspberry PI or the WD MyCloud.
+The lha application could be run on small computers such as the Raspberry PI or the WD MyCloud.
 It is built around a scheduler and an HTTP server based on [luajls](https://github.com/javalikescript/luajls).
 The application allows [Lua](https://www.lua.org/) extensions and [Blockly](https://developers.google.com/blockly/) scripts.
 It exposes a [Web of Things](https://iot.mozilla.org/wot/) API.
 
 The engine manages the extensions, the things, the scheduler and a web server.
 The engine records thing property values in dedicated time based log files.
+
+## Extensions
 
 Available extensions are:
 * [ConBee](https://phoscon.de/en/conbee), Dresden elektronik ConBee REST API  
@@ -31,9 +33,22 @@ Automatically trigger thing modifications
 * Self monitoring, based on Lua and [libuv](https://github.com/luvit/luv)
 * Ping, Test the reachability of a host on the network
 
-You need to include your devices using the dedicated tool such as deCONZ, Hue App and Z-Wave to MQTT Control Panel.
+You need to include your devices using the dedicated tool such as deCONZ, Hue App or Z-Wave to MQTT Control Panel.
 
-lha includes web extensions using the following libraries:
+## Screenshots
+
+An example of a dashboard setup with temperature and motion sensors.
+![dashboard](https://user-images.githubusercontent.com/9386420/170430755-c585a479-1277-4eac-a8a8-fc15bcec452d.png)
+
+A chart of temperature sensors.
+![data-chart](https://user-images.githubusercontent.com/9386420/170430776-2f4277ba-039f-426c-8c2a-60c7d8bef64a.png)
+
+An example of script to send a SMS on an intrusion.
+![alarm-script](https://user-images.githubusercontent.com/9386420/170430789-86008c90-5a5a-4f2c-bd82-911addb9d373.png)
+
+## Dependencies
+
+The lha release includes web extensions using the following libraries:
 * "vuejs" is licensed under the MIT License see https://vuejs.org/  
 *Reactive, component-oriented view layer for modern web interfaces*
 * "blockly" is licensed under the Apache License 2.0 see https://developers.google.com/blockly/  
