@@ -3,8 +3,10 @@ lha is a light home automation application
 ## Overview
 
 The lha application could be run on small computers such as the Raspberry PI or the WD MyCloud.
-It is built around a scheduler and an HTTP server based on [luajls](https://github.com/javalikescript/luajls).
-The application allows [Lua](https://www.lua.org/) extensions and [Blockly](https://developers.google.com/blockly/) scripts.
+It could also be run on any Linux distribution or Windows.
+
+The application is built around a scheduler and an HTTP server based on [luajls](https://github.com/javalikescript/luajls).
+It allows [Lua](https://www.lua.org/) extensions and [Blockly](https://developers.google.com/blockly/) scripts.
 It exposes a [Web of Things](https://iot.mozilla.org/wot/) API.
 
 The engine manages the extensions, the things, the scheduler and a web server.
@@ -34,6 +36,30 @@ Automatically trigger thing modifications
 * Ping, Test the reachability of a host on the network
 
 You need to include your devices using the dedicated tool such as deCONZ, Hue App or Z-Wave to MQTT Control Panel.
+
+## Devices
+
+Any device available through ConBee, Hue or Z-Wave could be added.
+
+The following devices are already availables.
+* Philips Hue
+  * Go
+  * Lightstrip
+  * White and Ambiance
+  * Dimmer Switch
+  * Motion sensor
+  * Outdoor sensor
+* Ikea TRÅDFRI
+  * Driver for Pax Led NORRFLY
+  * Light panel FLOALT
+  * Wireless dimmer
+  * Wireless control outlet
+* Xiaomi Aqara
+  * Multi sensor
+* Mextronic
+  * Switch ZG9101SAC
+* FIBARO
+  * Smoke Sensor
 
 ## Screenshots
 
