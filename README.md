@@ -2,22 +2,29 @@ lha is a light home automation application
 
 ## Overview
 
-The lha application could be run on small computers such as the Raspberry PI or the WD MyCloud.
-It could also be run on any Linux distribution or Windows.
+The lha application allows to
+* enrich your existing gateway such as the [Hue](https://www.philips-hue.com/) bridge
+* record and display historical device values such as temperature
+* interact between incompatible protocols such as between _ZigBee_ and _Z-Wave_
+* compose advanced automations using [Blockly](https://developers.google.com/blockly/) scripts
+* create your own [Lua](https://www.lua.org/) extensions
 
-The application is built around a scheduler and an HTTP server based on [luajls](https://github.com/javalikescript/luajls).
-It allows [Lua](https://www.lua.org/) extensions and [Blockly](https://developers.google.com/blockly/) scripts.
+The lha engine manages the extensions including scripts, the things, the scheduler and a web server.
+The engine records thing property values in dedicated time based log files.
+
+It is a pure [Lua](https://www.lua.org/) application built around a scheduler and an HTTP server based on [luajls](https://github.com/javalikescript/luajls).
 It exposes a [Web of Things](https://iot.mozilla.org/wot/) API.
 
-The engine manages the extensions, the things, the scheduler and a web server.
-The engine records thing property values in dedicated time based log files.
+The lha application could be run on small computers such as the _Raspberry PI_ or the _WD MyCloud_.
+It could also be run on any _Linux_ distribution or _Windows_.
+The application is small, around 5MB, and does not need any dependency.
 
 ## Extensions
 
 Available extensions are:
 * [ConBee](https://phoscon.de/en/conbee), Dresden elektronik ConBee REST API  
 The recommended tool is [deCONZ](https://github.com/deconz-community/deconz-docker) using docker
-* [Philips Hue](http://meethue.com/), Hue Bridge REST API  
+* [Philips Hue](https://www.philips-hue.com/), Hue Bridge REST API  
 The recommended tool is the Hue Bridge
 * [Z-Wave JS](https://github.com/zwave-js), Z-Wave JS API  
 The recommended tool is [Zwave to MQTT](https://zwave-js.github.io/zwavejs2mqtt/) using docker
@@ -71,6 +78,16 @@ A chart of temperature sensors.
 
 An example of script to send a SMS on an intrusion.
 ![alarm-script](https://user-images.githubusercontent.com/9386420/170430789-86008c90-5a5a-4f2c-bd82-911addb9d373.png)
+
+## Setup
+
+Download the [latest](https://github.com/javalikescript/lha/releases/latest) release corresponding to your target OS.
+Unzip the archive and launch the engine using `bin/lua lha.lua -ll info`
+
+Open the web interface in a browser.
+Go to the extension section to add and configure your extensions.
+
+Note that you will need to provide an authorized user to use the ConBee or Hue bridge.
 
 ## Dependencies
 
