@@ -9,7 +9,7 @@
       <select v-model="path" v-on:change="openPath">
         <option value="" disabled selected>(Choose something)</option>
         <optgroup  v-for="thing in things" :label="thing.title" v-if="thing.archiveData">
-          <option v-for="(property, name) in thing.properties" v-if="!property.configuration" :value="thing.thingId + '/' + name">{{ property.title }}</option>
+          <option v-for="(property, name) in thing.properties" v-if="!(property.configuration || property.writeOnly)" :value="thing.thingId + '/' + name">{{ property.title }}</option>
         </optgroup>
       </select>
       <span>Duration:</span>
