@@ -4,7 +4,6 @@ local color = require('jls.util.color')
 local hex = require('jls.util.hex')
 
 local ThingProperty = require('lha.ThingProperty')
-local ThingEvent = require('lha.ThingEvent')
 
 -- Standard properties, see https://webthings.io/schemas/
 
@@ -198,7 +197,6 @@ return require('jls.lang.class').create(function(thing)
     self.type = tType or {}
     self.context = context or 'https://iot.mozilla.org/schemas'
     self.properties = {}
-    self.events = {}
   end
 
   --- Returns the id of this thing.
@@ -352,24 +350,6 @@ return require('jls.lang.class').create(function(thing)
     return names
   end
 
-  function thing:addEvent(name, event)
-    if type(event) == 'table' then
-      if not ThingEvent:isInstance(event) then
-        event = ThingEvent:new(event)
-      end
-      self.events[name] = event
-    end
-    return self
-  end
-
-  function thing:getEventDescriptions()
-    local descriptions = {}
-    for name, event in pairs(self.events) do
-      descriptions[name] = event:asEventDescription()
-    end
-    return descriptions
-  end
-
   --- Returns a description of this thing.
   -- @return this thing as a description.
   function thing:asThingDescription()
@@ -380,8 +360,8 @@ return require('jls.lang.class').create(function(thing)
       ['@context'] = self.context,
       [AT_TYPE] = self.type,
       properties = self:getPropertyDescriptions(),
-      events = self:getEventDescriptions(),
-      actions = {},
+      --events = {},
+      --actions = {},
       links = {},
       href = self.href
     }
