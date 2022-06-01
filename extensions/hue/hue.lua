@@ -48,7 +48,7 @@ local function onHueEvent(info)
       logger:fine('Hue event received '..(thing and 'v' or 'x')..' '..json.stringify(info, 2))
     end
     if thing then
-      hueBridge:lazyUpdateThing(thing, info)
+      hueBridge:updateThing(thing, info, true)
     end
   --elseif info.e == 'added' then
   --elseif info.e == 'deleted' then

@@ -70,7 +70,8 @@ local DEVICE = {
   TemperatureSensor = Thing.CAPABILITIES.TemperatureSensor,
   HumiditySensor = Thing.CAPABILITIES.HumiditySensor,
   BarometricPressureSensor = Thing.CAPABILITIES.BarometricPressureSensor,
-  PushButton = Thing.CAPABILITIES.PushButton,
+  DimmerSwitch = 'DimmerSwitch',
+  --OnOffSwitch = 'OnOffSwitch',
 }
 
 -- see https://developers.meethue.com/develop/hue-api/supported-devices/
@@ -83,7 +84,7 @@ local deviceByType = {
   ['Extended color light'] = DEVICE.ExtendedColorLight,
   ['Dimmable light'] = DEVICE.DimmableLight,
   ['Dimmable plug-in unit'] = DEVICE.DimmableLight,
-  ['On/Off light'] = DEVICE.OnOffLight, 
+  ['On/Off light'] = DEVICE.OnOffLight,
   ['On/Off plug-in unit'] = DEVICE.OnOffLight,
   ['ZLLLightLevel'] = DEVICE.LightLevelSensor,
   ['ZHALightLevel'] = DEVICE.LightLevelSensor,
@@ -91,8 +92,8 @@ local deviceByType = {
   ['ZHATemperature'] = DEVICE.TemperatureSensor,
   ['ZLLPresence'] = DEVICE.MotionSensor,
   ['ZHAPresence'] = DEVICE.MotionSensor,
-  ['ZLLSwitch'] = DEVICE.PushButton,
-  ['ZHASwitch'] = DEVICE.PushButton,
+  ['ZLLSwitch'] = DEVICE.DimmerSwitch,
+  ['ZHASwitch'] = DEVICE.DimmerSwitch,
   ['ZHAHumidity'] = DEVICE.HumiditySensor,
   ['ZHAPressure'] = DEVICE.BarometricPressureSensor,
   --['Daylight'] = 0,
@@ -106,7 +107,7 @@ local capabilitiesByDevice = {
   [DEVICE.LightLevelSensor] = {Thing.CAPABILITIES.LightSensor},
   [DEVICE.TemperatureSensor] = {Thing.CAPABILITIES.TemperatureSensor},
   [DEVICE.MotionSensor] = {Thing.CAPABILITIES.MotionSensor},
-  [DEVICE.PushButton] = {Thing.CAPABILITIES.PushButton},
+  [DEVICE.DimmerSwitch] = {Thing.CAPABILITIES.PushButton},
   [DEVICE.HumiditySensor] = {Thing.CAPABILITIES.HumiditySensor},
   [DEVICE.BarometricPressureSensor] = {Thing.CAPABILITIES.BarometricPressureSensor},
 }
@@ -119,7 +120,7 @@ local namesByDevice = {
   [DEVICE.LightLevelSensor] = {'lightlevel'},
   [DEVICE.TemperatureSensor] = {'temperature'},
   [DEVICE.MotionSensor] = {'presence', 'battery', 'enabled', 'sensitivity'},
-  [DEVICE.PushButton] = {'battery'},
+  [DEVICE.DimmerSwitch] = {'buttonOn', 'buttonOff', 'buttonDimUp', 'buttonDimDown', 'battery'},
   [DEVICE.HumiditySensor] = {'humidity'},
   [DEVICE.BarometricPressureSensor] = {'pressure'},
 }
@@ -128,7 +129,7 @@ local titleByDevice = {
   [DEVICE.LightLevelSensor] = 'Light Level',
   [DEVICE.TemperatureSensor] = 'Temperature',
   [DEVICE.MotionSensor] = 'Motion',
-  [DEVICE.PushButton] = 'Switch',
+  [DEVICE.DimmerSwitch] = 'Switch',
   [DEVICE.HumiditySensor] = 'Relative Humidity',
   [DEVICE.BarometricPressureSensor] = 'Atmospheric Pressure',
 }
@@ -144,7 +145,10 @@ local categoryByName = {
   temperature = CONST.state,
   pressure = CONST.state,
   lastupdated = CONST.state,
-  buttonevent = CONST.state,
+  buttonOn = CONST.state,
+  buttonOff = CONST.state,
+  buttonDimUp = CONST.state,
+  buttonDimDown = CONST.state,
   battery = CONST.config,
   enabled = CONST.config,
   reachable = CONST.config,
@@ -152,20 +156,18 @@ local categoryByName = {
   sensitivity = CONST.config,
 }
 
-local allNames = Map.keys(categoryByName)
-
-local BUTTON = {
-  ON = 1000,
-  DIM_UP = 2000,
-  DIM_DOWN = 3000,
-  OFF = 4000
+local BUTTON_NAME = {
+  [1] = 'buttonOn',
+  [2] = 'buttonDimUp',
+  [3] = 'buttonDimDown',
+  [4] = 'buttonOff',
 }
 
 local BUTTON_EVENT = {
-  INITIAL_PRESS = 0,
-  HOLD = 1,
-  SHORT_RELEASED = 2,
-  LONG_RELEASED = 3
+  [0] = 'pressed',
+  [1] = 'hold',
+  [2] = 'released',
+  [3] = 'long-released',
 }
 
 local function isValue(value)
@@ -251,6 +253,21 @@ local function computeHumidity(info)
   end
 end
 
+local function computeButtonEvent(info, name)
+  local value = (info.state or {}).buttonevent
+  --logger:info('computeButtonEvent() buttonevent: '..tostring(value))
+  -- i want to receive an event after short press, during hold, after long press
+  if type(value) == 'number' then
+    local event = value % 10
+    local button = value // 1000
+    local eventName = BUTTON_EVENT[event]
+    local buttonName = BUTTON_NAME[button]
+    if eventName and name == buttonName then
+      return eventName
+    end
+  end
+end
+
 local function computeEnabled(info)
   return (info.config or {}).on
 end
@@ -266,7 +283,7 @@ local function getInfoProperty(info, name)
     if t then
       local value = t[name]
       if isValue(value) then
-        return value
+        return value, name
       end
     end
   end
@@ -284,6 +301,10 @@ local computeFnByName = {
   humidity = computeHumidity,
   temperature = computeTemperature,
   enabled = computeEnabled,
+  buttonOn = computeButtonEvent,
+  buttonOff = computeButtonEvent,
+  buttonDimUp = computeButtonEvent,
+  buttonDimDown = computeButtonEvent,
 }
 
 local toPostFnByName = {
@@ -298,18 +319,6 @@ local function updateValue(thing, info, name)
   local value = computeFn(info, name)
   if isValue(value) then
     thing:updatePropertyValue(name, value)
-  end
-end
-
-local function updateValues(thing, info, names)
-  for _, name in ipairs(names) do
-    updateValue(thing, info, name)
-  end
-end
-
-local function lazyUpdateValue(thing, info, name)
-  if thing:hasProperty(name) then
-    updateValue(thing, info, name)
   end
 end
 
@@ -489,19 +498,9 @@ return require('jls.lang.class').create(function(hueBridge)
     })
   end
 
-  function hueBridge:lazyUpdateThing(thing, info)
-    for _, name in ipairs(allNames) do
-      lazyUpdateValue(thing, info, name)
-    end
-  end
-
-  function hueBridge:updateThing(thing, info)
-    local alias = deviceByType[info.type]
-    if alias then
-      local names = namesByDevice[alias]
-      if names then
-        updateValues(thing, info, names)
-      end
+  function hueBridge:updateThing(thing, info, isEvent)
+    for name in pairs(thing:getProperties()) do
+      updateValue(thing, info, name)
     end
   end
 
@@ -532,6 +531,18 @@ end, function(HueBridge)
   HueBridge.CONST = CONST
   HueBridge.DEVICE = DEVICE
 
+  local function buttonMetadata(title)
+    return {
+      ['@type'] = 'HueButtonEvent',
+      type = 'string',
+      title = title,
+      description = 'The button is pressed or released',
+      enum = {'pressed', 'hold', 'released', 'long-released'},
+      readOnly = true,
+      writeOnly = true,
+    }
+  end
+
   local PROPERTY_METADATA_BY_NAME = {
     sensitivity = {
       ['@type'] = 'LevelProperty',
@@ -540,6 +551,10 @@ end, function(HueBridge)
       description = 'The sensor sensitivity',
       configuration = true,
     },
+    buttonOn = buttonMetadata('On Button'),
+    buttonOff = buttonMetadata('Off Button'),
+    buttonDimUp = buttonMetadata('Dim Up Button'),
+    buttonDimDown = buttonMetadata('Dim Down Button')
   }
 
   function HueBridge.createThingForType(info)
