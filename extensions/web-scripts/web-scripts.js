@@ -40,30 +40,28 @@ define(['requirePath', './scripts.xml', './script-editor.xml'], function(require
     var lhaEventColor = 48;
     var lhaStatementColor = 58;
     // Prepare data fields
-    var dataPathField = {
-      "type": "field_input",
-      "name": "PATH",
-      "text": "some/path"
-    };
+    var getThingPathOptions = [];
+    var setThingPathOptions = [];
+    var eventThingPathOptions = [];
     if (self.things && self.things.length > 0) {
       // thing in things thing.title
-      // v-for="(property, name) in thing.properties thing.thingId + '/' + name  property.title
-      var thingPathOptions = [];
       for (var i = 0; i < self.things.length; i++) {
         var thing = self.things[i];
         for (var name in thing.properties) {
           var property = thing.properties[name];
-          thingPathOptions.push([
+          var option = [
             thing.title + ' - ' + property.title,
             thing.thingId + '/' + name
-          ]);
+          ];
+          if (!property.readOnly) {
+            setThingPathOptions.push(option);
+          }
+          if (!property.writeOnly) {
+            getThingPathOptions.push(option);
+          }
+          eventThingPathOptions.push(option);
         }
       }
-      dataPathField = {
-        "type": "field_dropdown",
-        "name": "PATH",
-        "options": thingPathOptions
-      };
     }
     // Register custom blocks
     Blockly.Blocks['lha_event'] = {
@@ -155,7 +153,11 @@ define(['requirePath', './scripts.xml', './script-editor.xml'], function(require
       init: function() {
         this.jsonInit({
           "message0": "get %1",
-          "args0": [dataPathField],
+          "args0": [{
+            "type": "field_dropdown",
+            "name": "PATH",
+            "options": getThingPathOptions
+          }],
           "output": null,
           "colour": lhaStatementColor
         });
@@ -170,7 +172,11 @@ define(['requirePath', './scripts.xml', './script-editor.xml'], function(require
       init: function() {
         this.jsonInit({
           "message0": "set %1 %2",
-          "args0": [dataPathField, {
+          "args0": [{
+            "type": "field_dropdown",
+            "name": "PATH",
+            "options": setThingPathOptions
+          }, {
             "type": "input_value",
             "name": "VALUE"
             //"check": "String"
@@ -190,7 +196,11 @@ define(['requirePath', './scripts.xml', './script-editor.xml'], function(require
       init: function() {
         this.jsonInit({
           "message0": "watch %1",
-          "args0": [dataPathField],
+          "args0": [{
+            "type": "field_dropdown",
+            "name": "PATH",
+            "options": eventThingPathOptions
+          }],
           "message1": "new: %1",
           "args1": [{
             "type": "field_variable",

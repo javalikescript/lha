@@ -91,7 +91,8 @@ local function createThing(targetName)
     ['@type'] = 'MessageProperty',
     title = 'Message',
     type = 'string',
-    description = 'Send the message'
+    description = 'Send the message',
+    writeOnly = true
   }, '')
 end
 

@@ -2,6 +2,14 @@
 local tables = require('jls.util.tables')
 --local logger = require('jls.lang.logger')
 
+local function returnIdentity(value)
+  return value
+end
+
+local function returnNil()
+  return nil
+end
+
 --- The ThingProperty class represents a thing property.
 -- @type ThingProperty
 return require('jls.lang.class').create(function(thingProperty)
@@ -15,10 +23,10 @@ return require('jls.lang.class').create(function(thingProperty)
   --   - A title (A string providing a human friendly name)
   --   - A description (A string providing a human friendly description)
   --   - enum (an enumeration of possible values for the property)
-  --   - readOnly (A boolean indicating whether or not the property is read-only, defaulting to false)
-  --   - configuration (A boolean indicating whether or not the property is a configuration, defaulting to false)
-  --   - observable (A boolean indicating whether or not the property is observable, defaulting to false)
   --   - A minimum and maximum (numeric values)
+  --   - readOnly (A boolean indicating whether or not the property is read-only, defaulting to false)
+  --   - writeOnly (A boolean indicating whether or not the property is write-only, defaulting to false)
+  --   - configuration (A boolean indicating whether or not the property is a configuration, defaulting to false)
   -- @function ThingProperty:new
   -- @param metadata the property metadata, i.e. type, description, unit, etc., as a table
   -- @param[opt] initialValue the property value
@@ -26,12 +34,22 @@ return require('jls.lang.class').create(function(thingProperty)
   -- @usage
   --local property = ThingProperty:new()
   function thingProperty:initialize(metadata, initialValue)
-    self.value = initialValue
     self.metadata = metadata or {}
+    self.value = initialValue
+    if self:isReadOnly() then
+      self.setValue = returnIdentity
+    end
+    if self:isWriteOnly() then
+      self.getValue = returnNil
+    end
   end
 
   function thingProperty:isReadOnly()
     return self.metadata.readOnly == true
+  end
+
+  function thingProperty:isWriteOnly()
+    return self.metadata.writeOnly == true
   end
 
   function thingProperty:isConfiguration()
