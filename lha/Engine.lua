@@ -429,6 +429,7 @@ return class.create(function(engine)
 
   function engine:loadThing(thingId, thingConfiguration)
     local thing = EngineThing:new(self, thingConfiguration.extensionId, thingId, thingConfiguration.description)
+    -- TODO load thing property values
     self.things[thingId] = thing
     return thing
   end
@@ -570,6 +571,7 @@ return class.create(function(engine)
     self:publishEvent('shutdown')
     self.configHistory:saveJson()
     self.dataHistory:saveJson()
+    -- TODO save thing property values
     self:saveThingValues()
   end
 

@@ -82,12 +82,10 @@ return class.create(Thing, function(engineThing, super)
       local property = self:getProperty(name)
       if property then
         local path = self.thingId..'/'..name
-        local prev
         if self:isArchiveData() and not property:isConfiguration() then
-          prev = self.engine.dataHistory:aggregateValue(path, value)
-        else
-          prev = property:getValue()
+          self.engine.dataHistory:aggregateValue(path, value)
         end
+        local prev = property:getValue()
         if prev ~= value then
           self.engine:publishRootChange('data/'..path, value, prev)
         end

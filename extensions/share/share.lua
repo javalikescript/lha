@@ -21,7 +21,7 @@ local function addContext(server, ...)
 end
 
 local function isValidPath(name)
-  if name == 'engine' or name == 'things' then
+  if not name or name == '' or name == 'engine' or name == 'things' then
     logger:warn('Invalid share name "'..name..'"')
     return false
   end
