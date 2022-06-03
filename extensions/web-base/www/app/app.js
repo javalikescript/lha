@@ -364,7 +364,7 @@ var homePage = new Vue({
   computed: {
     sortedTiles: function() {
       var tiles = [].concat(this.tiles);
-      if (typeof webBaseConfig === 'object') {
+      if ((typeof webBaseConfig === 'object') && Array.isArray(webBaseConfig.links)) {
         tiles = tiles.concat(webBaseConfig.links);
       }
       tiles.sort(compareByName);
