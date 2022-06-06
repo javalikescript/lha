@@ -429,7 +429,6 @@ return class.create(function(engine)
 
   function engine:loadThing(thingId, thingConfiguration)
     local thing = EngineThing:new(self, thingConfiguration.extensionId, thingId, thingConfiguration.description)
-    -- TODO load thing property values
     self.things[thingId] = thing
     return thing
   end
@@ -470,7 +469,9 @@ return class.create(function(engine)
       for thingId, values in pairs(t) do
         local thing = self.things[thingId]
         if thing then
-          thing:setPropertyValues(values)
+          for name, value in pairs(values) do
+            thing:updatePropertyValue(name, value)
+          end
         end
       end
       file:delete()
@@ -571,7 +572,6 @@ return class.create(function(engine)
     self:publishEvent('shutdown')
     self.configHistory:saveJson()
     self.dataHistory:saveJson()
-    -- TODO save thing property values
     self:saveThingValues()
   end
 

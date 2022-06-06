@@ -313,7 +313,6 @@ return require('jls.lang.class').create(function(thing)
   -- @param name The property's name
   -- @param value The property value to update
   function thing:updatePropertyValue(name, value)
-    -- should we accept nil value
     local property = self.properties[name]
     if property then
       property:setValue(value)
@@ -334,12 +333,6 @@ return require('jls.lang.class').create(function(thing)
       props[name] = property:getValue()
     end
     return props
-  end
-
-  function thing:setPropertyValues(values)
-    for name, value in pairs(values) do
-      self:updatePropertyValue(name, value)
-    end
   end
 
   function thing:getPropertyNames()
