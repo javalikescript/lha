@@ -54,45 +54,54 @@ return class.create(Thing, function(engineThing, super)
 
   function engineThing:setPropertyValue(name, value)
     local property = self:getProperty(name)
-    if not property or property:isReadOnly() then
-      logger:warn('Cannot update property "'..name..'"')
-      return
-    end
-    if self.setterFn then
-      local r = self:setterFn(name, value)
-      if r ~= nil then
-        if Promise:isInstance(r) then
-          r:next(function(v)
-            if v ~= nil then
-              super.setPropertyValue(self, name, v)
+    if property then
+      if not property:isReadOnly() then
+        if self.setterFn then
+          local r = self:setterFn(name, value)
+          if r ~= nil then
+            if Promise:isInstance(r) then
+              r:next(function(v)
+                if v ~= nil then
+                  self:updatePropertyValue(name, v)
+                end
+              end)
+            else
+              self:updatePropertyValue(name, r)
             end
-          end)
+          end
         else
-          super.setPropertyValue(self, name, r)
+          self:updatePropertyValue(name, value)
         end
+      else
+        logger:warn('Cannot set read-only property "'..name..'"')
       end
     else
-      super.setPropertyValue(self, name, value)
+      logger:warn('Cannot set unknown property "'..name..'"')
     end
   end
 
   function engineThing:updatePropertyValue(name, value)
-    if isValidValue(value) then
-      self.lastupdated = getUpdateTime()
-      local property = self:getProperty(name)
-      if property then
+    local property = self:getProperty(name)
+    if property then
+      if isValidValue(value) then
         local path = self.thingId..'/'..name
-        if self:isArchiveData() and not property:isConfiguration() then
-          self.engine.dataHistory:aggregateValue(path, value)
+        local prev
+        if not property:isWriteOnly() then
+          if self:isArchiveData() and not property:isConfiguration() then
+            self.engine.dataHistory:aggregateValue(path, value)
+          end
+          prev = property:getValue()
         end
-        local prev = property:getValue()
         if prev ~= value then
           self.engine:publishRootChange('data/'..path, value, prev)
         end
+        self.lastupdated = getUpdateTime()
+        property:setValue(value)
+      else
+        logger:warn('Invalid value on update property "'..name..'"')
       end
-      super.updatePropertyValue(self, name, value)
     else
-      logger:warn('Invalid number value on update property "'..name..'"')
+      logger:warn('Cannot update unknown property "'..name..'"')
     end
   end
 

@@ -2,14 +2,6 @@
 local tables = require('jls.util.tables')
 --local logger = require('jls.lang.logger')
 
-local function returnIdentity(value)
-  return value
-end
-
-local function returnNil()
-  return nil
-end
-
 --- The ThingProperty class represents a thing property.
 -- @type ThingProperty
 return require('jls.lang.class').create(function(thingProperty)
@@ -36,12 +28,6 @@ return require('jls.lang.class').create(function(thingProperty)
   function thingProperty:initialize(metadata, initialValue)
     self.metadata = metadata or {}
     self.value = initialValue
-    if self:isReadOnly() then
-      self.setValue = returnIdentity
-    end
-    if self:isWriteOnly() then
-      self.getValue = returnNil
-    end
   end
 
   function thingProperty:isReadOnly()
