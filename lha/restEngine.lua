@@ -113,6 +113,7 @@ local REST_ADMIN = {
     return {
       ['CPU Time'] = os.clock(),
       ['Server Time'] = os.time(),
+      ['Server Date'] = os.date(),
       ['Lua Memory Size'] = math.floor(collectgarbage('count') * 1024),
       ['Lua Registry Entries'] = Map.size(debug.getregistry()),
       ['Loaded Packages'] = Map.size(package.loaded),
