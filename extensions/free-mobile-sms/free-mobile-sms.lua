@@ -96,10 +96,8 @@ local function createThing(targetName)
   }, '')
 end
 
-local thing, watcher
-
 extension:subscribeEvent('things', function()
-  thing = extension:syncDiscoveredThingByKey('lua', createThing)
+  local thing = extension:syncDiscoveredThingByKey('lua', createThing)
   local p = thing:getProperty('message')
   if p then
     p.setValue = onMessage

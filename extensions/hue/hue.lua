@@ -12,9 +12,22 @@ local thingsMap = {}
 local lastSensorPollTime
 local lastLightPollTime
 
+local function setThingPropertyValue(thing, name, value)
+  if hueBridge and thing.hueId then
+    hueBridge:setThingPropertyValue(thing, thing.hueId, name, value):next(function()
+      thing:updatePropertyValue(name, value)
+    end)
+  else
+    thing:updatePropertyValue(name, value)
+  end
+end
+
 extension:subscribeEvent('things', function()
   logger:info('Looking for '..extension:getPrettyName()..' things')
   thingsMap = extension:getThingsByDiscoveryKey()
+  for _, thing in pairs(thingsMap) do
+    thing.setPropertyValue = setThingPropertyValue
+  end
 end)
 
 local function onHueThing(id, info, time, lastTime)
@@ -31,9 +44,7 @@ local function onHueThing(id, info, time, lastTime)
       thingsMap[info.uniqueid] = thing
     end
     if thing then
-      if not thing.connected and thing.connect then
-        hueBridge:connectThing(thing, id)
-      end
+      thing.hueId = id
       hueBridge:updateThing(thing, info)
     end
   end
@@ -79,11 +90,6 @@ extension:subscribeEvent('poll', function()
       end
       lastLightPollTime = time
     end
-    --[[for discoveryKey, thing in pairs(thingsMap) do
-      if not thing:isConnected() then
-        thing:setReachable(false)
-      end
-    end]]
   end):catch(function(err)
     logger:warn('fail to get '..extension:getPrettyName()..' things, due to "'..tostring(err)..'"')
   end)

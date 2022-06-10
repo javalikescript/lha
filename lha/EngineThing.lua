@@ -30,9 +30,6 @@ return class.create(Thing, function(engineThing, super)
     self.engine = engine
     self.extensionId = extensionId
     self.thingId = thingId
-    self.connected = false
-    self.setterFn = false
-    self.lastupdated = 0
     self:refreshConfiguration()
   end
 
@@ -56,22 +53,7 @@ return class.create(Thing, function(engineThing, super)
     local property = self:getProperty(name)
     if property then
       if not property:isReadOnly() then
-        if self.setterFn then
-          local r = self:setterFn(name, value)
-          if r ~= nil then
-            if Promise:isInstance(r) then
-              r:next(function(v)
-                if v ~= nil then
-                  self:updatePropertyValue(name, v)
-                end
-              end)
-            else
-              self:updatePropertyValue(name, r)
-            end
-          end
-        else
-          self:updatePropertyValue(name, value)
-        end
+        self:updatePropertyValue(name, value)
       else
         logger:warn('Cannot set read-only property "'..name..'"')
       end
@@ -95,7 +77,6 @@ return class.create(Thing, function(engineThing, super)
         if prev ~= value then
           self.engine:publishRootChange('data/'..path, value, prev)
         end
-        self.lastupdated = getUpdateTime()
         property:setValue(value)
       else
         logger:warn('Invalid value on update property "'..name..'"')
@@ -105,34 +86,9 @@ return class.create(Thing, function(engineThing, super)
     end
   end
 
-  function engineThing:connect(setterFn)
-    self.connected = true
-    self.setterFn = (type(setterFn) == 'function') and setterFn or false
-    return self
-  end
-
-  function engineThing:disconnect()
-    local setterFn = self.setterFn
-    self.connected = false
-    self.setterFn = false
-    return setterFn
-  end
-
-  function engineThing:isConnected()
-    return self.connected
-  end
-
-  function engineThing:isReachable(since, time)
-    since = since or 3600000
-    time = time or Date.now()
-    return (time - self.lastupdated) < since
-  end
-
   function engineThing:asEngineThingDescription()
     local description = self:asThingDescription()
     description.archiveData = self:isArchiveData()
-    --description.connected = self:isConnected()
-    --description.reachable = self:isReachable()
     description.extensionId = self.extensionId
     description.thingId = self.thingId
     return description

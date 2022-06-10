@@ -515,15 +515,9 @@ return require('jls.lang.class').create(function(hueBridge)
       path = CONST.sensors
     end
     if path and category and t then
-      self:put(path..'/'..id..'/'..category, t)
+      return self:put(path..'/'..id..'/'..category, t)
     end
-  end
-
-  function hueBridge:connectThing(thing, id)
-    --thing.hueId = id
-    return thing:connect(function(t, name, value)
-      self:setThingPropertyValue(t, id, name, value)
-    end)
+    return Promise.resolve()
   end
 
 end, function(HueBridge)
