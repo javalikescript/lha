@@ -21,6 +21,7 @@
     <block type="lha_clear_timer"></block>
     <block type="lha_to_string"></block>
     <block type="lha_time"></block>
+    <block type="lha_date"></block>
     <block type="lha_log"></block>
   </category>
   <sep></sep>

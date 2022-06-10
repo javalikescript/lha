@@ -73,7 +73,7 @@ define(['requirePath', './scripts.xml', './script-editor.xml'], function(require
             "name": "EVENT",
             "options": [
               [ "startup", "startup" ],
-              [ "poll", "polling" ],
+              [ "polling", "poll" ],
               [ "shutdown", "shutdown" ]
             ]
           }],
@@ -314,6 +314,42 @@ define(['requirePath', './scripts.xml', './script-editor.xml'], function(require
     };
     Blockly.Lua['lha_time'] = function(block) {
       var code = "os.time()";
+      return [code, Blockly.JavaScript.ORDER_MEMBER];
+    };
+    Blockly.Blocks['lha_date'] = {
+      init: function() {
+        this.jsonInit({
+          "message0": "get date field %1 from %2",
+          "args0": [{
+            "type": "field_dropdown",
+            "name": "FIELD",
+            "options": [
+              [ "yearweek (0-53)", "W" ],
+              [ "weekday (0-6)", "w" ],
+              [ "year", "Y" ],
+              [ "month (1-12)", "m" ],
+              [ "day", "d" ],
+              [ "minutes", "M" ],
+              [ "hours", "H" ],
+              [ "seconds", "S" ]
+            ]
+          }, {
+            "type": "input_value",
+            "name": "VALUE"
+          }],
+          "output": null,
+          "colour": lhaStatementColor
+        });
+      }
+    };
+    Blockly.Lua['lha_date'] = function(block) {
+      var field = block.getFieldValue('FIELD');
+      var value = Blockly.Lua.valueToCode(block, 'VALUE', Blockly.JavaScript.ORDER_NONE);
+      var code = "os.date('%" + field + "', " + value + ")";
+      var numRe = new RegExp('^[VwYmdMHS]$');
+      if (numRe.test(field)) {
+        code = "tonumber(" + code + ")";
+      }
       return [code, Blockly.JavaScript.ORDER_MEMBER];
     };
     // Registers action buttons
