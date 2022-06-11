@@ -324,14 +324,15 @@ define(['requirePath', './scripts.xml', './script-editor.xml'], function(require
             "type": "field_dropdown",
             "name": "FIELD",
             "options": [
-              [ "yearweek (0-53)", "W" ],
+              [ "hours (decimal)", "H.ms" ],
               [ "weekday (0-6)", "w" ],
-              [ "year", "Y" ],
               [ "month (1-12)", "m" ],
               [ "day", "d" ],
-              [ "minutes", "M" ],
               [ "hours", "H" ],
-              [ "seconds", "S" ]
+              [ "minutes", "M" ],
+              [ "seconds", "S" ],
+              [ "yearweek (0-53)", "W" ],
+              [ "year", "Y" ]
             ]
           }, {
             "type": "input_value",
@@ -345,10 +346,11 @@ define(['requirePath', './scripts.xml', './script-editor.xml'], function(require
     Blockly.Lua['lha_date'] = function(block) {
       var field = block.getFieldValue('FIELD');
       var value = Blockly.Lua.valueToCode(block, 'VALUE', Blockly.JavaScript.ORDER_NONE);
-      var code = "os.date('%" + field + "', " + value + ")";
-      var numRe = new RegExp('^[VwYmdMHS]$');
-      if (numRe.test(field)) {
-        code = "tonumber(" + code + ")";
+      var code;
+      if (field === 'H.ms') {
+        code = "(function(h, m, s) return tonumber(h) + tonumber(m) / 60 + tonumber(s) / 3600; end)(string.match(os.date('%H %M %S', " + value + "), '(%d+) (%d+) (%d+)'))";
+      } else {
+        code = "tonumber(os.date('%" + field + "', " + value + "))";
       }
       return [code, Blockly.JavaScript.ORDER_MEMBER];
     };
