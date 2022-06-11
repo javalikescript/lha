@@ -132,7 +132,12 @@
                     ]
                   },
                   "readOnly": {
-                    "title": "Read Only Property",
+                    "title": "Non Writable Property",
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "writeOnly": {
+                    "title": "Non Readable Property",
                     "type": "boolean",
                     "default": false
                   },
