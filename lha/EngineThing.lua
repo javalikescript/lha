@@ -52,10 +52,10 @@ return class.create(Thing, function(engineThing, super)
   function engineThing:setPropertyValue(name, value)
     local property = self:getProperty(name)
     if property then
-      if not property:isReadOnly() then
+      if property:isWritable() then
         self:updatePropertyValue(name, value)
       else
-        logger:warn('Cannot set read-only property "'..name..'"')
+        logger:warn('Cannot set property "'..name..'"')
       end
     else
       logger:warn('Cannot set unknown property "'..name..'"')
@@ -68,7 +68,7 @@ return class.create(Thing, function(engineThing, super)
       if isValidValue(value) then
         local path = self.thingId..'/'..name
         local prev
-        if not property:isWriteOnly() then
+        if property:isReadable() then
           if self:isArchiveData() and not property:isConfiguration() then
             self.engine.dataHistory:aggregateValue(path, value)
           end

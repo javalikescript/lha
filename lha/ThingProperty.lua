@@ -38,6 +38,14 @@ return require('jls.lang.class').create(function(thingProperty)
     return self.metadata.writeOnly == true
   end
 
+  function thingProperty:isReadable()
+    return self.metadata.writeOnly ~= true
+  end
+
+  function thingProperty:isWritable()
+    return self.metadata.readOnly ~= true
+  end
+
   function thingProperty:isConfiguration()
     return self.metadata.configuration == true
   end
