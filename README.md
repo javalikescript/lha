@@ -67,6 +67,8 @@ The following devices are already availables.
   * Switch ZG9101SAC
 * FIBARO
   * Smoke Sensor
+* ZOOZ
+  * ZSE44 Temperature Humidity XS Sensor
 
 ## Screenshots
 

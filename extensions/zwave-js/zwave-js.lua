@@ -56,6 +56,11 @@ local function createThingFromNode(node)
       Thing.CAPABILITIES.SmokeSensor,
       Thing.CAPABILITIES.TemperatureSensor,
     }):addPropertiesFromNames('smoke', 'temperature')
+  elseif productLabel == 'ZSE44' then
+    return Thing:new(getNodeName(node, 'Temperature Sensor'), 'Temperature Sensor', {
+      Thing.CAPABILITIES.HumiditySensor,
+      Thing.CAPABILITIES.TemperatureSensor,
+    }):addPropertiesFromNames('humidity', 'temperature')
   end
 end
 
@@ -65,7 +70,12 @@ local function updateThingFromNodeInfo(thing, info)
   local value = info.value or info.newValue
   if cc == CC.MULTILEVEL then
     if property == 'Air temperature' then
+      if info.metadata and info.metadata.unit == '°F' then
+        value = ((value - 32) * 50 // 9) / 10
+      end
       thing:updatePropertyValue('temperature', value)
+    elseif property == 'Humidity' then
+      thing:updatePropertyValue('humidity', value)
     end
   elseif cc == CC.ALARM then
     if property == 'Smoke Alarm' then
@@ -262,6 +272,7 @@ local function startWebSocket(wsConfig)
         end
       elseif message.type == 'version' then
         sendWebSocket('start_listening'):next(function(result)
+          --logger:info('Z-Wave start_listening result: '..json.stringify(result, 2))
           for _, node in ipairs(result.state.nodes) do
             onZWaveNode(node)
           end
