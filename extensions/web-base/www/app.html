@@ -291,6 +291,9 @@
         <option v-for="ev in enumValues" :value="ev.const">{{ev.title}}</option>
       </select>
     </div>
+    <div v-if="hasDescription">
+      <span>{{ schema.description }}</span>
+    </div>
     <ul class="json-properties" v-show="open" v-if="hasProperties">
       <li is="json-item" v-for="n in propertyNames" :key="n" :name="n" :pobj="obj" :obj="obj[n]" :schema="schema.properties[n]" :root="root"></li>
     </ul>

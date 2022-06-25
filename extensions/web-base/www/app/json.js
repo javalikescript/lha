@@ -161,20 +161,26 @@ Vue.component('json-item', {
       }
       return this.name || 'Value';
     },
+    hasDescription: function() {
+      return this.schema && (typeof this.schema.description === 'string');
+    },
     hasStringValue: function() {
       return this.schema && (this.schema.type === 'string');
     },
     hasEnumValues: function() {
-      return this.schema && (Array.isArray(this.schema.enum) || Array.isArray(this.schema.enumValues));
+      var schema = this.schema;
+      return schema && (Array.isArray(schema.enum) || Array.isArray(schema.enumValues));
     },
     hasNumberValue: function() {
-      return this.schema && ((this.schema.type === 'number') || (this.schema.type === 'integer'));
+      var schema = this.schema;
+      return schema && ((schema.type === 'number') || (schema.type === 'integer'));
     },
     hasBooleanValue: function() {
       return this.schema && (this.schema.type === 'boolean');
     },
     hasProperties: function() {
-      return this.schema && (this.schema.type === 'object') && (typeof this.schema.properties === 'object');
+      var schema = this.schema;
+      return schema && (schema.type === 'object') && (typeof schema.properties === 'object');
     },
     propertyNames: function() {
       var names = [];
