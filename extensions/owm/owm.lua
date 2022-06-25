@@ -116,20 +116,21 @@ local function updateWeatherThing(thing, w)
   if not (thing and type(w) == 'table') then
     return
   end
-  if (w.main) then
+  --logger:info('rain '..json.stringify(w, 2))
+  if w.main then
     -- temp_min temp_max
     thing:updatePropertyValue('temperature', w.main.temp)
     thing:updatePropertyValue('humidity', w.main.humidity)
     thing:updatePropertyValue('pressure', w.main.pressure)
   end
-  if (w.clouds) then
+  if w.clouds then
     thing:updatePropertyValue('cloud', w.clouds.all)
   end
-  if (w.wind) then
+  if w.wind then
     thing:updatePropertyValue('windSpeed', w.wind.speed)
     thing:updatePropertyValue('windDirection', w.wind.deg)
   end
-  if (w.rain) then
+  if w.rain and w.rain['3h'] then
     thing:updatePropertyValue('rain', w.rain['3h'])
   end
   -- sys.sunrise: 1485720272
