@@ -45,7 +45,7 @@ local function getNodeDiscoveryId(node)
   local nodeId = node.nodeId or node.id
   local deviceId = getNodeDeviceId(node)
   if nodeId and deviceId then
-    return nodeId..'-'..deviceId
+    return tostring(nodeId)..'-'..deviceId
   end
 end
 
@@ -94,9 +94,8 @@ local function updateThingFromNode(thing, node)
 end
 
 
-local mqttClient
-local webSocket
 local thingsMap = {}
+local thingsByNodeId = {}
 
 local function onZWaveNode(node)
   local did = getNodeDiscoveryId(node)
@@ -105,7 +104,9 @@ local function onZWaveNode(node)
     if thing == nil then
       thing = createThingFromNode(node)
       if thing then
-        logger:info('Z-Wave node '..did..' found '..thing:getTitle()..' "'..thing:getDescription()..'"')
+        if logger:isLoggable(logger.INFO) then
+          logger:info('Z-Wave node '..did..' found '..thing:getTitle()..' "'..thing:getDescription()..'"')
+        end
         extension:discoverThing(did, thing)
       else
         thing = false
@@ -113,6 +114,9 @@ local function onZWaveNode(node)
       thingsMap[did] = thing
     end
     if thing then
+      if node.nodeId then
+        thingsByNodeId[node.nodeId] = thing
+      end
       updateThingFromNode(thing, node)
     end
   end
@@ -120,26 +124,17 @@ end
 
 local function onZWaveNodeEvent(event)
   -- see https://zwave-js.github.io/node-zwave-js/#/api/node?id=zwavenode-events
-  if event.source == 'node' and event.event == 'value updated' then
-    local nodeId = event.nodeId
-    local thing = thingsMap[nodeId]
+  if event.source == 'node' and event.event == 'value updated' and event.nodeId then
+    local thing = thingsByNodeId[event.nodeId]
     if thing then
       updateThingFromNodeInfo(thing, event.args)
+    else
+      if logger:isLoggable(logger.FINE) then
+        logger:fine('Z-Wave JS event without thing: '..json.stringify(event, 2))
+      end
     end
   end
 end
-
-local function cleanup()
-  if mqttClient then
-    mqttClient:close(false)
-    mqttClient = nil
-  end
-  if webSocket then
-    webSocket:close(false)
-    webSocket = nil
-  end
-end
-
 
 ------------------------------------------------------------
 -- MQTT
@@ -156,7 +151,7 @@ local function startMqtt(mqttConfig)
   local apiPattern = '^'..strings.escape(apiTopic)..'([^/]+)$'
   local nodeStatusPattern = '^'..strings.escape(mqttConfig.prefix)..'/([^/]+)/([^/]+)/status$'
   logger:info('Z-Wave JS API pattern "'..apiPattern..'"')
-  mqttClient = mqtt.MqttClient:new()
+  local mqttClient = mqtt.MqttClient:new()
   function mqttClient:onMessage(topicName, payload)
     if logger:isLoggable(logger.FINER) then
       logger:finer('Received on topic "'..topicName..'": '..payload)
@@ -199,6 +194,7 @@ local function startMqtt(mqttConfig)
       end)
     end)
   end)
+  return mqttClient
 end
 
 
@@ -206,31 +202,37 @@ end
 -- WebSocket
 ------------------------------------------------------------
 
-local function sendWebSocket(command, options)
-  if webSocket then
-    webSocket.zwMsgId = webSocket.zwMsgId + 1
-    local messageId = 'lha-zwave-js-'..tostring(webSocket.zwMsgId)
-    logger:finest('sendWebSocket('..tostring(command)..') '..messageId)
-    local message = {
-      command = command,
-      messageId = messageId
-    }
-    if options then
-      Map.assign(message, options)
-    end
-    local textMsg = json.encode(message)
-    logger:finer('message: '..textMsg)
-    return webSocket:sendTextMessage(textMsg):next(function()
-      local promise, cb = Promise.createWithCallback()
-      webSocket.zwMsgCb[messageId] = cb
-      return promise
-    end)
+local function sendWebSocket(webSocket, command, options)
+  webSocket.zwMsgId = webSocket.zwMsgId + 1
+  local messageId = 'lha-zwave-js-'..tostring(webSocket.zwMsgId)
+  logger:finest('sendWebSocket('..tostring(command)..') '..messageId)
+  local message = {
+    command = command,
+    messageId = messageId
+  }
+  if options then
+    Map.assign(message, options)
   end
-  return Promise.reject()
+  local textMsg = json.encode(message)
+  logger:finer('message: '..textMsg)
+  return webSocket:sendTextMessage(textMsg):next(function()
+    local promise, cb = Promise.createWithCallback()
+    webSocket.zwMsgCb[messageId] = cb
+    return promise
+  end)
+end
+
+local function startListeningWebSocket(webSocket)
+  sendWebSocket(webSocket, 'start_listening'):next(function(result)
+    --logger:info('Z-Wave start_listening result: '..json.stringify(result, 2))
+    for _, node in ipairs(result.state.nodes) do
+      onZWaveNode(node)
+    end
+  end)
 end
 
 local function startWebSocket(wsConfig)
-  webSocket = WebSocket:new(wsConfig.url)
+  local webSocket = WebSocket:new(wsConfig.url)
   webSocket.zwMsgId = 0
   webSocket.zwMsgCb = {}
   webSocket:open():next(function()
@@ -271,12 +273,7 @@ local function startWebSocket(wsConfig)
           end
         end
       elseif message.type == 'version' then
-        sendWebSocket('start_listening'):next(function(result)
-          --logger:info('Z-Wave start_listening result: '..json.stringify(result, 2))
-          for _, node in ipairs(result.state.nodes) do
-            onZWaveNode(node)
-          end
-        end)
+        startListeningWebSocket(webSocket)
       else
         logger:warn('Z-Wave JS WebSocket unsupported message type '..tostring(message.type))
       end
@@ -284,6 +281,7 @@ local function startWebSocket(wsConfig)
       logger:warn('Z-Wave WebSocket received invalid JSON payload '..tostring(payload))
     end
   end
+  return webSocket
 end
 
 
@@ -291,17 +289,32 @@ end
 -- Extension events
 ------------------------------------------------------------
 
+local mqttClient
+local webSocket
+
+local function cleanup()
+  if mqttClient then
+    mqttClient:close(false)
+    mqttClient = nil
+  end
+  if webSocket then
+    webSocket:close(false)
+    webSocket = nil
+  end
+end
+
 extension:subscribeEvent('things', function()
+  thingsByNodeId = {}
   thingsMap = extension:getThingsByDiscoveryKey()
 end)
 
 extension:subscribeEvent('poll', function()
   local configuration = extension:getConfiguration()
   if webSocket then
-    -- TODO poll nodes
-    --onZWaveNode(node)
+    -- starting again to receive the nodes state, no really part of the API
+    startListeningWebSocket(webSocket)
   elseif configuration.websocket and configuration.websocket.enable then
-    startWebSocket(configuration.websocket)
+    webSocket = startWebSocket(configuration.websocket)
   end
 end)
 
@@ -309,10 +322,10 @@ extension:subscribeEvent('startup', function()
   local configuration = extension:getConfiguration()
   cleanup()
   if configuration.mqtt and configuration.mqtt.enable then
-    startMqtt(configuration.mqtt)
+    mqttClient = startMqtt(configuration.mqtt)
   end
   if configuration.websocket and configuration.websocket.enable then
-    startWebSocket(configuration.websocket)
+    webSocket = startWebSocket(configuration.websocket)
   end
 end)
 

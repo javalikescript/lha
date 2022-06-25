@@ -8,6 +8,7 @@
     "properties": {
       "mqtt": {
         "title": "MQTT Configuration",
+        "description": "The MQTT integration is not fully functional",
         "type": "object",
         "properties": {
           "enable": {

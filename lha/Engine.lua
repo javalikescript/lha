@@ -224,9 +224,14 @@ return class.create(function(engine)
 
   function engine:publishExtensionsEvent(source, ...)
     local name = ...
-    logger:finer('Publishing Extensions Event '..tostring(name))
+    if logger:isLoggable(logger.FINER) then
+      logger:finer('Publishing Extensions Event '..tostring(name))
+    end
     for _, extension in ipairs(self.extensions) do
       if extension ~= source and extension:isActive() then
+        if logger:isLoggable(logger.FINE) then
+          logger:fine('Publishing event '..tostring(name)..' on extension '..tostring(extension:getId()))
+        end
         extension:publishEvent(...)
       end
     end
