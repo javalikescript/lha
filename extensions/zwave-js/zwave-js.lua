@@ -49,18 +49,40 @@ local function getNodeDiscoveryId(node)
   end
 end
 
+local function findNodeValue(node, commandClass, property)
+  if node.values then
+    for _, info in pairs(node.values) do
+      if info.commandClass == commandClass and info.property == property then
+        return info
+      end
+    end
+  end
+end
+
 local function createThingFromNode(node)
   local productLabel = node.productLabel or node.label
+  local thing
+  -- we may add properties based on the CC
   if productLabel == 'FGSD002' then
-    return Thing:new(getNodeName(node, 'Smoke Detector'), 'Smoke Sensor', {
+    thing = Thing:new(getNodeName(node, 'Smoke Detector'), 'Smoke Sensor', {
       Thing.CAPABILITIES.SmokeSensor,
       Thing.CAPABILITIES.TemperatureSensor,
     }):addPropertiesFromNames('smoke', 'temperature')
   elseif productLabel == 'ZSE44' then
-    return Thing:new(getNodeName(node, 'Temperature Sensor'), 'Temperature Sensor', {
+    thing = Thing:new(getNodeName(node, 'Temperature Sensor'), 'Temperature Sensor', {
       Thing.CAPABILITIES.HumiditySensor,
       Thing.CAPABILITIES.TemperatureSensor,
     }):addPropertiesFromNames('humidity', 'temperature')
+  end
+  if thing then
+    local thingProp = thing:getProperty('temperature')
+    if thingProp then
+      local info = findNodeValue(node, CC.MULTILEVEL, 'Air temperature')
+      if info and info.metadata and info.metadata.unit and string.match(info.metadata.unit, '.F') then
+        thingProp.metadata.sourceUnit = 'degree fahrenheit'
+      end
+    end
+    return thing
   end
 end
 
@@ -69,11 +91,16 @@ local function updateThingFromNodeInfo(thing, info)
   local property = info.property
   local value = info.value or info.newValue
   if cc == CC.MULTILEVEL then
+    --logger:info('Z-Wave update thing "'..thing:getTitle()..'" node info: '..json.stringify(info, 2))
     if property == 'Air temperature' then
-      if info.metadata and info.metadata.unit == '°F' then
-        value = ((value - 32) * 50 // 9) / 10
+      local thingProp = thing:getProperty('temperature')
+      if thingProp then
+        local sourceUnit = thingProp:getMetadata('sourceUnit')
+        if sourceUnit == 'degree fahrenheit' then
+          value = ((value - 32) * 50 // 9) / 10
+        end
+        thing:updatePropertyValue('temperature', value)
       end
-      thing:updatePropertyValue('temperature', value)
     elseif property == 'Humidity' then
       thing:updatePropertyValue('humidity', value)
     end
@@ -244,7 +271,6 @@ local function startWebSocket(wsConfig)
   end)
   webSocket.onClose = function()
     logger:warn('Z-Wave JS WebSocket closed')
-    webSocket = nil
   end
   webSocket.onTextMessage = function(_, payload)
     if logger:isLoggable(logger.FINEST) then
@@ -310,11 +336,13 @@ end)
 
 extension:subscribeEvent('poll', function()
   local configuration = extension:getConfiguration()
-  if webSocket then
-    -- starting again to receive the nodes state, no really part of the API
-    startListeningWebSocket(webSocket)
-  elseif configuration.websocket and configuration.websocket.enable then
-    webSocket = startWebSocket(configuration.websocket)
+  if configuration.websocket and configuration.websocket.enable then
+    if not webSocket or webSocket:isClosed() then
+      webSocket = startWebSocket(configuration.websocket)
+    else
+      -- starting again to receive the nodes state, no really part of the API
+      startListeningWebSocket(webSocket)
+    end
   end
 end)
 
