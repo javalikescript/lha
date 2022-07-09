@@ -98,8 +98,7 @@ return class.create(function(engine)
     scheduler:schedule(schedules.data, function()
       logger:info('Archiving data')
       self.dataHistory:save(false)
-      -- TODO save configuration in case of modifications
-      --self.configHistory:saveJson()
+      self.configHistory:save(false, true)
     end)
     -- configuration schedule
     scheduler:schedule(schedules.configuration, function()

@@ -109,7 +109,7 @@ htSource:forEachFile(fromTime, toTime, function(file)
     print(date:toISOString(), t)
     if htDest then
       htDest:setLiveTable(t)
-      --htDest:save(isFull, withJson, time)
+      --htDest:save(isFull, nil, time)
     end
   end)
 end)
@@ -149,7 +149,7 @@ htSource:forEachTable(fromTime, toTime, function(t, tTime, isFull)
   end
   if htDest then
     htDest:setLiveTable(dt)
-    htDest:save(isFull, tTime)
+    htDest:save(isFull, nil, tTime)
   end
   lastTable = dt
 end)

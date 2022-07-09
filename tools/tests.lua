@@ -47,7 +47,7 @@ local function applySamples(ht, samples, debug)
       if debug then
         print(tables.stringify(t, 2))
       end
-      ht:save(false, sample * 1000)
+      ht:save(false, nil, sample * 1000)
     end
   end
 end

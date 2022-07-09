@@ -578,17 +578,17 @@ return class.create(function(historicalTable)
     return pathsValues
   end
 
-  function historicalTable:getFileAt(time)
-    if self.time and time > (self.time + (self.fileMin * 60000)) then
-      self.file = nil
-    end
-    if not self.file then
+  function historicalTable:isNewFileAt(time)
+    return self.time and time > (self.time + (self.fileMin * 60000))
+  end
+
+  function historicalTable:getFileAt(time, isNew)
+    if not self.file or isNew then
       self.time = time
       local ts = Date.timestamp(self.time, self.utc)
       self.file = File:new(self.dir, self:getFileName(ts))
-      return self.file, true
     end
-    return self.file, false
+    return self.file
   end
 
   function historicalTable:hasJsonFile()
@@ -613,15 +613,15 @@ return class.create(function(historicalTable)
     return currentTable, previousTable
   end
 
-  function historicalTable:save(isFull, time)
-    if logger:isLoggable(logger.FINE) then
-      logger:fine('historicalTable:save() '..self.name)
+  function historicalTable:save(isFull, isNotEmpty, time)
+    if logger:isLoggable(logger.FINER) then
+      logger:finer('historicalTable:save('..tostring(isFull)..', '..tostring(isNotEmpty)..', '..tostring(time)..') '..self.name)
     end
+    local currentTable, previousTable = self:rollover()
     if not time then
       time = Date.now()
     end
-    local file, isNew = self:getFileAt(time)
-    local currentTable, previousTable = self:rollover()
+    local isNew = self:isNewFileAt(time)
     local kind, size, data
     if isFull or isNew then
       kind = 1
@@ -629,11 +629,14 @@ return class.create(function(historicalTable)
       size = #data
     else
       kind = 0
-      local dt = tables.compare(previousTable, currentTable)
       size = 0
+      local dt = tables.compare(previousTable, currentTable)
       if dt then
         data = json.encode(dt)
         size = #data
+      elseif isNotEmpty then
+        logger:fine('historicalTable:save() nothing to save')
+        return
       end
     end
     if size > 8 then
@@ -643,6 +646,7 @@ return class.create(function(historicalTable)
       kind = kind | 2
     end
     local header = 'LHA'..string.pack(HEADER_FORMAT, kind, time // 1000, size)
+    local file = self:getFileAt(time, isNew)
     local fd, err = FileDescriptor.openSync(file, 'a')
     if fd then
       fd:writeSync(header)
