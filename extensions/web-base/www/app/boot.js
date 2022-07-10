@@ -61,7 +61,8 @@ var webSocket = null;
 
 function setupWebSocket() {
   if (!webSocket) {
-    webSocket = new WebSocket('ws://' + location.host + '/ws/');
+    var protocol = location.protocol.replace('http', 'ws');
+    webSocket = new WebSocket(protocol + '//' + location.host + '/ws/');
     webSocket.onmessage = function(event) {
       //console.log('webSocket.onmessage', event);
       if (event.data) {
