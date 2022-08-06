@@ -72,6 +72,9 @@ local DEVICE = {
   BarometricPressureSensor = Thing.CAPABILITIES.BarometricPressureSensor,
   DimmerSwitch = 'DimmerSwitch',
   --OnOffSwitch = 'OnOffSwitch',
+  Alarm = 'Alarm',
+  Consumption = 'Consumption',
+  EnergyMonitor = 'EnergyMonitor',
 }
 
 -- see https://developers.meethue.com/develop/hue-api/supported-devices/
@@ -96,6 +99,9 @@ local deviceByType = {
   ['ZHASwitch'] = DEVICE.DimmerSwitch,
   ['ZHAHumidity'] = DEVICE.HumiditySensor,
   ['ZHAPressure'] = DEVICE.BarometricPressureSensor,
+  ['ZHAAlarm'] = DEVICE.Alarm,
+  ['ZHAConsumption'] = DEVICE.Consumption,
+  ['ZHAPower'] = DEVICE.EnergyMonitor,
   --['Daylight'] = 0,
 }
 
@@ -110,6 +116,9 @@ local capabilitiesByDevice = {
   [DEVICE.DimmerSwitch] = {Thing.CAPABILITIES.PushButton},
   [DEVICE.HumiditySensor] = {Thing.CAPABILITIES.HumiditySensor},
   [DEVICE.BarometricPressureSensor] = {Thing.CAPABILITIES.BarometricPressureSensor},
+  [DEVICE.Alarm] = {Thing.CAPABILITIES.Alarm},
+  [DEVICE.EnergyMonitor] = {Thing.CAPABILITIES.EnergyMonitor},
+  [DEVICE.Consumption] = {Thing.CAPABILITIES.MultiLevelSensor},
 }
 
 local namesByDevice = {
@@ -123,6 +132,9 @@ local namesByDevice = {
   [DEVICE.DimmerSwitch] = {'buttonOn', 'buttonOff', 'buttonDimUp', 'buttonDimDown', 'battery'},
   [DEVICE.HumiditySensor] = {'humidity'},
   [DEVICE.BarometricPressureSensor] = {'pressure'},
+  [DEVICE.Alarm] = {'alarm'},
+  [DEVICE.EnergyMonitor] = {'current', 'power'}, -- 'consumption', 'voltage'
+  [DEVICE.Consumption] = {'consumption'},
 }
 
 local titleByDevice = {
@@ -132,6 +144,9 @@ local titleByDevice = {
   [DEVICE.DimmerSwitch] = 'Switch',
   [DEVICE.HumiditySensor] = 'Relative Humidity',
   [DEVICE.BarometricPressureSensor] = 'Atmospheric Pressure',
+  [DEVICE.Alarm] = 'ADPS',
+  [DEVICE.EnergyMonitor] = 'Energy Monitor',
+  [DEVICE.Consumption] = 'Consumption',
 }
 
 local categoryByName = {
@@ -149,6 +164,10 @@ local categoryByName = {
   buttonOff = CONST.state,
   buttonDimUp = CONST.state,
   buttonDimDown = CONST.state,
+  alarm = CONST.state,
+  current = CONST.state,
+  power = CONST.state,
+  consumption = CONST.state,
   battery = CONST.config,
   enabled = CONST.config,
   reachable = CONST.config,
@@ -548,7 +567,23 @@ end, function(HueBridge)
     buttonOn = buttonMetadata('On Button'),
     buttonOff = buttonMetadata('Off Button'),
     buttonDimUp = buttonMetadata('Dim Up Button'),
-    buttonDimDown = buttonMetadata('Dim Down Button')
+    buttonDimDown = buttonMetadata('Dim Down Button'),
+    consumption = {
+      ['@type'] = 'LevelProperty',
+      type = 'number',
+      title = 'Power consumption index',
+      description = 'The power consumption index',
+      readOnly = true,
+      unit = 'watthour'
+    },
+    power = {
+      ['@type'] = Thing.PROPERTY_TYPES.ApparentPowerProperty,
+      type = 'number',
+      title = 'Apparent power',
+      description = 'The apparent power',
+      readOnly = true,
+      unit = 'voltampere'
+    },
   }
 
   function HueBridge.createThingForType(info)

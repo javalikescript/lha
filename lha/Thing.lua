@@ -36,6 +36,7 @@ local CAPABILITIES = {
 }
 
 local PROPERTY_TYPES = {
+  AlarmProperty = 'AlarmProperty',
   BarometricPressureProperty = 'BarometricPressureProperty',
   BrightnessProperty = 'BrightnessProperty',
   ColorProperty = 'ColorProperty',
@@ -49,6 +50,11 @@ local PROPERTY_TYPES = {
   PushedProperty = 'PushedProperty',
   SmokeProperty = 'SmokeProperty',
   TemperatureProperty = 'TemperatureProperty',
+  ApparentPowerProperty = 'ApparentPowerProperty',
+  --InstantaneousPowerProperty = 'InstantaneousPowerProperty',
+  --VoltageProperty = 'VoltageProperty',
+  CurrentProperty = 'CurrentProperty',
+  --FrequencyProperty	 = 'FrequencyProperty',
 }
 
 local UNIT_BY_PROPERTY_TYPE = {
@@ -58,6 +64,11 @@ local UNIT_BY_PROPERTY_TYPE = {
   HumidityProperty = 'percent',
   IlluminanceProperty = 'lux',
   TemperatureProperty = 'degree celsius',
+  ApparentPowerProperty = 'voltampere',
+  --InstantaneousPowerProperty = 'watt',
+  --VoltageProperty = 'volt',
+  CurrentProperty = 'ampere',
+  --FrequencyProperty = 'hertz',
 }
 
 local AT_TYPE = '@type'
@@ -172,6 +183,21 @@ local PROPERTY_METADATA_BY_NAME = {
     title = 'Enabled',
     description = 'Whether the thing is enabled',
     configuration = true
+  },
+  alarm = {
+    [AT_TYPE] = PROPERTY_TYPES.AlarmProperty,
+    type = 'boolean',
+    title = 'Alarm',
+    description = 'Whether the alarm is active',
+    readOnly = true
+  },
+  current = {
+    [AT_TYPE] = PROPERTY_TYPES.CurrentProperty,
+    type = 'number',
+    title = 'Current',
+    description = 'The current',
+    readOnly = true,
+    unit = 'ampere'
   },
 }
 
