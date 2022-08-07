@@ -23,8 +23,10 @@
               "type": "string",
               "enumValues": [
                 {"const": "AlarmProperty", "title": "Alarm"},
+                {"const": "ApparentPowerProperty", "title": "Apparent Power"},
                 {"const": "BarometricPressureProperty", "title": "Barometric Pressure"},
                 {"const": "BooleanProperty", "title": "Boolean"},
+                {"const": "CurrentProperty", "title": "Current"},
                 {"const": "HumidityProperty", "title": "Humidity"},
                 {"const": "LeakProperty", "title": "Leak"},
                 {"const": "LevelProperty", "title": "Level"},
@@ -41,7 +43,6 @@
                 {"const": "ColorProperty", "title": "Color"},
                 {"const": "ColorTemperatureProperty", "title": "Color Temperature"},
                 {"const": "ConcentrationProperty", "title": "Concentration"},
-                {"const": "CurrentProperty", "title": "Current"},
                 {"const": "DensityProperty", "title": "Density"},
                 {"const": "FrequencyProperty", "title": "Frequency"},
                 {"const": "HeatingCoolingProperty", "title": "Heating Cooling"},

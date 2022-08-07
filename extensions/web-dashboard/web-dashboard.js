@@ -18,6 +18,7 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
     "lux": "lx",
     "percent": "%",
     "volt": "V",
+    "voltampere": "VA",
     "watt": "W"
   };
 
@@ -27,6 +28,8 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
     "ColorTemperatureProperty": "kelvin",
     "HumidityProperty": "percent",
     "TemperatureProperty": "degree celsius",
+    "ApparentPowerProperty": "voltampere",
+    "CurrentProperty": "ampere"
   };
 
   var iconsByType = {
