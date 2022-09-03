@@ -5,13 +5,14 @@ function setTheme(name) {
 }
 
 function formatNavigationPath(pageId, path) {
-  return '/' + pageId + '/' + (path ? encodeURIComponent(path) : '');
+  var encodedPath = path ? path.split('/').map(function(part) { return encodeURIComponent(part); }).join('/') : '';
+  return '/' + pageId + '/' + encodedPath;
 }
 
 function parseNavigationPath(path) {
   var matches = path.match(/^\/([^\/]+)\/(.*)$/);
   if (matches) {
-    matches[2] = decodeURIComponent(matches[2]);
+    matches[2] = matches[2].split('/').map(function(part) { return decodeURIComponent(part); }).join('/');
   }
   return matches
 }
