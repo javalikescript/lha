@@ -60,6 +60,13 @@ define(['./web-tools.xml'], function(toolsTemplate) {
           toaster.toast('Polling triggered');
         });
       },
+      refreshThings: function() {
+        confirmation.ask('Disable and refresh all things?').then(function() {
+          fetch('/engine/refreshThingsDescription', {method: 'POST'}).then(function() {
+            toaster.toast('Things refreshed');
+          });
+        });
+      },
       saveConfig: function() {
         fetch('/engine/admin/configuration/save', {method: 'POST'}).then(function() {
           toaster.toast('Configuration saved');

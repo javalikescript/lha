@@ -9,6 +9,7 @@ local json = require('jls.util.json')
 local Date = require('jls.util.Date')
 local Map = require('jls.util.Map')
 local ZipFile = require('jls.util.zip.ZipFile')
+local Promise = require('jls.lang.Promise')
 
 local utils = require('lha.utils')
 
@@ -251,6 +252,59 @@ return {
       end
     end
     return descriptions
+  end,
+  ['refreshThingsDescription?method=POST'] = function(exchange)
+    local engine = exchange:getAttribute('engine')
+    local thingIds = Map.skeys(engine.things)
+    if #thingIds == 0 then
+      return
+    end
+    logger:info('Disabling '..tostring(#thingIds)..' things')
+    local things = {}
+    for _, thingId in ipairs(thingIds) do
+      local thing = engine:getThingById(thingId)
+      local extensionId, discoveryKey = engine:getThingDiscoveryKey(thingId)
+      if thing and extensionId and discoveryKey then
+        things[thingId] = thing
+        engine:disableThing(thingId)
+        logger:info('Thing "'..thing:getTitle()..'" ('..thingId..' '..tostring(extensionId)..'/'..tostring(discoveryKey)..') disabled')
+      end
+    end
+    engine:publishEvent('things')
+    engine:publishEvent('poll') -- poll is used for discovery
+    thingIds = Map.skeys(things)
+    return Promise:new(function(resolve, reject)
+      local count, maxCount = 0, 5
+      local timer
+      timer = event:setInterval(function()
+        count = count + 1
+        logger:info('Discovering '..tostring(#thingIds)..' things '..tostring(count)..'/'..tostring(maxCount))
+        for _, thingId in ipairs(thingIds) do
+          local extensionId, discoveryKey = engine:getThingDiscoveryKey(thingId)
+          if engine:getDiscoveredThing(extensionId, discoveryKey) then
+            engine:addDiscoveredThing(extensionId, discoveryKey)
+            local thing = things[thingId]
+            things[thingId] = nil
+            logger:fine('Thing "'..thing:getTitle()..'" ('..thingId..') discovered')
+          end
+        end
+        thingIds = Map.skeys(things)
+        if #thingIds == 0 or count >= maxCount then
+          event:clearInterval(timer)
+          logger:info('Discovered ended, missing '..tostring(#thingIds)..' things')
+          for thingId, thing in pairs(things) do
+            engine.things[thingId] = thing
+            logger:warn('Thing "'..thing:getTitle()..'" ('..thingId..') restored')
+            local thingConfiguration = engine:getThingConfigurationById(thingId)
+            if thingConfiguration then
+              thingConfiguration.active = true
+            end
+          end
+          engine:publishEvent('things')
+          resolve()
+        end
+      end, 1000)
+    end)
   end,
   ['poll?method=POST'] = function(exchange)
     exchange.attributes.engine:publishEvent('poll')

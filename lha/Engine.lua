@@ -113,6 +113,7 @@ return class.create(function(engine)
       self.configHistory:save(true)
       self:publishEvent('clean')
     end)
+    -- We could expose default scheduler based events such as hourly, daily
     self.scheduler = scheduler
   end
 
@@ -372,11 +373,17 @@ return class.create(function(engine)
     end
   end
 
+  function engine:getDiscoveredThing(extensionId, discoveryKey)
+    local extension = self:getExtensionById(extensionId)
+    if extension then
+      return extension:getDiscoveredThingByKey(discoveryKey)
+    end
+  end
+
   -- Adds a thing to this engine.
   function engine:addDiscoveredThing(extensionId, discoveryKey, keepDescription)
     logger:fine('addDiscoveredThing("'..tostring(extensionId)..'", "'..tostring(discoveryKey)..'")')
-    local extension = self:getExtensionById(extensionId)
-    local discoveredThing = extension and extension:getDiscoveredThingByKey(discoveryKey)
+    local discoveredThing = self:getDiscoveredThing(extensionId, discoveryKey)
     if not discoveredThing then
       logger:info('The thing "'..tostring(extensionId)..'", "'..tostring(discoveryKey)..'" has not been discovered')
       return
@@ -404,8 +411,8 @@ return class.create(function(engine)
         active = true,
         archiveData = false
       }
+      self.root.configuration.things[thingId] = thingConfiguration
     end
-    self.root.configuration.things[thingId] = thingConfiguration
     thing = self:loadThing(thingId, thingConfiguration)
     for name, value in pairs(discoveredThing:getPropertyValues()) do
       thing:updatePropertyValue(name, value)
@@ -416,14 +423,18 @@ return class.create(function(engine)
 
   function engine:refreshThingDescription(thingId)
     local thing = self.things[thingId]
-    local thingConfiguration = self.root.configuration.things[thingId]
+    local thingConfiguration = self:getThingConfigurationById(thingId)
     if thing and thingConfiguration then
       logger:info('refreshThingDescription("'..tostring(thingId)..'") not implemented')
     end
   end
 
+  function engine:getThingConfigurationById(thingId)
+    return self.root.configuration.things[thingId]
+  end
+
   function engine:disableThing(thingId)
-    local thingConfiguration = self.root.configuration.things[thingId]
+    local thingConfiguration = self:getThingConfigurationById(thingId)
     if thingConfiguration then
       thingConfiguration.active = false
       self.things[thingId] = nil
@@ -522,6 +533,13 @@ return class.create(function(engine)
       end
     end
     return nil
+  end
+
+  function engine:getThingDiscoveryKey(thingId)
+    local thingConfiguration = self:getThingConfigurationById(thingId)
+    if thingConfiguration then
+      return thingConfiguration.extensionId, thingConfiguration.discoveryKey
+    end
   end
 
   function engine:getThingById(thingId)
