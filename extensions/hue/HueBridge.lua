@@ -126,16 +126,23 @@ local namesByDevice = {
   [DEVICE.ExtendedColorLight] = {'on', 'brightness', 'colorTemperature', 'color'},
   [DEVICE.DimmableLight] = {'on', 'brightness'},
   [DEVICE.OnOffLight] = {'on'},
-  [DEVICE.LightLevelSensor] = {'lightlevel'},
-  [DEVICE.TemperatureSensor] = {'temperature'},
+  [DEVICE.LightLevelSensor] = {'lightlevel', 'battery'},
+  [DEVICE.TemperatureSensor] = {'temperature', 'battery'},
   [DEVICE.MotionSensor] = {'presence', 'battery', 'enabled', 'sensitivity'},
   [DEVICE.DimmerSwitch] = {'buttonOn', 'buttonOff', 'buttonDimUp', 'buttonDimDown', 'battery'},
-  [DEVICE.HumiditySensor] = {'humidity'},
-  [DEVICE.BarometricPressureSensor] = {'pressure'},
+  [DEVICE.HumiditySensor] = {'humidity', 'battery'},
+  [DEVICE.BarometricPressureSensor] = {'pressure', 'battery'},
   [DEVICE.Alarm] = {'alarm'},
   [DEVICE.EnergyMonitor] = {'current', 'power'}, -- 'consumption', 'voltage'
   [DEVICE.Consumption] = {'consumption'},
 }
+
+local defaultNames = {'lastseen'}
+for device, names in pairs(namesByDevice) do
+  for _, name in ipairs(defaultNames) do
+    table.insert(names, name)
+  end
+end
 
 local titleByDevice = {
   [DEVICE.LightLevelSensor] = 'Light Level',
@@ -144,7 +151,7 @@ local titleByDevice = {
   [DEVICE.DimmerSwitch] = 'Switch',
   [DEVICE.HumiditySensor] = 'Relative Humidity',
   [DEVICE.BarometricPressureSensor] = 'Atmospheric Pressure',
-  [DEVICE.Alarm] = 'ADPS',
+  [DEVICE.Alarm] = 'Alarm',
   [DEVICE.EnergyMonitor] = 'Energy Monitor',
   [DEVICE.Consumption] = 'Consumption',
 }
@@ -291,6 +298,15 @@ local function computeEnabled(info)
   return (info.config or {}).on
 end
 
+local function computeLastSeen(info, name, hueBridge)
+  local value = info.lastseen -- "2022-08-24T15:51Z"
+  if type(value) == 'string' then
+    -- we may need to parse/format to apply the bridge delay
+    --return hueBridge:parseDateTime(value)
+    return value
+  end
+end
+
 local function toPostEnabled(value)
   return {on = value}
 end
@@ -320,6 +336,7 @@ local computeFnByName = {
   humidity = computeHumidity,
   temperature = computeTemperature,
   enabled = computeEnabled,
+  lastseen = computeLastSeen,
   buttonOn = computeButtonEvent,
   buttonOff = computeButtonEvent,
   buttonDimUp = computeButtonEvent,
@@ -332,14 +349,6 @@ local toPostFnByName = {
   color = toPostColor,
   enabled = toPostEnabled,
 }
-
-local function updateValue(thing, info, name)
-  local computeFn = computeFnByName[name] or getInfoProperty
-  local value = computeFn(info, name)
-  if isValue(value) then
-    thing:updatePropertyValue(name, value)
-  end
-end
 
 return require('jls.lang.class').create(function(hueBridge)
 
@@ -519,7 +528,11 @@ return require('jls.lang.class').create(function(hueBridge)
 
   function hueBridge:updateThing(thing, info, isEvent)
     for name in pairs(thing:getProperties()) do
-      updateValue(thing, info, name)
+      local computeFn = computeFnByName[name] or getInfoProperty
+      local value = computeFn(info, name, self)
+      if isValue(value) then
+        thing:updatePropertyValue(name, value)
+      end
     end
   end
 

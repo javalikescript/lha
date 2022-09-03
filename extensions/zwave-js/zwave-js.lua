@@ -9,6 +9,8 @@ local Url = require('jls.net.Url')
 local strings = require('jls.util.strings')
 local json = require('jls.util.json')
 local Map = require('jls.util.Map')
+local List = require('jls.util.List')
+local Date = require('jls.util.Date')
 
 local Thing = require('lha.Thing')
 
@@ -67,14 +69,15 @@ local function createThingFromNode(node)
     thing = Thing:new(getNodeName(node, 'Smoke Detector'), 'Smoke Sensor', {
       Thing.CAPABILITIES.SmokeSensor,
       Thing.CAPABILITIES.TemperatureSensor,
-    }):addPropertiesFromNames('smoke', 'temperature')
+    }):addPropertiesFromNames('smoke', 'temperature', 'battery')
   elseif productLabel == 'ZSE44' then
     thing = Thing:new(getNodeName(node, 'Temperature Sensor'), 'Temperature Sensor', {
       Thing.CAPABILITIES.HumiditySensor,
       Thing.CAPABILITIES.TemperatureSensor,
-    }):addPropertiesFromNames('humidity', 'temperature')
+    }):addPropertiesFromNames('humidity', 'temperature', 'battery')
   end
   if thing then
+    thing:addPropertiesFromNames('lastseen')
     local thingProp = thing:getProperty('temperature')
     if thingProp then
       local info = findNodeValue(node, CC.MULTILEVEL, 'Air temperature')
@@ -92,7 +95,7 @@ local function updateThingFromNodeInfo(thing, info)
   local value = info.value or info.newValue
   if cc == CC.MULTILEVEL then
     --logger:info('Z-Wave update thing "'..thing:getTitle()..'" node info: '..json.stringify(info, 2))
-    if property == 'Air temperature' then
+    if property == 'Air temperature' and type(value) == 'number' then
       local thingProp = thing:getProperty('temperature')
       if thingProp then
         local sourceUnit = thingProp:getMetadata('sourceUnit')
@@ -101,12 +104,16 @@ local function updateThingFromNodeInfo(thing, info)
         end
         thing:updatePropertyValue('temperature', value)
       end
-    elseif property == 'Humidity' then
+    elseif property == 'Humidity' and type(value) == 'number' then
       thing:updatePropertyValue('humidity', value)
     end
   elseif cc == CC.ALARM then
-    if property == 'Smoke Alarm' then
+    if property == 'Smoke Alarm' and type(value) == 'number' then
       thing:updatePropertyValue('smoke', value ~= 0)
+    end
+  elseif cc == CC.BATTERY then
+    if property == 'level' and type(value) == 'number' then
+      thing:updatePropertyValue('battery', value)
     end
   end
 end
@@ -154,7 +161,12 @@ local function onZWaveNodeEvent(event)
   if event.source == 'node' and event.event == 'value updated' and event.nodeId then
     local thing = thingsByNodeId[event.nodeId]
     if thing then
+      --logger:info('Z-Wave JS event on thing: '..json.stringify(event, 2))
       updateThingFromNodeInfo(thing, event.args)
+      if thing:hasProperty('lastseen') then
+        local lastseen = string.sub(Date:new():toISOString(true), 1, 16)..'Z'
+        thing:updatePropertyValue('lastseen', lastseen)
+      end
     else
       if logger:isLoggable(logger.FINE) then
         logger:fine('Z-Wave JS event without thing: '..json.stringify(event, 2))
@@ -229,14 +241,18 @@ end
 -- WebSocket
 ------------------------------------------------------------
 
-local function sendWebSocket(webSocket, command, options)
+local function sendWebSocket(webSocket, message, options)
   webSocket.zwMsgId = webSocket.zwMsgId + 1
   local messageId = 'lha-zwave-js-'..tostring(webSocket.zwMsgId)
-  logger:finest('sendWebSocket('..tostring(command)..') '..messageId)
-  local message = {
-    command = command,
-    messageId = messageId
-  }
+  if type(message) == 'string' then
+    message = {
+      command = message
+    }
+  elseif type(message) ~= 'table' then
+    error('Invalid message type '..type(message))
+  end
+  message.messageId = messageId
+  logger:finest('sendWebSocket('..tostring(message.command)..') '..messageId)
   if options then
     Map.assign(message, options)
   end
@@ -252,10 +268,35 @@ end
 local function startListeningWebSocket(webSocket)
   sendWebSocket(webSocket, 'start_listening'):next(function(result)
     --logger:info('Z-Wave start_listening result: '..json.stringify(result, 2))
+    --require('jls.io.File'):new('zwave-js.json'):write(json.stringify(result, 2))
     for _, node in ipairs(result.state.nodes) do
       onZWaveNode(node)
     end
   end)
+  --[[
+  Promise.all(List.map({
+    {
+      command = 'node.get_state',
+      nodeId = 6
+    },
+    {
+      command = 'node.get_value',
+      nodeId = 6,
+      valueId = {
+        commandClass = CC.MULTILEVEL,
+        endpoint = 0,
+        property = 'Humidity'
+      }
+    },-- node.get_value => {value: 1}
+    {
+      command = 'controller.get_state'
+    }
+  }, function(message)
+    return sendWebSocket(webSocket, message)
+  end)):next(function(results)
+    logger:info('Z-Wave results: '..json.stringify(results, 2))
+  end)
+  ]]
 end
 
 local function startWebSocket(wsConfig)
@@ -342,6 +383,12 @@ extension:subscribeEvent('poll', function()
     else
       -- starting again to receive the nodes state, no really part of the API
       startListeningWebSocket(webSocket)
+      --[[sendWebSocket(webSocket, {
+        command = 'node.get_state',
+        nodeId = 6
+      }):next(function(results)
+        logger:info('Z-Wave results: '..json.stringify(results, 2))
+      end)]]
     end
   end
 end)

@@ -38,6 +38,8 @@ local CAPABILITIES = {
 local PROPERTY_TYPES = {
   AlarmProperty = 'AlarmProperty',
   BarometricPressureProperty = 'BarometricPressureProperty',
+  BooleanProperty = 'BooleanProperty',
+  DateTimeProperty = 'DateTimeProperty',
   BrightnessProperty = 'BrightnessProperty',
   ColorProperty = 'ColorProperty',
   ColorTemperatureProperty = 'ColorTemperatureProperty',
@@ -59,6 +61,7 @@ local PROPERTY_TYPES = {
 
 local UNIT_BY_PROPERTY_TYPE = {
   BarometricPressureProperty = 'hectopascal',
+  DateTimeProperty = 'date time', -- string ISO 8601
   BrightnessProperty = 'percent',
   ColorTemperatureProperty = 'kelvin',
   HumidityProperty = 'percent',
@@ -176,6 +179,23 @@ local PROPERTY_METADATA_BY_NAME = {
     configuration = true,
     readOnly = true,
     unit = 'percent'
+  },
+  lastseen = {
+    [AT_TYPE] = PROPERTY_TYPES.DateTimeProperty,
+    type = 'string',
+    title = 'Last Seen',
+    description = 'The date where the thing was last seen',
+    configuration = true,
+    readOnly = true,
+    unit = 'date time'
+  },
+  reachable = {
+    [AT_TYPE] = PROPERTY_TYPES.BooleanProperty,
+    type = 'boolean',
+    title = 'Reachable',
+    description = 'Whether the thing is reachable',
+    configuration = true,
+    readOnly = true
   },
   enabled = {
     [AT_TYPE] = PROPERTY_TYPES.OnOffProperty,

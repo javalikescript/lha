@@ -73,6 +73,6 @@ local function discoverThings(extension)
 end
 
 extension:subscribeEvent('things', function()
-  logger:info('looking for generic things')
+  logger:info('Looking for generic things')
   discoverThings(extension)
 end)
