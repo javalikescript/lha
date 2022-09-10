@@ -222,6 +222,12 @@ return class.create(function(engine)
     self:publishExtensionsEvent(nil, ...)
   end
 
+  function engine:publishEventAsync(...)
+    event:setTimeout(function(...)
+      self:publishExtensionsEvent(nil, ...)
+    end, 0, ...)
+  end
+
   function engine:publishExtensionsEvent(source, ...)
     local name = ...
     if logger:isLoggable(logger.FINER) then
@@ -267,7 +273,7 @@ return class.create(function(engine)
   function engine:getExtensions()
     local list = {}
     for _, extension in ipairs(self.extensions) do
-      if extension:isLoaded() then
+      if extension:isActive() then
         table.insert(list, extension)
       end
     end
@@ -513,13 +519,19 @@ return class.create(function(engine)
     end
   end
 
-  function engine:getThingsByExtensionId(extensionId)
+  function engine:getThingsByExtensionId(extensionId, useDiscoveryKey)
     local things = {}
     for thingId, thingConfiguration in pairs(self.root.configuration.things) do
-      if thingConfiguration.active and thingConfiguration.extensionId == extensionId and thingConfiguration.discoveryKey then
+      if thingConfiguration.active and thingConfiguration.extensionId == extensionId then
         local thing = self.things[thingId]
         if thing then
-          things[thingConfiguration.discoveryKey] = thing
+          if useDiscoveryKey then
+            if thingConfiguration.discoveryKey then
+              things[thingConfiguration.discoveryKey] = thing
+            end
+          else
+            things[thingId] = thing
+          end
         end
       end
     end
@@ -583,6 +595,7 @@ return class.create(function(engine)
     self:loadThings()
     self:loadThingValues()
     self:publishEvent('startup')
+    self:publishEvent('extensions')
     self:publishEvent('things')
   end
 
@@ -618,7 +631,8 @@ end, function(Engine)
     logger:setLevel(options.loglevel)
     local engine = Engine:new(options)
     engine:start(defaultConfig, customOptions.config)
-    engine:publishEvent('poll')
+    -- Do we need to poll at startup?
+    engine:publishEventAsync('poll')
     return engine
   end
 

@@ -6,11 +6,44 @@ local File = require('jls.io.File')
 local json = require('jls.util.json')
 local tables = require('jls.util.tables')
 local List = require('jls.util.List')
+local Map = require('jls.util.Map')
 local Scheduler = require('jls.util.Scheduler')
 local system = require('jls.lang.system')
 
 local utils = require('lha.utils')
 local schema = utils.requireJson('lha.schema-extension')
+
+local STATUS = {
+  OK = 0,
+  WARNING = 1,
+  ERROR = 2,
+}
+
+local function formatStatus(status)
+  local names = Map.reverse(STATUS)
+  for s, name in Map.spairs(names) do
+    if s >= status then
+      return name
+    end
+  end
+  return nil
+end
+
+local function parseStatus(status)
+  local statusType = type(status)
+  if statusType == 'boolean' or statusType == 'nil' then
+    return status and STATUS.ERROR or STATUS.OK
+  elseif statusType == 'string' then
+    if status == '' then
+      return STATUS.OK
+    else
+      return STATUS[string.upper(status)] or STATUS.ERROR
+    end
+  elseif statusType == 'number' then
+    return status
+  end
+  error('Invalid status type '..statusType)
+end
 
 --- A Extension class.
 -- @type Extension
@@ -21,10 +54,10 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
   --  startup: called after all the extension have been loaded
   --  shutdown: called prior to stop the engine, or when reloading an extenstion
   --  things: called when things change, added, removed, or extension loaded
-  --  poll: called depending on the configuration schedule, to collect things data
+  --  extensions: called when extensions change
+  --  poll: called depending on the configuration schedule, to collect things data and discover things
   --  refresh: called depending on the configuration schedule
   --  clean: called depending on the configuration
-  --  --discover: look for available things for this extension
   -- @function Extension:new
   -- @param engine the engine that holds this extension.
   -- @param dir the extension directory
@@ -37,6 +70,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     self.id = dir:getName()
     self.loaded = false
     self.manifest = {}
+    self.statuses = {}
     self.discoveredThings = {}
     self.lastModified = 0
     self.scheduler = Scheduler:new()
@@ -60,6 +94,17 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     self:connectConfiguration()
   end
 
+  function extension:cleanExtension()
+    if logger:isLoggable(logger.FINE) then
+      logger:fine('extension:cleanExtension() '..self.id)
+    end
+    self.scheduler:removeAllSchedules()
+    self:unsubscribeAllEvents()
+    self:clearTimers()
+    self.watchers = {}
+    self.statuses = {}
+  end
+
   function extension:getEngine()
     return self.engine
   end
@@ -78,6 +123,45 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
 
   function extension:getPrettyName()
     return self.id
+  end
+
+  function extension:getStatuses()
+    return self.statuses
+  end
+
+  function extension:getStatus(id)
+    if id then
+      local entry = self.statuses[id]
+      if entry then
+        return entry.status, entry.message
+      end
+      return STATUS.OK, ''
+    end
+    local s = STATUS.OK
+    for _, entry in pairs(self.statuses) do
+      if entry.status and entry.status > s then
+        s = entry.status
+      end
+    end
+    return s
+  end
+
+  function extension:setStatus(id, status, message)
+    if type(id) ~= 'string' then
+      error('Invalid id argument, '..type(id))
+    end
+    status = parseStatus(status)
+    local previous = self.statuses[id]
+    local previousStatus = previous and previous.status or STATUS.OK
+    if status == STATUS.OK then
+      self.statuses[id] = nil
+    else
+      self.statuses[id] = {status = status, message = message or ''}
+    end
+    if previousStatus ~= status then
+      self:fireExtensionEvent('extensions')
+    end
+    return self
   end
 
   function extension:isLoaded()
@@ -108,8 +192,10 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
   end
 
   function extension:setActive(value)
-    if self.loaded then
-      self.configuration.active = value == true
+    local target = value == true
+    if self.loaded and self.configuration.active ~= target then
+      self.configuration.active = target
+      self:fireExtensionEvent('extensions')
     end
   end
 
@@ -183,7 +269,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
 
   function extension:fireExtensionEvent(...)
     if logger:isLoggable(logger.INFO) then
-      logger:info('extension:fireExtensionEvent('..List.concat(table.pack(...), ', ')..')')
+      logger:info('extension:fireExtensionEvent('..List.join(table.pack(...), ', ')..')')
     end
     self.engine:publishExtensionsEvent(self, ...)
   end
@@ -205,16 +291,6 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
       self:publishEvent('startup')
       self:publishEvent('things')
     end
-  end
-
-  function extension:cleanExtension()
-    if logger:isLoggable(logger.FINE) then
-      logger:fine('extension:cleanExtension() '..self.id)
-    end
-    self.scheduler:removeAllSchedules()
-    self:unsubscribeAllEvents()
-    self:clearTimers()
-    self.watchers = {}
   end
 
   function extension:registerSchedule(schedule, fn)
@@ -384,12 +460,12 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
   --- Returns the map of things by their discovery key.
   function extension:getThingsByDiscoveryKey()
     -- We may cache this map and refresh on things event
-    return self:getEngine():getThingsByExtensionId(self:getId())
+    return self:getEngine():getThingsByExtensionId(self:getId(), true)
   end
 
-  -- for compatibility
+  --- Returns the map of things by their id.
   function extension:getThings()
-    return self:getThingsByDiscoveryKey()
+    return self:getEngine():getThingsByExtensionId(self:getId())
   end
 
   --- Returns the thing associated to the discovery key.
@@ -507,9 +583,11 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
       if status then
         self.lastModified = lastModified
         self.loaded = true
+        self:setStatus('load')
       else
         logger:warn('Cannot load extension "'..self:getPrettyName()..'" due to "'..tostring(err)..'"')
         self.manifest = {}
+        self:setStatus('load', STATUS.ERROR, tostring(err))
       end
     else
       self.manifest = {}
@@ -518,6 +596,10 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
   end
 
 end, function(Extension)
+
+  Extension.STATUS = STATUS
+  Extension.formatStatus = formatStatus
+  Extension.parseStatus = parseStatus
 
   function Extension.read(engine, dir, type)
     if Extension.isValid(engine, dir) then

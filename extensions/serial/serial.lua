@@ -109,7 +109,7 @@ function serialLineHandler:onData(line)
     local thing = serialThings[thingId]
     if thing then
       if logger:isLoggable(logger.FINE) then
-        logger:fine('serial looking for thing properties "'..tostring(List.concat(thing:getPropertyNames(), '", "'))..'"')
+        logger:fine('serial looking for thing properties "'..tostring(List.join(thing:getPropertyNames(), '", "'))..'"')
       end
       for propertyName in pairs(thing:getProperties()) do
         local value = data[propertyName]
