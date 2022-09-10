@@ -93,7 +93,6 @@ extension:subscribeEvent('poll', function()
   end):catch(function(err)
     logger:warn('fail to get '..extension:getPrettyName()..' things, due to "'..tostring(err)..'"')
   end)
-  hueBridge:checkWebSocket()
 end)
 
 extension:subscribeEvent('refresh', function()
@@ -101,12 +100,19 @@ extension:subscribeEvent('refresh', function()
   hueBridge:updateConfiguration()
 end)
 
+extension:subscribeEvent('heartbeat', function()
+  hueBridge:checkWebSocket()
+end)
+
 extension:subscribeEvent('startup', function()
   logger:info('startup '..extension:getPrettyName()..' extension')
   if hueBridge then
     hueBridge:close()
   end
-  hueBridge = HueBridge:new(configuration.url, configuration.user, configuration.useWebSocket and onHueEvent)
+  hueBridge = HueBridge:new(configuration.url, configuration.user, extension)
+  if configuration.useWebSocket then
+    hueBridge:setOnWebSocket(onHueEvent)
+  end
   logger:info('Bridge '..extension:getPrettyName()..': "'..configuration.url..'"')
   hueBridge:updateConfiguration()
 end)

@@ -352,11 +352,29 @@ local toPostFnByName = {
 
 return require('jls.lang.class').create(function(hueBridge)
 
-  function hueBridge:initialize(url, user, onWebSocket)
+  function hueBridge:initialize(url, user, extension, onWebSocket)
     self.user = user or ''
     self.url = url or ''
     self.delta = 0
-    self.onWebSocket = onWebSocket
+    self.extension = extension
+    self:setOnWebSocket(onWebSocket)
+  end
+
+  function hueBridge:setOnWebSocket(onWebSocket)
+    if type(onWebSocket) == 'function' then
+      self.onWebSocket = onWebSocket
+    else
+      self.onWebSocket = nil
+    end
+    return self
+  end
+
+  function hueBridge:setStatus(id, status, message)
+    if self.extension then
+      self.extension:setStatus(id, status, message)
+    else
+      logger:info('Hue '..tostring(id)..' is '..tostring(status)..' "'..tostring(message)..'"')
+    end
   end
 
   function hueBridge:configure(config)
@@ -389,6 +407,7 @@ return require('jls.lang.class').create(function(hueBridge)
     local webSocket = Map.assign(WebSocket:new(self.wsUrl), {
       onClose = function()
         logger:info('Hue WebSocket closed')
+        self:setStatus('WebSocket', 'error', 'Hue WebSocket closed')
         self.ws = nil
       end,
       onTextMessage = function(webSocket, payload)
@@ -414,9 +433,11 @@ return require('jls.lang.class').create(function(hueBridge)
     webSocket:open():next(function()
       webSocket:readStart()
       logger:info('Hue WebSocket connect on '..tostring(self.wsUrl))
+      self:setStatus('WebSocket')
       self.ws = webSocket
     end, function(reason)
       logger:warn('Cannot open Hue WebSocket on '..tostring(self.wsUrl)..' due to '..tostring(reason))
+      self:setStatus('WebSocket', 'error', 'Cannot open Hue WebSocket')
     end)
   end
 
@@ -432,7 +453,7 @@ return require('jls.lang.class').create(function(hueBridge)
   end
 
   function hueBridge:checkWebSocket()
-    if self.onWebSocket and not self.ws and self.wsUrl then
+    if self.onWebSocket and self.wsUrl and (not self.ws or self.ws:isClosed()) then
       self:startWebSocket()
     end
   end

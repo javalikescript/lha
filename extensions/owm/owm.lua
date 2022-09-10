@@ -159,7 +159,7 @@ extension:subscribeEvent('things', function()
   logger:info('looking for OpenWeatherMap things')
   extension:cleanDiscoveredThings()
   thingByKey = {}
-  local things = extension:getThings()
+  local things = extension:getThingsByDiscoveryKey()
   for key, refThing in pairs(THINGS_BY_KEY) do
     local thing = things and things[key]
     if thing then

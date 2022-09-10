@@ -23,7 +23,7 @@ extension:subscribeEvent('things', function()
   local configuration = extension:getConfiguration()
   extension:cleanDiscoveredThings()
   thingsByTarget = {}
-  local things = extension:getThings()
+  local things = extension:getThingsByDiscoveryKey()
   local targetNames = configuration.targetNames or {}
   for _, targetName in ipairs(targetNames) do
     local thing = things[targetName]

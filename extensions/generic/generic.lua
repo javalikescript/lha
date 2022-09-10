@@ -57,7 +57,7 @@ end
 local function discoverThings(extension)
   local configuration = extension:getConfiguration()
   extension:cleanDiscoveredThings()
-  local things = extension:getThings()
+  local things = extension:getThingsByDiscoveryKey()
   if configuration.things then
     for index, thingConfig in ipairs(configuration.things) do
       local key = formatKey(index, thingConfig)
