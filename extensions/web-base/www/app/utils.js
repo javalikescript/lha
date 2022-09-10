@@ -13,6 +13,17 @@ function compareByTitle(a, b) {
   return strcasecmp(a.title, b.title);
 }
 
+function contains(q) {
+  var ql = q.toLowerCase();
+  for (var i = 1; i < arguments.length; i++) {
+    var sl = ('' + arguments[i]).toLowerCase();
+    if (sl.indexOf(ql) >= 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function apply(to, fn) {
   return function(args) {
     return fn.apply(to, args);

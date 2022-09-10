@@ -2,9 +2,24 @@ var thingsVue = new Vue({
   el: '#things',
   data: {
     edit: false,
+    filter: false,
+    query: '',
     extensionsById: {},
     propertiesById: {},
     things: []
+  },
+  computed: {
+    filteredThings: function () {
+      if ((this.query.length === 0) || !this.filter) {
+        return this.things;
+      }
+      var query = this.query;
+      var extensionsById = this.extensionsById;
+      return this.things.filter(function(thing) {
+        var extension = extensionsById[thing.extensionId];
+        return contains(query, thing.title, thing.description, thing.extensionId, extension ? extension.name : '');
+      });
+    }
   },
   methods: {
     onShow: function() {

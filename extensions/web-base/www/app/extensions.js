@@ -1,7 +1,20 @@
 var extensionsVue =new Vue({
   el: '#extensions',
   data: {
-    extensions: []
+    extensions: [],
+    filter: false,
+    query: ''
+  },
+  computed: {
+    filteredExtensions: function () {
+      if ((this.query.length === 0) || !this.filter) {
+        return this.extensions;
+      }
+      var query = this.query;
+      return this.extensions.filter(function(extension) {
+        return contains(query, extension.name, extension.description, extension.id);
+      });
+    }
   },
   methods: {
     pollExtension: function(extension) {
@@ -27,18 +40,34 @@ new Vue({
   },
   methods: {
     onDisable: function() {
-      if (!this.extensionId) {
+      var extensionId = this.extensionId;
+      if (!extensionId) {
         return Promise.reject();
       }
-      return fetch('/engine/extensions/' + this.extensionId + '/disable', {method: 'POST'}).then(function() {
-        app.clearCache();
-        toaster.toast('Extension disabled');
+      return confirmation.ask('Disable the extension?').then(function() {
+        return fetch('/engine/extensions/' + extensionId + '/disable', {method: 'POST'}).then(function() {
+          app.clearCache();
+          toaster.toast('Extension disabled');
+        });
       });
     },
     onReload: function() {
-      if (this.extensionId) {
-        fetch('/engine/extensions/' + this.extensionId + '/reload', {method: 'POST'}).then(function() {
-          toaster.toast('Extension reloaded');
+      var extensionId = this.extensionId;
+      if (extensionId) {
+        confirmation.ask('Reload the extension?').then(function() {
+          fetch('/engine/extensions/' + extensionId + '/reload', {method: 'POST'}).then(function() {
+            toaster.toast('Extension reloaded');
+          });
+        });
+      }
+    },
+    onRefreshThings: function() {
+      var extensionId = this.extensionId;
+      if (extensionId) {
+        confirmation.ask('Disable and refresh all extension things?').then(function() {
+            fetch('/engine/extensions/' + extensionId + '/refreshThingsDescription', {method: 'POST'}).then(function() {
+            toaster.toast('Extension things refreshed');
+          });
         });
       }
     },

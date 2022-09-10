@@ -51,13 +51,15 @@
   -->
   <app-page id="things" title="Things">
     <template slot="bar-right">
+      <input v-if="filter" v-model="query" type="text" placeholder="Type to filter">
+      <button v-on:click="filter = !filter"><i class="fas fa-search"></i></button>
       <button v-on:click="app.toPage('addThings')"><i class="fa fa-plus"></i></button>
       <button v-if="edit" v-on:click="onSave" title="Save"><i class="far fa-save"></i></button>
       <button v-on:click="onShow" title="Refresh"><i class="fas fa-sync"></i></button>
       <button v-on:click="edit = !edit" title="Edit"><i :class="['fas', edit ? 'fa-eye' : 'fa-edit']"></i></button>
     </template>
     <article class="cards">
-      <div class="card" v-for="thing in things">
+      <div class="card" v-for="thing in filteredThings">
         <div class="bar">
           <div>
             <p>{{ thing.title + (thing.extensionId in extensionsById ? (' (' + extensionsById[thing.extensionId].name + ')') : '') }}</p>
@@ -146,11 +148,13 @@
   -->
   <app-page id="extensions" title="Extensions">
     <template slot="bar-right">
+      <input v-if="filter" v-model="query" type="text" placeholder="Type to filter">
+      <button v-on:click="filter = !filter"><i class="fas fa-search"></i></button>
       <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
       <button v-on:click="app.toPage('addExtensions')" title="Add"><i class="fa fa-plus"></i></button>
     </template>
     <article class="cards">
-      <div class="card" v-for="extension in extensions" v-if="extension.active">
+      <div class="card" v-for="extension in filteredExtensions" v-if="extension.active">
         <div class="bar">
           <p>{{ extension.name }}</p>
           <div>
@@ -169,6 +173,7 @@
       <button v-on:click="onDisable().then(function(){ app.back(); })" title="Disable"><i class="fa fa-trash"></i></button>
       <button v-on:click="onSave()" title="Save"><i class="fas fa-save"></i></button>
       <button v-on:click="onReload" title="Reload"><i class="fas fa-redo"></i></button>
+      <button v-on:click="onRefreshThings" title="Refresh Things"><i class="fas fa-recycle"></i></button>
     </template>
     <article class="content">
       <section>
