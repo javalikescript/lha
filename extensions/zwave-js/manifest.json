@@ -58,6 +58,11 @@
             "default": "ws://localhost:3000"
           }
         }
+      },
+      "dumpNodes": {
+        "title": "Dump nodes into a file for troubleshooting",
+        "type": "boolean",
+        "default": false
       }
     }
   }

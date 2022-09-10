@@ -9,7 +9,6 @@ local Url = require('jls.net.Url')
 local strings = require('jls.util.strings')
 local json = require('jls.util.json')
 local Map = require('jls.util.Map')
-local List = require('jls.util.List')
 local Date = require('jls.util.Date')
 
 local Thing = require('lha.Thing')
@@ -19,7 +18,8 @@ local Thing = require('lha.Thing')
 -- command classes
 -- 0x20..0xEE Application Command Classes
 local CC = {
-  MULTILEVEL = 49,
+  SWITCH_MULTILEVEL = 38,
+  SENSOR_MULTILEVEL = 49,
   ALARM = 113,
   BATTERY = 128,
 }
@@ -75,17 +75,21 @@ local function createThingFromNode(node)
       Thing.CAPABILITIES.HumiditySensor,
       Thing.CAPABILITIES.TemperatureSensor,
     }):addPropertiesFromNames('humidity', 'temperature', 'battery')
+  elseif productLabel == 'ZMNHUD' then
+    thing = Thing:new(getNodeName(node, 'Pilot Wire'), 'Pilot Wire Switch', {
+      Thing.CAPABILITIES.MultiLevelSwitch,
+    }):addProperty('value', {
+      ['@type'] = 'LevelProperty',
+      title = 'Signal Order',
+      type = 'integer',
+      -- stop, hg, eco, -2, -1, comfort
+      description = 'The signal order as a level, 0, 20, 30, 40, 50, 99 from stop to comfort',
+      minimum = 0,
+      maximum = 99
+    }, 0)
   end
   if thing then
-    thing:addPropertiesFromNames('lastseen')
-    local thingProp = thing:getProperty('temperature')
-    if thingProp then
-      local info = findNodeValue(node, CC.MULTILEVEL, 'Air temperature')
-      if info and info.metadata and info.metadata.unit and string.match(info.metadata.unit, '.F') then
-        thingProp.metadata.sourceUnit = 'degree fahrenheit'
-      end
-    end
-    return thing
+    return thing:addPropertiesFromNames('lastseen')
   end
 end
 
@@ -93,19 +97,16 @@ local function updateThingFromNodeInfo(thing, info)
   local cc = info.commandClass
   local property = info.property
   local value = info.value or info.newValue
-  if cc == CC.MULTILEVEL then
+  if cc == CC.SENSOR_MULTILEVEL then
     --logger:info('Z-Wave update thing "'..thing:getTitle()..'" node info: '..json.stringify(info, 2))
     if property == 'Air temperature' and type(value) == 'number' then
-      local thingProp = thing:getProperty('temperature')
-      if thingProp then
-        local sourceUnit = thingProp:getMetadata('sourceUnit')
-        if sourceUnit == 'degree fahrenheit' then
-          value = ((value - 32) * 50 // 9) / 10
-        end
-        thing:updatePropertyValue('temperature', value)
-      end
+      thing:updatePropertyValue('temperature', value)
     elseif property == 'Humidity' and type(value) == 'number' then
       thing:updatePropertyValue('humidity', value)
+    end
+  elseif cc == CC.SWITCH_MULTILEVEL then
+    if property == 'currentValue' and type(value) == 'number' then
+      thing:updatePropertyValue('value', value)
     end
   elseif cc == CC.ALARM then
     if property == 'Smoke Alarm' and type(value) == 'number' then
@@ -268,35 +269,15 @@ end
 local function startListeningWebSocket(webSocket)
   sendWebSocket(webSocket, 'start_listening'):next(function(result)
     --logger:info('Z-Wave start_listening result: '..json.stringify(result, 2))
-    --require('jls.io.File'):new('zwave-js.json'):write(json.stringify(result, 2))
+    if extension:getConfiguration().dumpNodes then
+      logger:info('Z-Wave dumping nodes')
+      local File = require('jls.io.File')
+      File:new('zwave-js.json'):write(json.stringify(result, 2))
+    end
     for _, node in ipairs(result.state.nodes) do
       onZWaveNode(node)
     end
   end)
-  --[[
-  Promise.all(List.map({
-    {
-      command = 'node.get_state',
-      nodeId = 6
-    },
-    {
-      command = 'node.get_value',
-      nodeId = 6,
-      valueId = {
-        commandClass = CC.MULTILEVEL,
-        endpoint = 0,
-        property = 'Humidity'
-      }
-    },-- node.get_value => {value: 1}
-    {
-      command = 'controller.get_state'
-    }
-  }, function(message)
-    return sendWebSocket(webSocket, message)
-  end)):next(function(results)
-    logger:info('Z-Wave results: '..json.stringify(results, 2))
-  end)
-  ]]
 end
 
 local function startWebSocket(wsConfig)
@@ -306,11 +287,14 @@ local function startWebSocket(wsConfig)
   webSocket:open():next(function()
     webSocket:readStart()
     logger:info('Z-Wave JS WebSocket connected on '..tostring(wsConfig.url))
+    extension:setStatus('WebSocket')
     --sendWebSocket('set_api_schema', {schemaVersion = 15})
   end, function(reason)
+    extension:setStatus('WebSocket', 'error', 'Cannot open Z-Wave JS WebSocket')
     logger:warn('Cannot open Z-Wave JS WebSocket on '..tostring(wsConfig.url)..' due to '..tostring(reason))
   end)
   webSocket.onClose = function()
+    extension:setStatus('WebSocket', 'error', 'Z-Wave JS WebSocket closed')
     logger:warn('Z-Wave JS WebSocket closed')
   end
   webSocket.onTextMessage = function(_, payload)
@@ -370,38 +354,88 @@ local function cleanup()
   end
 end
 
+local function setThingPropertyValue(thing, name, value)
+  if webSocket and not webSocket:isClosed() then
+    local nodeId
+    for id, th in pairs(thingsByNodeId) do
+      if th == thing then
+        nodeId = id
+      end
+    end
+    if nodeId and thing:hasType(Thing.CAPABILITIES.MultiLevelSwitch) and thing:hasProperty(name) then
+      sendWebSocket(webSocket, {
+        command = 'node.set_value',
+        nodeId = nodeId,
+        valueId = {
+          commandClass = CC.SWITCH_MULTILEVEL,
+          property = 'targetValue'
+        },
+        value = value
+      }):next(function()
+        logger:info('Z-Wave nodeId '..tostring(nodeId)..' state set done')
+        thing:updatePropertyValue(name, value)
+      end, function(reason)
+        logger:info('Z-Wave nodeId '..tostring(nodeId)..' state set failed '..tostring(reason))
+        thing:updatePropertyValue(name, value)
+      end)
+      return
+    end
+  end
+  thing:updatePropertyValue(name, value)
+end
+
 extension:subscribeEvent('things', function()
   thingsByNodeId = {}
   thingsMap = extension:getThingsByDiscoveryKey()
+  for _, thing in pairs(thingsMap) do
+    thing.setPropertyValue = setThingPropertyValue
+  end
 end)
 
 extension:subscribeEvent('poll', function()
-  local configuration = extension:getConfiguration()
-  if configuration.websocket and configuration.websocket.enable then
-    if not webSocket or webSocket:isClosed() then
-      webSocket = startWebSocket(configuration.websocket)
-    else
-      -- starting again to receive the nodes state, no really part of the API
-      startListeningWebSocket(webSocket)
-      --[[sendWebSocket(webSocket, {
+  logger:info('Polling '..extension:getPrettyName()..' extension')
+  if webSocket and not webSocket:isClosed() then
+    -- starting again to receive the nodes state, not really part of the API
+    -- necessary to discover new nodes
+    startListeningWebSocket(webSocket)
+    --[[
+    for nodeId in pairs(thingsByNodeId) do
+      logger:fine('Z-Wave polling nodeId '..tostring(nodeId))
+      sendWebSocket(webSocket, {
         command = 'node.get_state',
-        nodeId = 6
+        nodeId = nodeId
       }):next(function(results)
-        logger:info('Z-Wave results: '..json.stringify(results, 2))
-      end)]]
+        logger:info('Z-Wave nodeId '..tostring(nodeId)..' state polled')
+        --logger:info('Z-Wave nodeId '..tostring(nodeId)..' state: '..json.stringify(results))
+        onZWaveNode(results.state)
+      end)
     end
+    ]]
+  else
+    logger:warn('Z-Wave no websocket available')
   end
 end)
 
+local function checkWebSocket()
+  local wsConfig = extension:getConfiguration().websocket
+  if wsConfig and wsConfig.enable and (not webSocket or webSocket:isClosed()) then
+    logger:info('Z-Wave JS WebSocket connecting to '..tostring(wsConfig.url))
+    webSocket = startWebSocket(wsConfig)
+  end
+end
+
+extension:subscribeEvent('heartbeat', function()
+  checkWebSocket()
+end)
+
 extension:subscribeEvent('startup', function()
-  local configuration = extension:getConfiguration()
+  logger:info('Starting '..extension:getPrettyName()..' extension')
   cleanup()
-  if configuration.mqtt and configuration.mqtt.enable then
-    mqttClient = startMqtt(configuration.mqtt)
+  local mqttConfig = extension:getConfiguration().mqtt
+  if mqttConfig and mqttConfig.enable then
+    mqttClient = startMqtt(mqttConfig)
   end
-  if configuration.websocket and configuration.websocket.enable then
-    webSocket = startWebSocket(configuration.websocket)
-  end
+  checkWebSocket()
 end)
 
 extension:subscribeEvent('shutdown', function()
