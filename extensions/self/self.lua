@@ -1,5 +1,6 @@
 local extension = ...
 
+local Extension = require('lha.Extension')
 local Thing = require('lha.Thing')
 --local ThingProperty = require('lha.ThingProperty')
 local logger = require('jls.lang.logger')
@@ -74,7 +75,7 @@ local function createLuaThing()
     ['@type'] = 'LevelProperty',
     title = 'Lua User Time',
     type = 'number',
-    description = 'The amount in seconds of CPU time used by the program',
+    description = 'The amount in seconds of CPU time used by the process',
     minimum = 0,
     readOnly = true,
     unit = 'second'
@@ -83,7 +84,7 @@ local function createLuaThing()
     ['@type'] = 'LevelProperty',
     title = 'Resident Set Size',
     type = 'integer',
-    description = 'The resident set size (RSS) for the current process.',
+    description = 'The resident set size (RSS) for the process.',
     minimum = 0,
     readOnly = true,
     unit = 'byte'
@@ -92,7 +93,7 @@ local function createLuaThing()
     ['@type'] = 'LevelProperty',
     title = 'Total Memory',
     type = 'integer',
-    description = 'The total memory available',
+    description = 'The memory available for the host',
     minimum = 0,
     readOnly = true,
     unit = 'byte'
@@ -101,7 +102,7 @@ local function createLuaThing()
     ['@type'] = 'LevelProperty',
     title = 'Used Memory',
     type = 'number',
-    description = 'The memory used',
+    description = 'The memory used by the process',
     minimum = 0,
     maximum = 100,
     readOnly = true,
@@ -111,7 +112,7 @@ local function createLuaThing()
     ['@type'] = 'LevelProperty',
     title = 'Host CPU Usage',
     type = 'number',
-    description = 'The CPU usage',
+    description = 'The CPU usage for the host',
     minimum = 0,
     maximum = 100,
     readOnly = true,
@@ -121,7 +122,7 @@ local function createLuaThing()
     ['@type'] = 'LevelProperty',
     title = 'Process CPU Usage',
     type = 'number',
-    description = 'The CPU usage',
+    description = 'The CPU usage for the process',
     minimum = 0,
     maximum = 100,
     readOnly = true,
@@ -148,11 +149,37 @@ local function createThingsThing()
     readOnly = true,
     unit = 'minute'
   }, 0)
-  luaThing:addProperty('things', {
+  luaThing:addProperty('count', {
     ['@type'] = 'LevelProperty',
     type = 'number',
-    title = 'Number of things',
-    description = 'The number of things',
+    title = 'Number of Things',
+    description = 'The number of enabled things',
+    readOnly = true
+  }, 0)
+  return luaThing
+end
+
+local function createExtensionsThing()
+  local luaThing = Thing:new('Extensions', 'Extensions', {'MultiLevelSensor'})
+  luaThing:addProperty('count', {
+    ['@type'] = 'LevelProperty',
+    type = 'number',
+    title = 'Number of Extensions',
+    description = 'The number of active extensions',
+    readOnly = true
+  }, 0)
+  luaThing:addProperty('status', {
+    ['@type'] = 'StatusProperty',
+    type = 'string',
+    title = 'Max Extensions Status',
+    description = 'The max extensions status value',
+    readOnly = true
+  }, 0)
+  luaThing:addProperty('wrong', {
+    ['@type'] = 'LevelProperty',
+    type = 'number',
+    title = 'Number of Extensions in Error',
+    description = 'The number of extensions with a status greater than OK',
     readOnly = true
   }, 0)
   return luaThing
@@ -160,27 +187,76 @@ end
 
 logger:info('self extension under '..extension:getDir():getPath())
 
-local luaThing, thingsThing
+local luaThing, thingsThing, extensionsThing
 
 --[[
 curl http://localhost:8080/engine/admin/stop
 curl http://localhost:8080/things
-
 ]]
 
-extension:subscribeEvent('things', function()
-  logger:fine('Looking for self things')
-  luaThing = extension:syncDiscoveredThingByKey('lua', createLuaThing)
-  thingsThing = extension:syncDiscoveredThingByKey('things', createThingsThing)
-  --logger:info('luaThing '..require('jls.util.json').encode(luaThing:asThingDescription()))
-end)
+local function refreshExtensions()
+  local count = 0
+  local maxStatus, wrongCount = 0, 0
+  for _, ext in ipairs(extension:getEngine():getExtensions()) do
+    count = count + 1
+    local status = ext:getStatus()
+    if status > maxStatus then
+      maxStatus = status
+    end
+    if status > 0 then
+      wrongCount = wrongCount + 1
+    end
+end
+  extensionsThing:updatePropertyValue('count', count)
+  extensionsThing:updatePropertyValue('wrong', wrongCount)
+  extensionsThing:updatePropertyValue('status', Extension.formatStatus(maxStatus))
+end
+
+local function refreshThings()
+  local time = Date.now()
+  local engine = extension:getEngine()
+  local minBattery = 100
+  local minLastseen = time
+  local count = 0
+  local value
+  for thingId, thing in pairs(engine.things) do
+    local extensionId, discoveryKey = engine:getThingDiscoveryKey(thingId)
+    if extensionId ~= extension:getId() then
+      local properties = thing:getProperties()
+      for propertyName, property in pairs(properties) do
+        count = count + 1
+        if propertyName == 'battery' then
+          value = property:getValue()
+          if type(value) == 'number' and value < minBattery then
+            minBattery = value
+          end
+        elseif propertyName == 'lastseen' then
+          value = property:getValue()
+          if type(value) == 'string' then
+            value = Date.fromISOString(value)
+            --logger:info('Thing '..thingId..' lastseen: '..tostring(value)..'/'..tostring(time))
+            if value and value < minLastseen then
+              minLastseen = value
+            end
+          end
+        end
+      end
+    end
+  end
+  thingsThing:updatePropertyValue('battery', minBattery)
+  value = 0
+  if minLastseen < time then
+    value = (time - minLastseen) // 60000
+  end
+  thingsThing:updatePropertyValue('lastseen', value)
+  thingsThing:updatePropertyValue('count', count)
+end
 
 local lastClock = os.clock()
 local lastTime = os.time()
 local lastInfo = sumCpuInfo(luv.cpu_info())
 
-extension:subscribeEvent('poll', function()
-  logger:fine('Polling self extension')
+local function refreshLua()
   luaThing:updatePropertyValue('memory', math.floor(collectgarbage('count') * 1024))
   local time = os.time()
   local clock = os.clock()
@@ -209,42 +285,26 @@ extension:subscribeEvent('poll', function()
     --local rusage = getRUsage(luv.getrusage())
   end
   lastClock = clock
+end
 
-  time = Date.now()
-  local engine = extension:getEngine()
-  local minBattery = 100
-  local minLastseen = time
-  local thingsCount = 0
-  local value
-  for thingId, thing in pairs(engine.things) do
-    local extensionId, discoveryKey = engine:getThingDiscoveryKey(thingId)
-    if extensionId ~= extension:getId() then
-      local properties = thing:getProperties()
-      for propertyName, property in pairs(properties) do
-        thingsCount = thingsCount + 1
-        if propertyName == 'battery' then
-          value = property:getValue()
-          if type(value) == 'number' and value < minBattery then
-            minBattery = value
-          end
-        elseif propertyName == 'lastseen' then
-          value = property:getValue()
-          if type(value) == 'string' then
-            value = Date.fromISOString(value)
-            --logger:info('Thing '..thingId..' lastseen: '..tostring(value)..'/'..tostring(time))
-            if value and value < minLastseen then
-              minLastseen = value
-            end
-          end
-        end
-      end
-    end
+extension:subscribeEvent('things', function()
+  logger:fine('Looking for self things')
+  luaThing = extension:syncDiscoveredThingByKey('lua', createLuaThing)
+  thingsThing = extension:syncDiscoveredThingByKey('things', createThingsThing)
+  extensionsThing = extension:syncDiscoveredThingByKey('extensions', createExtensionsThing)
+  --logger:info('luaThing '..require('jls.util.json').encode(luaThing:asThingDescription()))
+  refreshThings()
+end)
+
+extension:subscribeEvent('extensions', function()
+  if extensionsThing then
+    refreshExtensions()
   end
-  thingsThing:updatePropertyValue('battery', minBattery)
-  value = 0
-  if minLastseen < time then
-    value = (time - minLastseen) // 60000
-  end
-  thingsThing:updatePropertyValue('lastseen', value)
-  thingsThing:updatePropertyValue('things', thingsCount)
+end)
+
+extension:subscribeEvent('poll', function()
+  logger:fine('Polling '..extension:getPrettyName()..' extension')
+  refreshLua()
+  refreshThings()
+  refreshExtensions()
 end)

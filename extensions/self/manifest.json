@@ -1,6 +1,6 @@
 {
-  "name": "Lua Monitoring",
-  "description": "Expose Lua engine informations",
+  "name": "LHA self Monitoring",
+  "description": "Expose LHA engine informations",
   "version": "1.0",
   "script": "self.lua",
   "config": {

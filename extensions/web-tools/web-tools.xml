@@ -3,7 +3,7 @@
     <p>Actions</p>
     <button v-on:click="gc()"><i class="fa fa-trash"></i>&nbsp;Collect Garbage</button>
     <button v-on:click="pollThings()"><i class="far fa-bell"></i>&nbsp;Poll Things</button>
-    <button v-on:click="refreshThings()"><i class="fas fa-redo"></i>&nbsp;Refresh Things</button>
+    <button v-on:click="refreshThings()"><i class="fas fa-recycle"></i>&nbsp;Refresh Things</button>
     <button v-on:click="clearCache()"><i class="fas fa-broom"></i>&nbsp;Clear Cache</button>
     <p>Log Level</p>
     <select v-model="logLevel" v-on:change="applyLogLevel">
