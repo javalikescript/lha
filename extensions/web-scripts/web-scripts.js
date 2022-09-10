@@ -316,6 +316,42 @@ define(['requirePath', './scripts.xml', './script-editor.xml'], function(require
       var code = "os.time()";
       return [code, Blockly.JavaScript.ORDER_MEMBER];
     };
+    Blockly.Blocks['lha_parse_time'] = {
+      init: function() {
+        this.jsonInit({
+          "message0": "parse date time from %1",
+          "args0": [{
+            "type": "input_value",
+            "name": "VALUE"
+          }],
+          "output": null,
+          "colour": lhaStatementColor
+        });
+      }
+    };
+    Blockly.Lua['lha_parse_time'] = function(block) {
+      var value = Blockly.Lua.valueToCode(block, 'VALUE', Blockly.JavaScript.ORDER_NONE);
+      var code = "(require('jls.util.Date').fromISOString(" + value + ") // 1000)";
+      return [code, Blockly.JavaScript.ORDER_MEMBER];
+    };
+    Blockly.Blocks['lha_format_time'] = {
+      init: function() {
+        this.jsonInit({
+          "message0": "format date time from %1",
+          "args0": [{
+            "type": "input_value",
+            "name": "VALUE"
+          }],
+          "output": null,
+          "colour": lhaStatementColor
+        });
+      }
+    };
+    Blockly.Lua['lha_format_time'] = function(block) {
+      var value = Blockly.Lua.valueToCode(block, 'VALUE', Blockly.JavaScript.ORDER_NONE);
+      var code = "require('jls.util.Date'):new(" + value + " * 1000):toISOString(true, true)";
+      return [code, Blockly.JavaScript.ORDER_MEMBER];
+    };
     Blockly.Blocks['lha_date'] = {
       init: function() {
         this.jsonInit({
