@@ -16,9 +16,12 @@ function compareByTitle(a, b) {
 function contains(q) {
   var ql = q.toLowerCase();
   for (var i = 1; i < arguments.length; i++) {
-    var sl = ('' + arguments[i]).toLowerCase();
-    if (sl.indexOf(ql) >= 0) {
-      return true;
+    var s = arguments[i];
+    if ((s !== null) && (s !== undefined)) {
+      var sl = ('' + s).toLowerCase();
+      if (sl.indexOf(ql) >= 0) {
+        return true;
+      }
     }
   }
   return false;

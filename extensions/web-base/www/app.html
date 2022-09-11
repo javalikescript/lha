@@ -47,6 +47,36 @@
     </article>
   </app-menu>
   <!--
+    properties
+  -->
+  <app-page id="properties" title="Properties">
+    <template slot="bar-right">
+      <input v-if="filter" v-model="query" type="text" placeholder="Type to filter">
+      <button v-on:click="filter = !filter"><i class="fas fa-search"></i></button>
+      <button v-on:click="onShow" title="Refresh"><i class="fas fa-sync"></i></button>
+    </template>
+    <page-article>
+      <table style="border-spacing: 0.5rem 0; width: 100%;">
+        <thead>
+          <tr>
+            <th class="show-xl">Extension</th>
+            <th class="show-l">Thing</th>
+            <th>Property</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="property in filteredProperties">
+            <td class="show-xl"><span :title="property.extension.description">{{ property.extension.name }}</span></td>
+            <td class="show-l"><span :title="property.thing.description">{{ property.thing.title }}</span></td>
+            <td><span :title="property.description + ' (' + property.name + ')'">{{ property.title }}</span></td>
+            <td><span>{{ property.value }}</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </page-article>
+  </app-page>
+  <!--
     things
   -->
   <app-page id="things" title="Things">
@@ -394,5 +424,6 @@
 <script src="app/json.js" type="text/javascript" charset="utf-8"></script>
 <script src="app/extensions.js" type="text/javascript" charset="utf-8"></script>
 <script src="app/things.js" type="text/javascript" charset="utf-8"></script>
+<script src="app/properties.js" type="text/javascript" charset="utf-8"></script>
 <script src="app/boot.js" type="text/javascript" charset="utf-8"></script>
 </html>

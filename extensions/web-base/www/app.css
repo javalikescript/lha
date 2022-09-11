@@ -360,6 +360,17 @@ section > article > section, .card {
   padding: 0.5rem;
 }
 
+article > section > table {
+  font-size: 1.5rem;
+  line-height: 2rem;
+}
+article > section > table > thead {
+  font-weight: bold;
+}
+article > section > table > tbody {
+  font-weight: normal;
+}
+
 .switch {
   position: relative;
   display: inline-block;
@@ -437,4 +448,37 @@ input:checked + .slider:before {
   -webkit-transform: translateX(1.2rem);
   -ms-transform: translateX(1.2rem);
   transform: translateX(1.2rem);
+}
+
+@media all and (min-width: 1280px) {
+  section > article > section {
+    max-width: 120rem;
+  }
+  .card {
+    max-width: 90rem;
+  }
+}
+@media all and (min-width: 800px) and (max-width: 1279px) {
+  section > article > section {
+    max-width: 90rem;
+  }
+  .show-xl {
+    display: none;
+    width: 0;
+    height: 0;
+    opacity: 0;
+    visibility: collapse;
+  }    
+}
+@media all and (max-width: 799px) {
+  section > article > section {
+    max-width: 60rem;
+  }
+  .show-l, .show-xl {
+    display: none;
+    width: 0;
+    height: 0;
+    opacity: 0;
+    visibility: collapse;
+  }    
 }
