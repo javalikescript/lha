@@ -56,7 +56,7 @@ local function onHueEvent(info)
     local thing = thingsMap[info.uniqueid]
     if info.state and logger:isLoggable(logger.FINE) then
       local json = require('jls.util.json')
-      logger:fine('Hue event received '..(thing and 'v' or 'x')..' '..json.stringify(info, 2))
+      logger:fine('Hue event received on "'..(thing and thing:getTitle() or 'n/a')..'" '..json.stringify(info, 2))
     end
     if thing then
       hueBridge:updateThing(thing, info, true)

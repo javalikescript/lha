@@ -118,6 +118,7 @@ local REST_EXTENSIONS = {
         return refreshThingsDescription(engine, extension)
       end
     end,
+    -- curl -X POST http://localhost:8080/engine/extensions/web-base/reload
     ['reload(extension)?method=POST'] = function(exchange, extension)
       extension:restartExtension()
     end,
@@ -164,7 +165,8 @@ local REST_ADMIN = {
     end, 100)
     return 'In progress'
   end,
-  ['stop?method=POST'] = function(exchange)
+    -- curl -X POST http://localhost:8080/engine/stop
+    ['stop?method=POST'] = function(exchange)
     event:setTimeout(function()
       exchange.attributes.engine:stop()
       event:stop()

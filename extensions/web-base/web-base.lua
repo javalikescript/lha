@@ -126,15 +126,21 @@ extension:subscribeEvent('startup', function()
 
   local assets = utils.getAbsoluteFile(configuration.assets or 'assets', extension:getDir())
   local assetsHandler
-  if assets:isDirectory() then
-    logger:info('Using assets directory "'..assets:getPath()..'"')
-    assetsHandler = FileHttpHandler:new(assets):setCacheControl(configuration.cache)
-  elseif assets:isFile() and string.find(assets:getPathName(), '%.zip$') then
-    logger:info('Using assets file "'..assets:getPath()..'"')
-    assetsHandler = ZipFileHttpHandler:new(assets)
+  if assets:isFile() then
+    if string.find(assets:getPathName(), '%.zip$') then
+      logger:info('Using assets file "'..assets:getPath()..'"')
+      assetsHandler = ZipFileHttpHandler:new(assets)
+    else
+      logger:warn('Invalid assets file "'..assets:getPath()..'"')
+      assetsHandler = HttpContext.notFoundHandler
+    end
   else
-    assetsHandler = HttpContext.notFoundHandler
-    logger:warn('Invalid assets directory "'..assets:getPath()..'"')
+    if assets:isDirectory() then
+      logger:info('Using assets directory "'..assets:getPath()..'"')
+    else
+      logger:warn('Missing assets directory "'..assets:getPath()..'"')
+    end
+    assetsHandler = FileHttpHandler:new(assets):setCacheControl(configuration.cache)
   end
   local wwwDir = File:new(extension:getDir(), 'www')
 
