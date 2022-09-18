@@ -72,6 +72,7 @@ extension:subscribeEvent('poll', function()
     return
   end
   logger:info('Polling '..extension:getPrettyName()..' extension')
+  -- TODO expose a bridge thing
   hueBridge:get(HueBridge.CONST.sensors):next(function(allSensors)
     local time = Date.now()
     if allSensors then

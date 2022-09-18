@@ -157,23 +157,31 @@ local function onZWaveNode(node)
   end
 end
 
-local function onZWaveNodeEvent(event)
+local function onZWaveEvent(event)
+  logger:info('Z-Wave '..tostring(event.source)..' event "'..tostring(event.event)..'"')
   -- see https://zwave-js.github.io/node-zwave-js/#/api/node?id=zwavenode-events
-  if event.source == 'node' and event.event == 'value updated' and event.nodeId then
-    local thing = thingsByNodeId[event.nodeId]
-    if thing then
-      --logger:info('Z-Wave JS event on thing: '..json.stringify(event, 2))
-      updateThingFromNodeInfo(thing, event.args)
-      if thing:hasProperty('lastseen') then
-        local lastseen = string.sub(Date:new():toISOString(true), 1, 16)..'Z'
-        thing:updatePropertyValue('lastseen', lastseen)
+  if event.source == 'node' then
+    if event.event == 'value updated' and event.nodeId then
+      local thing = thingsByNodeId[event.nodeId]
+      if thing then
+        --logger:info('Z-Wave JS event on thing: '..json.stringify(event, 2))
+        updateThingFromNodeInfo(thing, event.args)
+        if thing:hasProperty('lastseen') then
+          local lastseen = string.sub(Date:new():toISOString(true), 1, 16)..'Z'
+          thing:updatePropertyValue('lastseen', lastseen)
+        end
+      else
+        if logger:isLoggable(logger.FINE) then
+          logger:fine('Z-Wave JS event without thing: '..json.stringify(event, 2))
+        end
       end
-    else
-      if logger:isLoggable(logger.FINE) then
-        logger:fine('Z-Wave JS event without thing: '..json.stringify(event, 2))
-      end
+    elseif event.event == 'ready' and event.node then
+      onZWaveNode(event.node)
     end
+    -- wake up, sleep
   end
+  -- controller: node added, node removed
+  -- driver: error, driver ready, all nodes ready
 end
 
 ------------------------------------------------------------
@@ -307,7 +315,7 @@ local function startWebSocket(wsConfig)
         if logger:isLoggable(logger.FINER) then
           logger:finer('Z-Wave JS event: '..json.stringify(message.event, 2))
         end
-        onZWaveNodeEvent(message.event)
+        onZWaveEvent(message.event)
       elseif message.type == 'result' then
         local cb = webSocket.zwMsgCb[message.messageId]
         if cb then
@@ -324,6 +332,7 @@ local function startWebSocket(wsConfig)
           end
         end
       elseif message.type == 'version' then
+        -- command = 'driver.set_preferred_scale', scales = {temperature = 'Celsius'}
         startListeningWebSocket(webSocket)
       else
         logger:warn('Z-Wave JS WebSocket unsupported message type '..tostring(message.type))
@@ -394,23 +403,24 @@ end)
 
 extension:subscribeEvent('poll', function()
   logger:info('Polling '..extension:getPrettyName()..' extension')
+  -- TODO expose a controller thing
   if webSocket and not webSocket:isClosed() then
-    -- starting again to receive the nodes state, not really part of the API
-    -- necessary to discover new nodes
-    startListeningWebSocket(webSocket)
-    --[[
     for nodeId in pairs(thingsByNodeId) do
       logger:fine('Z-Wave polling nodeId '..tostring(nodeId))
       sendWebSocket(webSocket, {
         command = 'node.get_state',
         nodeId = nodeId
       }):next(function(results)
-        logger:info('Z-Wave nodeId '..tostring(nodeId)..' state polled')
-        --logger:info('Z-Wave nodeId '..tostring(nodeId)..' state: '..json.stringify(results))
+        if logger:isLoggable(logger.FINE) then
+          if logger:isLoggable(logger.FINEST) then
+            logger:finest('Z-Wave nodeId '..tostring(nodeId)..' state: '..json.stringify(results))
+          else
+            logger:fine('Z-Wave nodeId '..tostring(nodeId)..' state polled')
+          end
+        end
         onZWaveNode(results.state)
       end)
     end
-    ]]
   else
     logger:warn('Z-Wave no websocket available')
   end
