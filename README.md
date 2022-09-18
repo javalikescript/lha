@@ -46,7 +46,7 @@ You need to include your devices using the dedicated tool such as deCONZ, Hue Ap
 
 ## Devices
 
-Any device available through ConBee, Hue or Z-Wave could be added.
+Any device available through ConBee, Hue or Z-Wave could be added with some modifications.
 
 The following devices are already availables.
 * Philips Hue
@@ -67,8 +67,12 @@ The following devices are already availables.
   * Switch ZG9101SAC
 * FIBARO
   * Smoke Sensor
+* Qubino
+  * ZMNHUD1_DIN Pilot wire
 * ZOOZ
   * ZSE44 Temperature Humidity XS Sensor
+* LiXee
+  * ZLinky TIC
 
 ## Screenshots
 
