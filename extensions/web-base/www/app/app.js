@@ -98,7 +98,11 @@ var app = new Vue({
     },
     onMessage: function(message) {
       //console.log('onMessage', message);
-      if (message && (message.event === 'data-change')) {
+      if (typeof message !== 'object') {
+        return;
+      }
+      switch (message.event) {
+      case 'data-change':
         var propsById = this.getFromCache('/engine/properties');
         if (propsById) {
           for (var thingId in message.data) {
@@ -112,6 +116,12 @@ var app = new Vue({
           }
           this.callPage(this.page, 'onDataChange');
         }
+        break;
+      case 'logs':
+        if (Array.isArray(message.logs)) {
+          this.callPage(this.page, 'onLogs', message.logs);
+        }
+        break;
       }
     },
     clearCache: function() {
