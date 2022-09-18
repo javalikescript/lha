@@ -2,9 +2,13 @@ define(['requirePath', './scripts.xml', './script-editor.xml'], function(require
 
   var exportToLua = function(workspace) {
     //Blockly.Lua.INFINITE_LOOP_TRAP = 'if(--window.LoopTrap == 0) throw "Infinite loop.";\n';
-    var code = Blockly.Lua.workspaceToCode(workspace);
-    code = "local script = ...\nlocal logger = require('jls.lang.logger')\n\n" + code;
-    return code;
+    return [
+      "local script = ...",
+      "local logger = require('jls.lang.logger')",
+      "local Date = require('jls.util.Date')",
+      "",
+      Blockly.Lua.workspaceToCode(workspace)
+    ].join('\n');
   };
   var exportToXml = function(workspace) {
     var xml = Blockly.Xml.workspaceToDom(workspace);
@@ -331,7 +335,7 @@ define(['requirePath', './scripts.xml', './script-editor.xml'], function(require
     };
     Blockly.Lua['lha_parse_time'] = function(block) {
       var value = Blockly.Lua.valueToCode(block, 'VALUE', Blockly.JavaScript.ORDER_NONE);
-      var code = "(require('jls.util.Date').fromISOString(" + value + ") // 1000)";
+      var code = "((Date.fromISOString(tostring(" + value + ")) or 0) // 1000)";
       return [code, Blockly.JavaScript.ORDER_MEMBER];
     };
     Blockly.Blocks['lha_format_time'] = {
@@ -349,7 +353,7 @@ define(['requirePath', './scripts.xml', './script-editor.xml'], function(require
     };
     Blockly.Lua['lha_format_time'] = function(block) {
       var value = Blockly.Lua.valueToCode(block, 'VALUE', Blockly.JavaScript.ORDER_NONE);
-      var code = "require('jls.util.Date'):new(" + value + " * 1000):toISOString(true, true)";
+      var code = "Date:new((tonumber(" + value + ") or 0) * 1000):toISOString(true, true)";
       return [code, Blockly.JavaScript.ORDER_MEMBER];
     };
     Blockly.Blocks['lha_date'] = {
@@ -445,6 +449,31 @@ define(['requirePath', './scripts.xml', './script-editor.xml'], function(require
           this.refresh();
         }
       },
+      onLogs: function(logs) {
+        if (logs) {
+          for (var i = 0; i < logs.length; i++) {
+            var log = logs[i];
+            var msg = 'Engine: ' + log.message
+            switch (log.level) {
+            case 100:
+              console.error(msg);
+              break;
+            case 90:
+              console.warn(msg);
+              break;
+            case 80:
+              console.info(msg);
+              break;
+            case 70:
+              console.log(msg);
+              break;
+            default:
+              console.debug(msg);
+              break;
+            }
+          }
+        }
+      },
       onDelete: function() {
         var scriptId = this.scriptId;
         console.log('scriptsEditor.onDelete(), scriptId is "' + scriptId + '"');
@@ -467,6 +496,19 @@ define(['requirePath', './scripts.xml', './script-editor.xml'], function(require
           self.name = self.newName;
           self.newName = false;
           toaster.toast('Renamed');
+        });
+      },
+      onApply: function () {
+        var scriptId = this.scriptId;
+        return this.onSave().then(function() {
+          return fetch('/engine/scripts/' + scriptId + '/reload', {method: 'POST'});
+        }).then(function() {
+          toaster.toast('Script reloaded');
+        });
+      },
+      onPoll: function () {
+        return fetch('/engine/extensions/' + this.scriptId + '/poll', {method: 'POST'}).then(function() {
+          toaster.toast('Script polled');
         });
       },
       onSave: function() {

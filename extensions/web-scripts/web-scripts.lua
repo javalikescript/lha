@@ -35,7 +35,7 @@ local REST_SCRIPTS = {
           script = scriptFile:getName()
         }
         blocksFile:write('<xml xmlns="http://www.w3.org/1999/xhtml"></xml>')
-        scriptFile:write("local script = ...\nlocal logger = require('jls.lang.logger')\n\n")
+        scriptFile:write('local script = ...\n\n')
         manifestFile:write(json.encode(manifest))
         logger:fine('Created script "'..scriptId..'"')
         engine:loadExtensionFromDirectory(scriptDir, 'script')
