@@ -6,7 +6,8 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
     "MotionSensor": "MotionProperty",
     "HumiditySensor": "HumidityProperty",
     "BarometricPressureSensor": "BarometricPressureProperty",
-    "SmokeSensor": "SmokeProperty"
+    "SmokeSensor": "SmokeProperty",
+    "AlarmSensor": "AlarmProperty"
   };
 
   var unitAlias = {
@@ -36,7 +37,8 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
     "default": ["fa-times", "fa-check"],
     "OnOffProperty": ["fa-power-off", "fa-lightbulb"],
     "MotionProperty": ["fa-user-alt-slash", "fa-running"],
-    "SmokeProperty": ["fa-smoking-ban", "fa-smoking"]
+    "SmokeProperty": ["fa-smoking-ban", "fa-smoking"],
+    "AlarmProperty": ["fa-sun", "fa-exclamation"]
   };
 
   //var capabilityToType = swapMap(typeByCapability);
@@ -120,7 +122,9 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
       config: {},
       things: [],
       properties: {},
-      tiles: []
+      tiles: [],
+      lastChange: null,
+      changeTimer: null
     },
     methods: {
       onShow: function() {
@@ -136,6 +140,16 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
           this.config = config;
           this.processThings(config, things, properties);
         }));
+      },
+      onLogs: function(logs) {
+        if (logs) {
+          for (var i = 0; i < logs.length; i++) {
+            var log = logs[i];
+            if (log.level >= 90) {
+              toaster.toast(log.message, 5000);
+            }
+          }
+        }
       },
       onDataChange: function() {
         //console.log('onDataChange');
@@ -188,6 +202,14 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
         }
         //console.log('tiles', JSON.stringify(tiles, undefined, 2));
         this.tiles = tiles;
+        this.lastChange = new Date();
+        if (this.changeTimer) {
+          window.clearTimeout(this.changeTimer);
+        }
+        var self = this;
+        this.changeTimer = window.setTimeout(function() {
+          self.changeTimer = null;
+        }, 5000);
       },
       formatValue: function(tile) {
         return formatValue(tile.value, tile.type);
