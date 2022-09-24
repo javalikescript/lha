@@ -597,7 +597,15 @@ return class.create(function(historicalTable)
 
   function historicalTable:saveJson()
     local jsonFile = self:getJsonFile()
-    jsonFile:write(json.stringify(self.liveTable, 2))
+    -- how to handle invalid JSON table?
+    local status, result = pcall(json.stringify, self.liveTable, 2)
+    -- if not status then status, result = pcall(json.encode, self.liveTable) end
+    if status then
+      jsonFile:write(result)
+    else
+      logger:error(tables.stringify(self.liveTable, 2))
+      error(result)
+    end
   end
 
   function historicalTable:clearAggregation()
