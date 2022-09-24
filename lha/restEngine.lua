@@ -286,21 +286,24 @@ local REST_THINGS = {
       elseif method == HTTP_CONST.METHOD_DELETE then
         engine:disableThing(thingId)
         engine:publishEvent('things')
+      elseif method == HTTP_CONST.METHOD_POST then
+        local thingConfiguration = engine:getThingConfigurationById(thingId)
+        local thingDescription = thingConfiguration and thingConfiguration.description
+        if thingDescription then
+          local thingDesc = json.decode(request:getBody())
+          -- TODO Allow properties modifications?
+          for _, key in pairs({'title', 'description'}) do
+            local value = thingDesc[key]
+            if value then
+              thing[key] = value
+              thingDescription[key] = value
+            end
+          end
+        end
       else
         HttpExchange.methodNotAllowed(exchange)
         return false
       end
-    end,
-    refreshDescription = function(exchange)
-      local engine = exchange:getAttribute('engine')
-      local thingId = exchange:getAttribute('thingId')
-      local thing = engine.things[thingId]
-      if not thing then
-        HttpExchange.notFound(exchange)
-        return false
-      end
-      engine:refreshThingDescription(thingId)
-      return 'done'
     end,
   },
 }

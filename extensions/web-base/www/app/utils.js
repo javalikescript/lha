@@ -143,3 +143,41 @@ function rejectIfNotOk(response) {
   }
   return Promise.reject(response.statusText);
 }
+
+function findAncestor(el, selector) {
+  if (el) {
+    while (true) {
+      el = el.parentElement;
+      if (el) {
+        if (el.matches(selector)) {
+          return el;
+        }
+      } else {
+        break;
+      }
+    }
+  }
+}
+
+function findChild(el, selector) {
+  if (el) {
+    for (let i = 0; i < el.children.length; i++) {
+      let c = el.children[i];
+      if (c.matches(selector)) {
+        return c;
+      }
+    }
+  }
+}
+
+function findParent(el) {
+  if (el) {
+    return el.parentElement;
+  }
+}
+
+function tryFocus(el) {
+  if (el) {
+    el.focus();
+  }
+}

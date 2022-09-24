@@ -33,7 +33,6 @@ var propertiesVue = new Vue({
         return response.json();
       }).then(function(properties) {
         self.properties = [];
-        self.properties = [];
         for (var i = 0; i < things.length; i++) {
           var thing = things[i];
           var props = properties[thing.thingId];
@@ -47,7 +46,14 @@ var propertiesVue = new Vue({
           }
         }
       });
-
+    },
+    toggleFilter: function(event) {
+      this.filter = !this.filter;
+      if (this.filter) {
+        this.$nextTick(() => {
+          tryFocus(findChild(findParent(findAncestor(event.target, 'button')), 'input'));
+        });
+      }
     }
   }
 });

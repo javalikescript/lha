@@ -52,7 +52,7 @@
   <app-page id="properties" title="Properties">
     <template slot="bar-right">
       <input v-if="filter" v-model="query" type="text" placeholder="Type to filter">
-      <button v-on:click="filter = !filter"><i class="fas fa-search"></i></button>
+      <button v-on:click="toggleFilter(event)"><i class="fas fa-search"></i></button>
       <button v-on:click="onShow" title="Refresh"><i class="fas fa-sync"></i></button>
     </template>
     <page-article>
@@ -119,16 +119,17 @@
     <template slot="bar-right">
       <button v-if="edit" v-on:click="onSave().then(function(){ edit = false; })" title="Save"><i class="far fa-save"></i></button>
       <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
-      <!--
-        <button v-on:click="refreshThingDescription()" title="Refresh Description"><i class="fas fa-redo"></i></button>
-      -->
       <button v-on:click="disableThing().then(function(){ app.back(); })" title="Disable"><i class="fa fa-trash"></i></button>
       <button v-on:click="onEdit()" title="Edit"><i :class="['fas', edit ? 'fa-eye' : 'fa-edit']"></i></button>
     </template>
     <article class="cards">
-      <div class="card">
+      <div class="card" v-if="!edit">
         <p>{{ thing.title }}</p>
         <p>{{ thing.description }}</p>
+      </div>
+      <div class="card" v-if="edit">
+        <p><span>Title</span> <input v-model="editThing.title" type="text" placeholder="Thing Title"></p>
+        <p><span>Description</span> <input v-model="editThing.description" type="text" placeholder="Thing Description"></p>
       </div>
       <div class="card" v-for="(property, name) in thing.properties">
         <div class="bar">
@@ -139,9 +140,9 @@
               <p v-else><i>No value</i></p>
             </div>
             <div v-else>
-              <input v-if="property.type === 'string'" v-model="props[name]" type="text" placeholder="String Value">
-              <input v-if="(property.type === 'number') || (property.type === 'integer')" v-model="props[name]" number type="number" placeholder="Number Value">
-              <label v-if="property.type === 'boolean'" class="switch"><input type="checkbox" v-model="props[name]" /><span class="slider"></span></label>
+              <input v-if="property.type === 'string'" v-model="editProps[name]" type="text" placeholder="String Value">
+              <input v-if="(property.type === 'number') || (property.type === 'integer')" v-model="editProps[name]" number type="number" placeholder="Number Value">
+              <label v-if="property.type === 'boolean'" class="switch"><input type="checkbox" v-model="editProps[name]" /><span class="slider"></span></label>
             </div>
           </div>
           <div>

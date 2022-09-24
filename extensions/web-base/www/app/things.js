@@ -100,8 +100,9 @@ new Vue({
     edit: false,
     thingId: '',
     properties: {},
-    props: {},
-    thing: {}
+    editProps: {},
+    thing: {},
+    editThing: {}
   },
   methods: {
     openHistoricalData: function(propertyName) {
@@ -113,37 +114,59 @@ new Vue({
         app.clearCache();
       });
     },
-    refreshThingDescription: function() {
-      fetch('/engine/things/' + this.thingId + '/refreshDescription', {method: 'POST'}).then(function() {
-        toaster.toast('Thing description refreshed');
-        app.clearCache();
-      });
-    },
     onEdit: function() {
       this.edit = !this.edit;
       if (this.edit) {
-        this.props = assignMap({}, this.properties);
+        this.editProps = assignMap({}, this.properties);
+        this.editThing = assignMap({}, this.thing);
+      } else {
+        this.editProps = {};
+        this.editThing = {};
       }
     },
     onSave: function() {
       var modifiedProps = {};
       for (var key in this.thing.properties) {
         var tp = this.thing.properties[key];
-        var value = parseJsonItemValue(tp.type, this.props[key]);
-        //console.info(key, tp.type, value, this.props[key]);
+        var value = parseJsonItemValue(tp.type, this.editProps[key]);
+        //console.info(key, tp.type, value, this.editProps[key]);
         //if ((value !== null) && (value !== undefined) && (value !== this.properties[key])) {
         if (value !== this.properties[key]) {
           modifiedProps[key] = value;
         }
       }
-      //console.info('onSave()', JSON.stringify(modifiedProps, undefined, 2));
-      return fetch('/things/' + this.thingId + '/properties', {
-        method: 'PUT',
-        body: JSON.stringify(modifiedProps)
-      }).then(function() {
-        toaster.toast('Properties updated');
-        app.clearCache();
-      });
+      var modifiedThing = {};
+      for (var key in this.thing) {
+        var value = this.editThing[key];
+        if (value !== this.thing[key]) {
+          modifiedThing[key] = value;
+        }
+      }
+      var thingId = this.thingId;
+      var p;
+      if (Object.keys(modifiedProps).length > 0) {
+        p = fetch('/things/' + thingId + '/properties', {
+          method: 'PUT',
+          body: JSON.stringify(modifiedProps)
+        }).then(function() {
+          toaster.toast('Properties updated');
+          app.clearCache();
+        });
+      } else {
+        p = Promise.resolve();
+      }
+      if (Object.keys(modifiedThing).length > 0) {
+        p = p.then(function() {
+          return fetch('/engine/things/' + thingId, {
+            method: 'POST',
+            body: JSON.stringify(modifiedThing)
+          }).then(function() {
+            toaster.toast('Thing updated');
+            app.clearCache();
+          });
+        });
+      }
+      return p;
     },
     onShow: function(thingId) {
       this.edit = false;
