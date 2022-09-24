@@ -131,6 +131,13 @@ end
 
 local thingsMap = {}
 local thingsByNodeId = {}
+local controllerThing
+
+local function setupControllerThing()
+  controllerThing = extension:syncDiscoveredThingByKey('controller', function()
+    return Thing:new('Controller', 'The Z-Wave controller', {'MultiLevelSensor'}):addPropertiesFromNames('connected')
+  end)
+end
 
 local function onZWaveNode(node)
   local did = getNodeDiscoveryId(node)
@@ -295,14 +302,14 @@ local function startWebSocket(wsConfig)
   webSocket:open():next(function()
     webSocket:readStart()
     logger:info('Z-Wave JS WebSocket connected on '..tostring(wsConfig.url))
-    extension:setStatus('WebSocket')
+    controllerThing:updatePropertyValue('connected', true)
     --sendWebSocket('set_api_schema', {schemaVersion = 15})
   end, function(reason)
-    extension:setStatus('WebSocket', 'error', 'Cannot open Z-Wave JS WebSocket')
+    controllerThing:updatePropertyValue('connected', false)
     logger:warn('Cannot open Z-Wave JS WebSocket on '..tostring(wsConfig.url)..' due to '..tostring(reason))
   end)
   webSocket.onClose = function()
-    extension:setStatus('WebSocket', 'error', 'Z-Wave JS WebSocket closed')
+    controllerThing:updatePropertyValue('connected', false)
     logger:warn('Z-Wave JS WebSocket closed')
   end
   webSocket.onTextMessage = function(_, payload)
@@ -403,7 +410,7 @@ end)
 
 extension:subscribeEvent('poll', function()
   logger:info('Polling '..extension:getPrettyName()..' extension')
-  -- TODO expose a controller thing
+  setupControllerThing()
   if webSocket and not webSocket:isClosed() then
     for nodeId in pairs(thingsByNodeId) do
       logger:fine('Z-Wave polling nodeId '..tostring(nodeId))
@@ -441,6 +448,7 @@ end)
 extension:subscribeEvent('startup', function()
   logger:info('Starting '..extension:getPrettyName()..' extension')
   cleanup()
+  setupControllerThing()
   local mqttConfig = extension:getConfiguration().mqtt
   if mqttConfig and mqttConfig.enable then
     mqttClient = startMqtt(mqttConfig)

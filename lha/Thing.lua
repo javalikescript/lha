@@ -197,6 +197,14 @@ local PROPERTY_METADATA_BY_NAME = {
     configuration = true,
     readOnly = true
   },
+  connected = {
+    [AT_TYPE] = PROPERTY_TYPES.BooleanProperty,
+    type = 'boolean',
+    title = 'Connected',
+    description = 'Whether the thing is connected',
+    configuration = true,
+    readOnly = true
+  },
   enabled = {
     [AT_TYPE] = PROPERTY_TYPES.OnOffProperty,
     type = 'boolean',

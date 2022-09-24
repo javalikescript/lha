@@ -13,38 +13,6 @@ local system = require('jls.lang.system')
 local utils = require('lha.utils')
 local schema = utils.requireJson('lha.schema-extension')
 
-local STATUS = {
-  OK = 0,
-  WARNING = 1,
-  ERROR = 2,
-}
-
-local function formatStatus(status)
-  local names = Map.reverse(STATUS)
-  for s, name in Map.spairs(names) do
-    if s >= status then
-      return name
-    end
-  end
-  return nil
-end
-
-local function parseStatus(status)
-  local statusType = type(status)
-  if statusType == 'boolean' or statusType == 'nil' then
-    return status and STATUS.ERROR or STATUS.OK
-  elseif statusType == 'string' then
-    if status == '' then
-      return STATUS.OK
-    else
-      return STATUS[string.upper(status)] or STATUS.ERROR
-    end
-  elseif statusType == 'number' then
-    return status
-  end
-  error('Invalid status type '..statusType)
-end
-
 --- A Extension class.
 -- @type Extension
 return require('jls.lang.class').create(require('jls.util.EventPublisher'), function(extension, super)
@@ -70,7 +38,6 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     self.id = dir:getName()
     self.loaded = false
     self.manifest = {}
-    self.statuses = {}
     self.discoveredThings = {}
     self.lastModified = 0
     self.scheduler = Scheduler:new()
@@ -102,7 +69,6 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     self:unsubscribeAllEvents()
     self:clearTimers()
     self.watchers = {}
-    self.statuses = {}
   end
 
   function extension:getEngine()
@@ -123,45 +89,6 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
 
   function extension:getPrettyName()
     return self.id
-  end
-
-  function extension:getStatuses()
-    return self.statuses
-  end
-
-  function extension:getStatus(id)
-    if id then
-      local entry = self.statuses[id]
-      if entry then
-        return entry.status, entry.message
-      end
-      return STATUS.OK, ''
-    end
-    local s = STATUS.OK
-    for _, entry in pairs(self.statuses) do
-      if entry.status and entry.status > s then
-        s = entry.status
-      end
-    end
-    return s
-  end
-
-  function extension:setStatus(id, status, message)
-    if type(id) ~= 'string' then
-      error('Invalid id argument, '..type(id))
-    end
-    status = parseStatus(status)
-    local previous = self.statuses[id]
-    local previousStatus = previous and previous.status or STATUS.OK
-    if status == STATUS.OK then
-      self.statuses[id] = nil
-    else
-      self.statuses[id] = {status = status, message = message or ''}
-    end
-    if previousStatus ~= status then
-      self:fireExtensionEvent('extensions')
-    end
-    return self
   end
 
   function extension:isLoaded()
@@ -478,6 +405,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
   -- The thing is created and discovered, if necessary.
   -- @tparam string key The uniq string identifying the thing in this extension.
   -- @tparam function create The function to call in order to create the thing.
+  -- @return the thing associated to the discovery key.
   function extension:syncDiscoveredThingByKey(key, create, ...)
     local discoveredThing = self.discoveredThings[key]
     local thing = self:getThingByDiscoveryKey(key)
@@ -583,11 +511,9 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
       if status then
         self.lastModified = lastModified
         self.loaded = true
-        self:setStatus('load')
       else
         logger:warn('Cannot load extension "'..self:getPrettyName()..'" due to "'..tostring(err)..'"')
         self.manifest = {}
-        self:setStatus('load', STATUS.ERROR, tostring(err))
       end
     else
       self.manifest = {}
@@ -596,10 +522,6 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
   end
 
 end, function(Extension)
-
-  Extension.STATUS = STATUS
-  Extension.formatStatus = formatStatus
-  Extension.parseStatus = parseStatus
 
   function Extension.read(engine, dir, type)
     if Extension.isValid(engine, dir) then

@@ -3,14 +3,15 @@ local extension = ...
 local logger = require('jls.lang.logger')
 local Date = require('jls.util.Date')
 
+local Thing = require('lha.Thing')
+
 local HueBridge = extension:require('hue.HueBridge', true)
 
 local configuration = extension:getConfiguration()
 
-local hueBridge
+local hueBridge, bridgeThing
 local thingsMap = {}
-local lastSensorPollTime
-local lastLightPollTime
+local lastSensorPollTime, lastLightPollTime
 
 local function setThingPropertyValue(thing, name, value)
   if hueBridge and thing.hueId then
@@ -22,8 +23,15 @@ local function setThingPropertyValue(thing, name, value)
   end
 end
 
+local function setupBridgeThing()
+  bridgeThing = extension:syncDiscoveredThingByKey('bridge', function()
+    return Thing:new('Bridge', 'The Hue bridge', {'MultiLevelSensor'}):addPropertiesFromNames('connected', 'reachable')
+  end)
+end
+
 extension:subscribeEvent('things', function()
   logger:info('Looking for '..extension:getPrettyName()..' things')
+  setupBridgeThing()
   thingsMap = extension:getThingsByDiscoveryKey()
   for _, thing in pairs(thingsMap) do
     thing.setPropertyValue = setThingPropertyValue
@@ -52,14 +60,18 @@ end
 
 local function onHueEvent(info)
   -- see https://dresden-elektronik.github.io/deconz-rest-doc/endpoints/websocket/
-  if info.e == 'changed' and (info.r == 'lights' or info.r == 'sensors') then
-    local thing = thingsMap[info.uniqueid]
-    if info.state and logger:isLoggable(logger.FINE) then
-      local json = require('jls.util.json')
-      logger:fine('Hue event received on "'..(thing and thing:getTitle() or 'n/a')..'" '..json.stringify(info, 2))
-    end
-    if thing then
-      hueBridge:updateThing(thing, info, true)
+  if info.e == 'changed' then
+    if info.r == 'lights' or info.r == 'sensors' then
+      local thing = thingsMap[info.uniqueid]
+      if info.state and logger:isLoggable(logger.FINE) then
+        local json = require('jls.util.json')
+        logger:fine('Hue event received on "'..(thing and thing:getTitle() or 'n/a')..'" '..json.stringify(info, 2))
+      end
+      if thing then
+        hueBridge:updateThing(thing, info, true)
+      end
+    elseif info.r == 'websocket' then
+      bridgeThing:updatePropertyValue('connected', (info.state and info.state.connected) == true)
     end
   --elseif info.e == 'added' then
   --elseif info.e == 'deleted' then
@@ -91,8 +103,10 @@ extension:subscribeEvent('poll', function()
       end
       lastLightPollTime = time
     end
+    bridgeThing:updatePropertyValue('reachable', true)
   end):catch(function(err)
     logger:warn('fail to get '..extension:getPrettyName()..' things, due to "'..tostring(err)..'"')
+    bridgeThing:updatePropertyValue('reachable', false)
   end)
 end)
 
@@ -107,10 +121,11 @@ end)
 
 extension:subscribeEvent('startup', function()
   logger:info('startup '..extension:getPrettyName()..' extension')
+  setupBridgeThing()
   if hueBridge then
     hueBridge:close()
   end
-  hueBridge = HueBridge:new(configuration.url, configuration.user, extension)
+  hueBridge = HueBridge:new(configuration.url, configuration.user)
   if configuration.useWebSocket then
     hueBridge:setOnWebSocket(onHueEvent)
   end

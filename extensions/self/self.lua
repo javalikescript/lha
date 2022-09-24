@@ -61,8 +61,8 @@ local function computeCpuUsage(lastInfo, info)
 end
 
 local function createLuaThing()
-  local luaThing = Thing:new('Lua', 'Lua host engine', {'MultiLevelSensor'})
-  luaThing:addProperty('memory', {
+  local thing = Thing:new('Lua', 'Lua host engine', {'MultiLevelSensor'})
+  thing:addProperty('memory', {
     ['@type'] = 'LevelProperty',
     title = 'Lua Memory',
     type = 'integer',
@@ -71,7 +71,7 @@ local function createLuaThing()
     readOnly = true,
     unit = 'byte'
   }, 0)
-  luaThing:addProperty('user', {
+  thing:addProperty('user', {
     ['@type'] = 'LevelProperty',
     title = 'Lua User Time',
     type = 'number',
@@ -80,7 +80,7 @@ local function createLuaThing()
     readOnly = true,
     unit = 'second'
   }, 0)
-  luaThing:addProperty('process_resident_memory', {
+  thing:addProperty('process_resident_memory', {
     ['@type'] = 'LevelProperty',
     title = 'Resident Set Size',
     type = 'integer',
@@ -89,7 +89,7 @@ local function createLuaThing()
     readOnly = true,
     unit = 'byte'
   }, 0)
-  luaThing:addProperty('total_memory', {
+  thing:addProperty('total_memory', {
     ['@type'] = 'LevelProperty',
     title = 'Total Memory',
     type = 'integer',
@@ -98,7 +98,7 @@ local function createLuaThing()
     readOnly = true,
     unit = 'byte'
   }, 0)
-  luaThing:addProperty('used_memory', {
+  thing:addProperty('used_memory', {
     ['@type'] = 'LevelProperty',
     title = 'Used Memory',
     type = 'number',
@@ -108,7 +108,7 @@ local function createLuaThing()
     readOnly = true,
     unit = 'percent'
   }, 0)
-  luaThing:addProperty('host_cpu_usage', {
+  thing:addProperty('host_cpu_usage', {
     ['@type'] = 'LevelProperty',
     title = 'Host CPU Usage',
     type = 'number',
@@ -118,7 +118,7 @@ local function createLuaThing()
     readOnly = true,
     unit = 'percent'
   }, 0)
-  luaThing:addProperty('process_cpu_usage', {
+  thing:addProperty('process_cpu_usage', {
     ['@type'] = 'LevelProperty',
     title = 'Process CPU Usage',
     type = 'number',
@@ -128,12 +128,12 @@ local function createLuaThing()
     readOnly = true,
     unit = 'percent'
   }, 0)
-  return luaThing
+  return thing
 end
 
 local function createThingsThing()
-  local luaThing = Thing:new('Things', 'Things', {'MultiLevelSensor'})
-  luaThing:addProperty('battery', {
+  local thing = Thing:new('Things', 'Things', {'MultiLevelSensor'})
+  thing:addProperty('battery', {
     ['@type'] = 'LevelProperty',
     type = 'number',
     title = 'Min Battery Level',
@@ -141,7 +141,7 @@ local function createThingsThing()
     readOnly = true,
     unit = 'percent'
   }, 0)
-  luaThing:addProperty('lastseen', {
+  thing:addProperty('lastseen', {
     ['@type'] = 'LevelProperty',
     type = 'number',
     title = 'Max Last Seen',
@@ -149,68 +149,24 @@ local function createThingsThing()
     readOnly = true,
     unit = 'minute'
   }, 0)
-  luaThing:addProperty('count', {
+  thing:addProperty('count', {
     ['@type'] = 'LevelProperty',
     type = 'number',
     title = 'Number of Things',
     description = 'The number of enabled things',
     readOnly = true
   }, 0)
-  return luaThing
-end
-
-local function createExtensionsThing()
-  local luaThing = Thing:new('Extensions', 'Extensions', {'MultiLevelSensor'})
-  luaThing:addProperty('count', {
-    ['@type'] = 'LevelProperty',
-    type = 'number',
-    title = 'Number of Extensions',
-    description = 'The number of active extensions',
-    readOnly = true
-  }, 0)
-  luaThing:addProperty('status', {
-    ['@type'] = 'StatusProperty',
-    type = 'string',
-    title = 'Max Extensions Status',
-    description = 'The max extensions status value',
-    readOnly = true
-  }, 0)
-  luaThing:addProperty('wrong', {
-    ['@type'] = 'LevelProperty',
-    type = 'number',
-    title = 'Number of Extensions in Error',
-    description = 'The number of extensions with a status greater than OK',
-    readOnly = true
-  }, 0)
-  return luaThing
+  return thing
 end
 
 logger:info('self extension under '..extension:getDir():getPath())
 
-local luaThing, thingsThing, extensionsThing
+local luaThing, thingsThing
 
 --[[
 curl http://localhost:8080/engine/admin/stop
 curl http://localhost:8080/things
 ]]
-
-local function refreshExtensions()
-  local count = 0
-  local maxStatus, wrongCount = 0, 0
-  for _, ext in ipairs(extension:getEngine():getExtensions()) do
-    count = count + 1
-    local status = ext:getStatus()
-    if status > maxStatus then
-      maxStatus = status
-    end
-    if status > 0 then
-      wrongCount = wrongCount + 1
-    end
-end
-  extensionsThing:updatePropertyValue('count', count)
-  extensionsThing:updatePropertyValue('wrong', wrongCount)
-  extensionsThing:updatePropertyValue('status', Extension.formatStatus(maxStatus))
-end
 
 local function refreshThings()
   local time = Date.now()
@@ -291,20 +247,12 @@ extension:subscribeEvent('things', function()
   logger:fine('Looking for self things')
   luaThing = extension:syncDiscoveredThingByKey('lua', createLuaThing)
   thingsThing = extension:syncDiscoveredThingByKey('things', createThingsThing)
-  extensionsThing = extension:syncDiscoveredThingByKey('extensions', createExtensionsThing)
   --logger:info('luaThing '..require('jls.util.json').encode(luaThing:asThingDescription()))
   refreshThings()
-end)
-
-extension:subscribeEvent('extensions', function()
-  if extensionsThing then
-    refreshExtensions()
-  end
 end)
 
 extension:subscribeEvent('poll', function()
   logger:fine('Polling '..extension:getPrettyName()..' extension')
   refreshLua()
   refreshThings()
-  refreshExtensions()
 end)
