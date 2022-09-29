@@ -2,6 +2,8 @@ LUACLIBS := ../luaclibs/dist
 LUAJLS := $(LUACLIBS)
 LHA_DIST := dist
 
+# make LUACLIBS=../luaclibs/dist-aarch64-pi LUAJLS=../luajls release
+
 PLAT ?= $(shell grep ^platform $(LUACLIBS)/versions.txt | cut -f2)
 TARGET_NAME ?= $(shell grep ^target $(LUACLIBS)/versions.txt | cut -f2)
 RELEASE_DATE = $(shell date '+%Y%m%d')
@@ -27,6 +29,8 @@ show:
 	@echo TARGET_NAME: $(TARGET_NAME)
 	@echo RELEASE_DATE: $(RELEASE_DATE)
 	@echo RELEASE_NAME: $(RELEASE_NAME)
+	@echo LUACLIBS: $(LUACLIBS)
+	@echo LUAJLS: $(LUAJLS)
 
 dist-bin-linux:
 	cp -u $(LUACLIBS)/linux.$(SO) $(LHA_DIST)/bin/
@@ -54,7 +58,7 @@ dist-any:
 	cp -u lha.bat $(LHA_DIST)/
 	cp -u *.lua $(LHA_DIST)/
 	cp -ru extensions/ $(LHA_DIST)/
-	cp -ru assets/ $(LHA_DIST)/extensions/web-base/
+	cp -ru assets/ $(LHA_DIST)/
 
 dist-clean:
 	rm -rf $(LHA_DIST)
@@ -63,6 +67,7 @@ dist-bin-prepare:
 	mkdir $(LHA_DIST)/bin
 
 dist-prepare:
+	@echo Prepare release $(RELEASE_NAME) for $(PLAT)
 	-mkdir $(LHA_DIST)
 	mkdir $(LHA_DIST)/lua
 	mkdir $(LHA_DIST)/work

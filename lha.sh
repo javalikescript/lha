@@ -1,1 +1,2 @@
-nohup bin/lua lha.lua &
+#!/bin/sh
+exec bin/lua lha.lua $@

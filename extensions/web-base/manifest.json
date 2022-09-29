@@ -12,7 +12,7 @@
       "assets": {
         "title": "Static assets directory",
         "type": "string",
-        "default": "assets"
+        "default": "../../assets"
       },
       "cache": {
         "title": "Cache control duration for assets, 0 to disable",
