@@ -7,9 +7,10 @@
       <div class="bar">
         <p>{{ script.name }}</p>
         <div>
+          <button v-if="script.hasBlocks" v-on:click="onTransform(script)"><i class="fas fa-recycle"></i>&nbsp;Lua</button>
           <button v-on:click="reloadScript(script)"><i class="fas fa-redo"></i>&nbsp;Reload</button>
           <button v-on:click="pollScript(script)"><i class="far fa-bell"></i>&nbsp;Poll</button>
-          <button v-on:click="app.toPage('scriptsEditor', script.id)"><i class="fas fa-edit"></i>&nbsp;Open</button>
+          <button v-on:click="openScript(script)"><i class="fas fa-edit"></i>&nbsp;Open</button>
         </div>
       </div>
       <p>{{ script.description }}</p>

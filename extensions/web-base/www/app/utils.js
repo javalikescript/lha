@@ -67,6 +67,31 @@ function toMap(l, k) {
   return l;
 }
 
+function deepMap(value, fn) {
+  if ((value === undefined) || (value === null)) {
+    return value;
+  }
+  if (typeof value !== 'object') {
+    return fn(value);
+  }
+  if (Array.isArray(value)) {
+    var l = [];
+    for (var i = 0; i < value.length; i++) {
+      l.push(deepMap(value[i], fn));
+    }
+    return l;
+  }
+  var m = {};
+  for (var k in value) {
+    m[k] = deepMap(value[k], fn);
+  }
+  return m;
+}
+
+function deepCopy(value) {
+  return deepMap(value, function(v) {return v;});
+}
+
 function hsvToRgb(h, s, v) {
   var r, g, b;
   var i = Math.floor(h * 6);

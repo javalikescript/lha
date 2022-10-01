@@ -1,0 +1,228 @@
+{
+  "lha_event": {
+    "message0": "on %1",
+    "args0": [{
+      "type": "field_dropdown",
+      "name": "EVENT",
+      "options": [
+        [ "startup", "startup" ],
+        [ "polling", "poll" ],
+        [ "shutdown", "shutdown" ]
+      ]
+    }],
+    "message1": "do %1",
+    "args1": [{
+      "type": "input_statement",
+      "name": "DO"
+    }],
+    "colour": "$lhaEventColor"
+  },
+  "lha_log": {
+    "message0": "log %1 %2",
+    "args0": [{
+      "type": "field_dropdown",
+      "name": "LEVEL",
+      "options": [
+        [ "error", "ERROR" ],
+        [ "warn", "WARN" ],
+        [ "info", "INFO" ],
+        [ "config", "CONFIG" ],
+        [ "fine", "FINE" ],
+        [ "finer", "FINER" ],
+        [ "finest", "FINEST" ]
+      ]
+    }, {
+      "type": "input_value",
+      "name": "MESSAGE",
+      "check": "String"
+    }],
+    "previousStatement": null,
+    "nextStatement": null,
+    "colour": "$lhaStatementColor"
+  },
+  "lha_schedule": {
+    "message0": "every %1",
+    "args0": [{
+      "type": "field_input",
+      "name": "VALUE",
+      "text": "0 0 * * *"
+    }],
+    "message1": "do %1",
+    "args1": [{
+      "type": "input_statement",
+      "name": "DO"
+    }],
+    "colour": "$lhaEventColor"
+  },
+  "lha_get_data": {
+    "message0": "get %1",
+    "args0": [{
+      "type": "field_dropdown",
+      "name": "PATH",
+      "options": "$getThingPathOptions"
+    }],
+    "output": null,
+    "colour": "$lhaStatementColor"
+  },
+  "lha_set_data": {
+    "message0": "set %1 %2",
+    "args0": [{
+      "type": "field_dropdown",
+      "name": "PATH",
+      "options": "$setThingPathOptions"
+    }, {
+      "type": "input_value",
+      "name": "VALUE"
+    }],
+    "previousStatement": null,
+    "nextStatement": null,
+    "colour": "$lhaStatementColor"
+  },
+  "lha_watch_data": {
+    "message0": "watch %1",
+    "args0": [{
+      "type": "field_dropdown",
+      "name": "PATH",
+      "options": "$eventThingPathOptions"
+    }],
+    "message1": "new: %1",
+    "args1": [{
+      "type": "field_variable",
+      "name": "NEW_VALUE",
+      "variable": "value"
+    }],
+    "message2": "do %1",
+    "args2": [{
+      "type": "input_statement",
+      "name": "DO"
+    }],
+    "colour": "$lhaEventColor"
+  },
+  "lha_timer": {
+    "message0": "set timer %1",
+    "args0": [{
+      "type": "field_input",
+      "name": "NAME",
+      "text": "my timer"
+    }],
+    "message1": "in %1 %2",
+    "args1": [{
+      "type": "field_input",
+      "name": "VALUE",
+      "text": "1"
+    }, {
+      "type": "field_dropdown",
+      "name": "SECONDS",
+      "options": [
+        [ "seconds", "1" ],
+        [ "minutes", "60" ],
+        [ "hours", "3600" ]
+      ]
+    }],
+    "message2": "do %1",
+    "args2": [{
+      "type": "input_statement",
+      "name": "DO"
+    }],
+    "previousStatement": null,
+    "nextStatement": null,
+    "colour": "$lhaStatementColor"
+  },
+  "lha_clear_timer": {
+    "message0": "clear timer %1",
+    "args0": [{
+      "type": "field_input",
+      "name": "NAME",
+      "text": "my timer"
+    }],
+    "previousStatement": null,
+    "nextStatement": null,
+    "colour": "$lhaStatementColor"
+  },
+  "lha_to_string": {
+    "message0": "to String %1",
+    "args0": [{
+      "type": "input_value",
+      "name": "VALUE"
+    }],
+    "output": null,
+    "colour": "$lhaExpressionColor"
+  },
+  "lha_time": {
+    "message0": "get time",
+    "args0": [],
+    "output": null,
+    "colour": "$lhaExpressionColor"
+  },
+  "lha_parse_time": {
+    "message0": "parse date time from %1",
+    "args0": [{
+      "type": "input_value",
+      "name": "VALUE"
+    }],
+    "output": null,
+    "colour": "$lhaExpressionColor"
+  },
+  "lha_format_time": {
+    "message0": "format date time from %1",
+    "args0": [{
+      "type": "input_value",
+      "name": "VALUE"
+    }],
+    "output": null,
+    "colour": "$lhaExpressionColor"
+  },
+  "lha_date": {
+    "message0": "get date field %1 from %2",
+    "args0": [{
+      "type": "field_dropdown",
+      "name": "FIELD",
+      "options": [
+        [ "hours (decimal)", "H.ms" ],
+        [ "weekday (0-6)", "w" ],
+        [ "month (1-12)", "m" ],
+        [ "day", "d" ],
+        [ "hours", "H" ],
+        [ "minutes", "M" ],
+        [ "seconds", "S" ],
+        [ "yearweek (0-53)", "W" ],
+        [ "year", "Y" ]
+      ]
+    }, {
+      "type": "input_value",
+      "name": "VALUE"
+    }],
+    "output": null,
+    "colour": "$lhaExpressionColor"
+  },
+  "lha_get_field": {
+    "message0": "get %1 field %2",
+    "args0": [{
+      "type": "field_variable",
+      "name": "OBJECT"
+    }, {
+      "type": "field_input",
+      "name": "NAME",
+      "text": "name"
+    }],
+    "output": null,
+    "colour": "$lhaExpressionColor"
+  },
+  "lha_set_field": {
+    "message0": "set %1 field %2 to %3",
+    "args0": [{
+      "type": "field_variable",
+      "name": "OBJECT"
+    }, {
+      "type": "field_input",
+      "name": "NAME",
+      "text": "name"
+    }, {
+      "type": "input_value",
+      "name": "VALUE"
+    }],
+    "previousStatement": null,
+    "nextStatement": null,
+    "colour": "$lhaExpressionColor"
+  }
+}

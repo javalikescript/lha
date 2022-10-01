@@ -17,7 +17,11 @@ local REST_SCRIPTS = {
       local list = {}
       for _, ext in ipairs(engine.extensions) do
         if ext:getType() == 'script' then
-          table.insert(list, ext:toJSON())
+          --local scriptDir = File:new(engine.scriptsDir, ext:getId())
+          local blocksFile = File:new(ext:getDir(), 'blocks.xml')
+          local item = ext:toJSON()
+          item.hasBlocks = blocksFile:isFile()
+          table.insert(list, item)
         end
       end
       return list
@@ -36,7 +40,7 @@ local REST_SCRIPTS = {
         }
         blocksFile:write('<xml xmlns="http://www.w3.org/1999/xhtml"></xml>')
         scriptFile:write('local script = ...\n\n')
-        manifestFile:write(json.encode(manifest))
+        manifestFile:write(json.stringify(manifest, 2))
         logger:fine('Created script "'..scriptId..'"')
         engine:loadExtensionFromDirectory(scriptDir, 'script')
         return scriptId
@@ -80,7 +84,7 @@ local REST_SCRIPTS = {
       local manifestFile = File:new(extensionDir, 'manifest.json')
       --local manifest = json.decode(manifestFile:readAll())
       ext.manifest.name = name
-      manifestFile:write(json.encode(ext.manifest))
+      manifestFile:write(json.stringify(ext.manifest, 2))
       return 'Renamed'
     end
   },

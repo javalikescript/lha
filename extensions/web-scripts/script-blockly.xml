@@ -1,4 +1,4 @@
-<app-page id="scriptsEditor" title="Scripts Editor">
+<app-page id="scriptsBlockly" title="Scripts Editor">
   <template slot="bar-middle">
     <h1 v-if="newName === false" v-on:click="newName = name">{{ name }}</h1>
     <div v-else>
@@ -14,6 +14,6 @@
     <button v-on:click="onSave" title="Save"><i class="far fa-save"></i></button>
   </template>
   <article class="content">
-    <textarea v-model="text" spellcheck="false" wrap="off" style="height:  100%; width:  100%; border: none; margin: 0px; padding: 0px; resize: none; font-size: 1.6rem;" placeholder="Enter your Lua script here"></textarea>
+    <div id="scriptsEditorBlocklyDiv" style="height: 100%; width: 100%;"></div>
   </article>
 </app-page>
