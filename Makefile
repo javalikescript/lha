@@ -55,7 +55,7 @@ dist-any:
 	cp -ru $(LUAJLS)/jls/ $(LHA_DIST)/lua/
 	cp -ru lha/ $(LHA_DIST)/lua/
 	cp -u lha.sh $(LHA_DIST)/
-	cp -u lha.bat $(LHA_DIST)/
+	cp -u lha.cmd $(LHA_DIST)/
 	cp -u *.lua $(LHA_DIST)/
 	cp -ru extensions/ $(LHA_DIST)/
 	cp -ru assets/ $(LHA_DIST)/

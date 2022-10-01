@@ -553,6 +553,7 @@ return require('jls.lang.class').create(function(hueBridge)
   function hueBridge:updateThing(thing, info, isEvent)
     for name in pairs(thing:getProperties()) do
       local computeFn = computeFnByName[name] or getInfoProperty
+      ---@diagnostic disable-next-line: redundant-parameter
       local value = computeFn(info, name, self)
       if isValue(value) then
         thing:updatePropertyValue(name, value)
@@ -563,6 +564,7 @@ return require('jls.lang.class').create(function(hueBridge)
   function hueBridge:setThingPropertyValue(thing, id, name, value)
     local category = categoryByName[name]
     local toPostFn = toPostFnByName[name] or toPost
+    ---@diagnostic disable-next-line: redundant-parameter
     local t = toPostFn(value, name)
     local path
     if thing:hasType(Thing.CAPABILITIES.OnOffSwitch) or thing:hasType(Thing.CAPABILITIES.Light) then

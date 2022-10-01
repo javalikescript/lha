@@ -20,6 +20,7 @@
     <p>Engine</p>
     <button v-on:click="stopServer"><i class="fas fa-power-off"></i>&nbsp;Stop the Server</button>
     <button v-on:click="restartServer"><i class="fas fa-redo"></i>&nbsp;Restart the Server</button>
+    <button v-on:click="rebootServer"><i class="fas fa-redo"></i>&nbsp;Reboot the Server</button>
     <p>Advanced</p>
     <button v-on:click="reloadExtensions"><i class="fas fa-redo"></i>&nbsp;Reload the Extensions</button>
     <button v-on:click="reloadScripts"><i class="fas fa-redo"></i>&nbsp;Reload the Scripts</button>

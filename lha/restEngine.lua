@@ -157,6 +157,13 @@ local REST_ADMIN = {
     exchange.attributes.engine:reloadScripts(mode == 'full')
     return 'Done'
   end,
+  ['reboot?method=POST'] = function(exchange)
+    event:setTimeout(function()
+      exchange.attributes.engine:stop()
+      runtime.exit(11)
+    end, 100)
+    return 'In progress'
+  end,
   ['restart?method=POST'] = function(exchange)
     event:setTimeout(function()
       exchange.attributes.engine:stop()
@@ -165,8 +172,8 @@ local REST_ADMIN = {
     end, 100)
     return 'In progress'
   end,
-    -- curl -X POST http://localhost:8080/engine/stop
-    ['stop?method=POST'] = function(exchange)
+  -- curl -X POST http://localhost:8080/engine/stop
+  ['stop?method=POST'] = function(exchange)
     event:setTimeout(function()
       exchange.attributes.engine:stop()
       event:stop()

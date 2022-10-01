@@ -90,6 +90,11 @@ define(['./web-tools.xml'], function(toolsTemplate) {
           fetch('/engine/admin/restart', { method: 'POST'});
         });
       },
+      rebootServer: function() {
+        confirmation.ask('Reboot the server?').then(function() {
+          fetch('/engine/admin/reboot', { method: 'POST'});
+        });
+      },
       stopServer: function() {
         confirmation.ask('Stop the server?').then(function() {
           fetch('/engine/admin/stop', { method: 'POST'}).then(function() {
