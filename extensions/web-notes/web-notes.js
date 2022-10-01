@@ -1,5 +1,13 @@
 define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTemplate, noteTemplate, drawTemplate) {
 
+  function readLink(note) {
+    return fetch('/notes/' + note.name).then(rejectIfNotOk).then(function(response) {
+      return response.text();
+    }).then(function(content) {
+      note.url = content;
+    });
+  }
+
   var notesVue = new Vue({
     template: notesTemplate,
     data: {
@@ -8,19 +16,39 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
     methods: {
       onShow: function() {
         var self = this;
+        self.notes = [];
         return fetch('/notes/', {
           headers: {
             "Accept": 'application/json'
           }
-        }).then(rejectIfNotOk).then(rejectIfNotOk).then(function(response) {
+        }).then(rejectIfNotOk).then(function(response) {
           return response.json();
         }).then(function(response) {
           if (!isEmpty(response)) {
             self.notes = response.filter(function(note) {
-              return endsWith(note.name, '.txt');
+              return !note.isDir;
+            }).map(function(note) {
+              if (endsWith(note.name, '.txt')) {
+                note.type = 'text';
+              } else if (endsWith(note.name, '.png')) {
+                note.type = 'draw';
+              } else if (endsWith(note.name, '.lnk')) {
+                note.type = 'link';
+                readLink(note);
+              }
+              return note;
             });
           }
         });
+      },
+      openNote: function(note) {
+        if (note.type === 'text') {
+          app.toPage('note', note.name);
+        } else if (note.type === 'draw') {
+          app.toPage('draw', note.name);
+        } else if ((note.type === 'link') && note.url) {
+          open(note.url, '_blank');
+        }
       }
     }
   });
