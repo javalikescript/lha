@@ -7,6 +7,7 @@
     var index = path.lastIndexOf('.');
     return index <= slashIndex ? '' : path.substring(index + 1);
   };
+  _AMD.setLogFunction(console.warn);
   _AMD.setLoadModuleFunction(function(pathname, callback, sync, prefix, suffix) {
     var ext = extension(pathname);
     fetch(pathname).then(function(response) {
@@ -24,7 +25,7 @@
         try {
           //var m = window.eval(src);
           var m = Function('"use strict";return ' + src)();
-          //console.log('module "' + pathname + '" evaluated', m);
+          //console.log('module "' + pathname + '" evaluated', m, src);
           callback(m);
         } catch(e) {
           console.warn('fail to eval module "' + pathname + '" due to:', e);
