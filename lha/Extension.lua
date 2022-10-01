@@ -58,6 +58,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
       end
     end
     self.timers = {}
+    self:cleanExtension()
     self:connectConfiguration()
   end
 
@@ -67,6 +68,9 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     end
     self.scheduler:removeAllSchedules()
     self:unsubscribeAllEvents()
+    self:subscribeEvent('error', function(reason, eventName)
+      logger:warn('Error while handling event "%s" on extension "%s": "%s"', eventName, self.id, reason)
+    end)
     self:clearTimers()
     self.watchers = {}
   end
