@@ -1,12 +1,15 @@
 local extension = ...
 
-local Extension = require('lha.Extension')
-local Thing = require('lha.Thing')
---local ThingProperty = require('lha.ThingProperty')
 local logger = require('jls.lang.logger')
 local loader = require('jls.lang.loader')
 local Date = require('jls.util.Date')
+
 local luv = loader.tryRequire('luv')
+
+local Extension = require('lha.Extension')
+local Thing = require('lha.Thing')
+--local ThingProperty = require('lha.ThingProperty')
+local utils = require('lha.utils')
 
 local function mathRound(value)
   -- Rounds value towards zero
@@ -128,8 +131,34 @@ local function createLuaThing()
     readOnly = true,
     unit = 'percent'
   }, 0)
+  thing:addProperty('engine_start_date', {
+    ['@type'] = 'LevelProperty',
+    title = 'Engine Start Date',
+    description = 'The engine start date',
+    type = 'string',
+    configuration = true,
+    readOnly = true,
+    unit = 'date time'
+  }, '')
+  thing:addProperty('system_start_date', {
+    ['@type'] = 'LevelProperty',
+    title = 'System Start Date',
+    description = 'The system start date',
+    type = 'string',
+    configuration = true,
+    readOnly = true,
+    unit = 'date time'
+  }, '')
   return thing
 end
+
+local engineStartDate, systemStartDate
+local startTime = os.time()
+if luv then
+  startTime = startTime - luv.uptime()
+end
+engineStartDate = utils.timeToString(extension:getEngine().startTime)
+systemStartDate = utils.timeToString(startTime)
 
 local function createThingsThing()
   local thing = Thing:new('Things', 'Things', {'MultiLevelSensor'})
@@ -239,7 +268,9 @@ local function refreshLua()
     luaThing:updatePropertyValue('host_cpu_usage', computeCpuUsage(lastInfo, info))
     lastInfo = info
     --local rusage = getRUsage(luv.getrusage())
-  end
+    luaThing:updatePropertyValue('engine_start_date', engineStartDate)
+    luaThing:updatePropertyValue('system_start_date', systemStartDate)
+end
   lastClock = clock
 end
 

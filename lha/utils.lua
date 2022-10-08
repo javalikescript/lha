@@ -2,6 +2,7 @@ local logger = require('jls.lang.logger')
 local runtime = require('jls.lang.runtime')
 local File = require('jls.io.File')
 local json = require('jls.util.json')
+local Date = require('jls.util.Date')
 
 local utils = {}
 
@@ -53,6 +54,17 @@ function utils.removeEmptyPaths(t)
     end
   end
   return c
+end
+
+function utils.dateToString(date)
+  return string.sub(date:toISOString(true), 1, 16)..'Z'
+end
+
+function utils.timeToString(time)
+  if type(time) ~= 'number' then
+    time = os.time()
+  end
+  return utils.dateToString(Date:new(time * 1000))
 end
 
 return utils
