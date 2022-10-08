@@ -9,26 +9,33 @@
     <button text="Delete" callbackKey="delete"></button>
   </category>
   <sep></sep>
-  <category name="Event" colour="48">
-    <block type="lha_event"></block>
-    <block type="lha_schedule"></block>
+  <category name="Data" colour="38">
+    <block type="lha_get_data"></block>
+    <block type="lha_set_data"></block>
     <block type="lha_watch_data"></block>
   </category>
-  <category name="Expression" colour="58">
-    <block type="lha_get_field"></block>
-    <block type="lha_set_field"></block>
+  <category name="Event" colour="58">
+    <block type="lha_event"></block>
+    <block type="lha_schedule"></block>
+    <block type="lha_timer"></block>
+    <block type="lha_clear_timer"></block>
+    <block type="lha_fire_event"></block>
+  </category>
+  <category name="Expression" colour="78">
+    <block type="lha_type"></block>
     <block type="lha_to_string"></block>
     <block type="lha_time"></block>
     <block type="lha_date"></block>
     <block type="lha_parse_time"></block>
     <block type="lha_format_time"></block>
   </category>
-  <category name="Statement" colour="68">
-    <block type="lha_get_data"></block>
-    <block type="lha_set_data"></block>
-    <block type="lha_timer"></block>
-    <block type="lha_clear_timer"></block>
+  <category name="Experimental" colour="0">
     <block type="lha_log"></block>
+    <block type="lha_get_field"></block>
+    <block type="lha_set_field"></block>
+    <block type="lha_require"></block>
+    <block type="lha_call"></block>
+    <block type="lha_call_no_return"></block>
   </category>
   <sep></sep>
   <category name="Logic" colour="%{BKY_LOGIC_HUE}">

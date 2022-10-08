@@ -1,59 +1,4 @@
 {
-  "lha_event": {
-    "message0": "on %1",
-    "args0": [{
-      "type": "field_dropdown",
-      "name": "EVENT",
-      "options": [
-        [ "startup", "startup" ],
-        [ "polling", "poll" ],
-        [ "shutdown", "shutdown" ]
-      ]
-    }],
-    "message1": "do %1",
-    "args1": [{
-      "type": "input_statement",
-      "name": "DO"
-    }],
-    "colour": "$lhaEventColor"
-  },
-  "lha_log": {
-    "message0": "log %1 %2",
-    "args0": [{
-      "type": "field_dropdown",
-      "name": "LEVEL",
-      "options": [
-        [ "error", "ERROR" ],
-        [ "warn", "WARN" ],
-        [ "info", "INFO" ],
-        [ "config", "CONFIG" ],
-        [ "fine", "FINE" ],
-        [ "finer", "FINER" ],
-        [ "finest", "FINEST" ]
-      ]
-    }, {
-      "type": "input_value",
-      "name": "MESSAGE",
-      "check": "String"
-    }],
-    "previousStatement": null,
-    "nextStatement": null,
-    "colour": "$lhaStatementColor"
-  },
-  "lha_schedule": {
-    "message0": "every %1",
-    "args0": [{
-      "type": "field_input",
-      "name": "VALUE",
-      "text": "0 0 * * *"
-    }],
-    "message1": "do %1",
-    "args1": [{
-      "type": "input_statement",
-      "name": "DO"
-    }],
-    "colour": "$lhaEventColor"
-  },
   "lha_get_data": {
     "message0": "get %1",
     "args0": [{
@@ -62,7 +7,7 @@
       "options": "$getThingPathOptions"
     }],
     "output": null,
-    "colour": "$lhaStatementColor"
+    "colour": "$lhaDataColor"
   },
   "lha_set_data": {
     "message0": "set %1 %2",
@@ -76,7 +21,7 @@
     }],
     "previousStatement": null,
     "nextStatement": null,
-    "colour": "$lhaStatementColor"
+    "colour": "$lhaDataColor"
   },
   "lha_watch_data": {
     "message0": "watch %1",
@@ -93,6 +38,40 @@
     }],
     "message2": "do %1",
     "args2": [{
+      "type": "input_statement",
+      "name": "DO"
+    }],
+    "colour": "$lhaDataColor"
+  },
+
+  "lha_event": {
+    "message0": "on %1",
+    "args0": [{
+      "type": "field_dropdown",
+      "name": "EVENT",
+      "options": [
+        [ "startup", "startup" ],
+        [ "polling", "poll" ],
+        [ "testing", "test" ],
+        [ "shutdown", "shutdown" ]
+      ]
+    }],
+    "message1": "do %1",
+    "args1": [{
+      "type": "input_statement",
+      "name": "DO"
+    }],
+    "colour": "$lhaEventColor"
+  },
+  "lha_schedule": {
+    "message0": "every %1",
+    "args0": [{
+      "type": "field_input",
+      "name": "VALUE",
+      "text": "0 0 * * *"
+    }],
+    "message1": "do %1",
+    "args1": [{
       "type": "input_statement",
       "name": "DO"
     }],
@@ -126,7 +105,7 @@
     }],
     "previousStatement": null,
     "nextStatement": null,
-    "colour": "$lhaStatementColor"
+    "colour": "$lhaEventColor"
   },
   "lha_clear_timer": {
     "message0": "clear timer %1",
@@ -137,10 +116,35 @@
     }],
     "previousStatement": null,
     "nextStatement": null,
-    "colour": "$lhaStatementColor"
+    "colour": "$lhaEventColor"
   },
+  "lha_fire_event": {
+    "message0": "fire %1 with %2",
+    "args0": [{
+      "type": "field_input",
+      "name": "VALUE",
+      "text": "custom event"
+    }, {
+      "type": "input_value",
+      "name": "ARGS",
+      "check": "Array"
+    }],
+    "previousStatement": null,
+    "nextStatement": null,
+    "colour": "$lhaEventColor"
+  },
+
   "lha_to_string": {
     "message0": "to String %1",
+    "args0": [{
+      "type": "input_value",
+      "name": "VALUE"
+    }],
+    "output": null,
+    "colour": "$lhaExpressionColor"
+  },
+  "lha_type": {
+    "message0": "type %1",
     "args0": [{
       "type": "input_value",
       "name": "VALUE"
@@ -195,6 +199,30 @@
     "output": null,
     "colour": "$lhaExpressionColor"
   },
+
+  "lha_log": {
+    "message0": "log %1 %2",
+    "args0": [{
+      "type": "field_dropdown",
+      "name": "LEVEL",
+      "options": [
+        [ "error", "ERROR" ],
+        [ "warn", "WARN" ],
+        [ "info", "INFO" ],
+        [ "config", "CONFIG" ],
+        [ "fine", "FINE" ],
+        [ "finer", "FINER" ],
+        [ "finest", "FINEST" ]
+      ]
+    }, {
+      "type": "input_value",
+      "name": "MESSAGE",
+      "check": "String"
+    }],
+    "previousStatement": null,
+    "nextStatement": null,
+    "colour": "$lhaExperimentalColor"
+  },
   "lha_get_field": {
     "message0": "get %1 field %2",
     "args0": [{
@@ -206,7 +234,7 @@
       "text": "name"
     }],
     "output": null,
-    "colour": "$lhaExpressionColor"
+    "colour": "$lhaExperimentalColor"
   },
   "lha_set_field": {
     "message0": "set %1 field %2 to %3",
@@ -223,6 +251,43 @@
     }],
     "previousStatement": null,
     "nextStatement": null,
-    "colour": "$lhaExpressionColor"
+    "colour": "$lhaExperimentalColor"
+  },
+  "lha_require": {
+    "message0": "require %1",
+    "args0": [{
+      "type": "field_input",
+      "name": "NAME",
+      "text": "name"
+    }],
+    "output": null,
+    "colour": "$lhaExperimentalColor"
+  },
+  "lha_call": {
+    "message0": "call %1 with %2",
+    "args0": [{
+      "type": "input_value",
+      "name": "FUNCTION"
+    }, {
+      "type": "input_value",
+      "name": "ARGS",
+      "check": "Array"
+    }],
+    "output": null,
+    "colour": "$lhaExperimentalColor"
+  },
+  "lha_call_no_return": {
+    "message0": "call %1 with %2",
+    "args0": [{
+      "type": "input_value",
+      "name": "FUNCTION"
+    }, {
+      "type": "input_value",
+      "name": "ARGS",
+      "check": "Array"
+    }],
+    "previousStatement": null,
+    "nextStatement": null,
+    "colour": "$lhaExperimentalColor"
   }
 }

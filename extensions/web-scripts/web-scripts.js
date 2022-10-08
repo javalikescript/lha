@@ -1,5 +1,14 @@
 define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolbox.xml', './blocks.json', './blocks-lua'], function(scriptsTemplate, scriptBlocklyTemplate, scriptEditorTemplate, toolboxXml, blocks, blocksLua) {
 
+  function getMatches(s, r) {
+    var matches = [];
+    var m;
+    var re = new RegExp(r, 'g');
+    while ((m = re.exec(s)) !== null) {
+      matches.push(m[1]);
+    }
+    return matches;
+  }
   function exportToLua(workspace) {
     //Blockly.Lua.INFINITE_LOOP_TRAP = 'if(--window.LoopTrap == 0) throw "Infinite loop.";\n';
     var lines = [
@@ -8,11 +17,19 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
       "local Date = require('jls.util.Date')",
       ""
     ];
-    var varNames = workspace.getAllVariables().map(function(v) {return v.name;}).join(', ');
+    var varNames = workspace.getAllVariables().map(function(v) {return v.name;});
+    varNames.sort();
     if (varNames.length > 0) {
-      lines.push('local ' + varNames, '');
+      lines.push('local ' + varNames.join(', '), '');
     }
-    lines.push(Blockly.Lua.workspaceToCode(workspace), '');
+    var code = Blockly.Lua.workspaceToCode(workspace);
+    // TODO Find a proper way to extract the function names
+    var names = getMatches(code, /\nfunction ([a-zA-Z][a-zA-Z0-9_]+)\(/g);
+    names.sort();
+    if (names.length > 0) {
+      lines.push('local ' + names.join(', '), '');
+    }
+    lines.push(code, '');
     return lines.join('\n');
   }
   function exportToXml(workspace) {
@@ -23,7 +40,7 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
     return xmlText;
   }
   function exportAs(text, filename, type) {
-    console.log('exportAs()', text);
+    //console.log('exportAs()', text);
     var blob = new window.Blob([text], {type : (type || 'text/plain')});
     var blobUrl = window.URL.createObjectURL(blob);
     var clickHandler = function() {
@@ -67,15 +84,17 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
   };
 
   var blockEnv = {
-    lhaEventColor: 48,
-    lhaExpressionColor: 58,
-    lhaStatementColor: 68
+    lhaDataColor: 38,
+    lhaEventColor: 58,
+    lhaExpressionColor: 78,
+    lhaExperimentalColor: 0,
   };
   // Register custom blocks
   for (var name in blocks) {
-    Blockly.Blocks[name] = (function (block) {
+    Blockly.Blocks[name] = (function (name, block) {
       return {
         init: function() {
+          console.log('init block ' + name);
           var b = deepMap(block, function(v) {
             if ((typeof v === 'string') && (v.charAt(0) === '$')) {
               var vv = blockEnv[v.substring(1)]
@@ -88,7 +107,7 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
           this.jsonInit(b);
         }
       };
-    })(blocks[name]);
+    })(name, blocks[name]);
   }
   for (var name in blocksLua) {
     Blockly.Lua[name] = blocksLua[name];
@@ -131,6 +150,10 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
       toaster.toast('Script polled');
     });
   }
+  function onTest() {
+    console.log('Testing script');
+    fetch('/engine/extensions/' + this.scriptId + '/test', {method: 'POST'});
+  }
   function onLogs(logs) {
     if (logs) {
       for (var i = 0; i < logs.length; i++) {
@@ -170,55 +193,51 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
       onShow: function(scriptId) {
         console.log('scriptsEditor.onShow()');
         if (this.workspace === null) {
-          if (scriptId) {
-            this.scriptId = scriptId;
-          }
-          var self = this;
-          app.getThings().then(function(things) {
-            // Prepare data fields
-            var getThingPathOptions = [];
-            var setThingPathOptions = [];
-            var eventThingPathOptions = [];
-            if (things && things.length > 0) {
-              // thing in things thing.title
-              for (var i = 0; i < things.length; i++) {
-                var thing = things[i];
-                for (var name in thing.properties) {
-                  var property = thing.properties[name];
-                  var option = [
-                    thing.title + ' - ' + property.title,
-                    thing.thingId + '/' + name
-                  ];
-                  if (!property.readOnly) {
-                    setThingPathOptions.push(option);
-                  }
-                  if (!property.writeOnly) {
-                    getThingPathOptions.push(option);
-                  }
-                  eventThingPathOptions.push(option);
+          this.workspace = loadBlockly(this);
+        }
+        var self = this;
+        app.getThings().then(function(things) {
+          // Prepare data fields
+          var getThingPathOptions = [];
+          var setThingPathOptions = [];
+          var eventThingPathOptions = [];
+          if (things && things.length > 0) {
+            // thing in things thing.title
+            for (var i = 0; i < things.length; i++) {
+              var thing = things[i];
+              for (var name in thing.properties) {
+                var property = thing.properties[name];
+                var option = [
+                  thing.title + ' - ' + property.title,
+                  thing.thingId + '/' + name
+                ];
+                if (!property.readOnly) {
+                  setThingPathOptions.push(option);
                 }
+                if (!property.writeOnly) {
+                  getThingPathOptions.push(option);
+                }
+                eventThingPathOptions.push(option);
               }
             }
-            assignMap(blockEnv, {
-              getThingPathOptions: getThingPathOptions,
-              setThingPathOptions: setThingPathOptions,
-              eventThingPathOptions: eventThingPathOptions
-            });
-            self.workspace = loadBlockly(self);
-            if (self.scriptId) {
-              self.refresh();
-            }
+          }
+          assignMap(blockEnv, {
+            getThingPathOptions: getThingPathOptions,
+            setThingPathOptions: setThingPathOptions,
+            eventThingPathOptions: eventThingPathOptions
           });
-        } else if (scriptId) {
-          this.scriptId = scriptId;
-          this.refresh();
-        }
+          if (scriptId) {
+            self.scriptId = scriptId;
+            self.refresh();
+          }
+        });
       },
       onLogs: onLogs,
       onDelete: onDelete,
       onRename: onRename,
       onApply: onApply,
       onPoll: onPoll,
+      onTest: onTest,
       onSave: function() {
         var scriptId = this.scriptId;
         console.log('scriptsEditor.onSave(), scriptId is "' + scriptId + '"');
@@ -227,8 +246,14 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
           return;
         }
         // generate
-        var code = exportToLua(workspace);
-        var xmlText = exportToXml(workspace);
+        var code, xmlText;
+        try {
+          code = exportToLua(workspace);
+          xmlText = exportToXml(workspace);
+        } catch (e) {
+          toaster.toast('Error');
+          return Promise.reject(e);
+        }
         // save
         return Promise.all([
           fetch('/engine/scriptFiles/' + scriptId + '/blocks.xml', {
@@ -285,6 +310,7 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
       onRename: onRename,
       onApply: onApply,
       onPoll: onPoll,
+      onTest: onTest,
       onSave: function() {
         var scriptId = this.scriptId;
         console.log('scriptsEditor.onSave(), scriptId is "' + scriptId + '"');

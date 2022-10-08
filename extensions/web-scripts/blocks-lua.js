@@ -13,28 +13,12 @@ define(function() {
     return '[' + textToLua(name) + ']';
   }
   function getVariableName(block, fieldName) {
-    return Blockly.Lua.variableDB_.getName(block.getFieldValue(fieldName), Blockly.Variables.NAME_TYPE);
+    var fieldValue = block.getFieldValue(fieldName);
+    return Blockly.Lua.nameDB_.getName(fieldValue, Blockly.Names.NameType.VARIABLE);
   }
 
   return {
-    "lha_event": function(block) {
-      var code = Blockly.Lua.statementToCode(block, 'DO');
-      var event = block.getFieldValue('EVENT');
-      code = "script:subscribeEvent('" + event + "', function()\n" + code + "end)\n";
-      return code;
-    },
-    "lha_log": function(block) {
-      var level = block.getFieldValue('LEVEL')
-      //var message = '"' + block.getFieldValue('MESSAGE') + '"';
-      var message = Blockly.Lua.valueToCode(block, 'MESSAGE', Blockly.JavaScript.ORDER_NONE);
-      return "logger:log(logger." + level + ", tostring(" + message + "))\n";
-    },
-    "lha_schedule": function(block) {
-      var code = Blockly.Lua.statementToCode(block, 'DO');
-      var value = block.getFieldValue('VALUE');
-      code = "script:registerSchedule('" + value + "', function()\n" + code + "end)\n";
-      return code;
-    },
+    // -- Data --------
     "lha_get_data": function(block) {
       var path = block.getFieldValue('PATH');
       var code = "script:getDataValue('" + path + "')";
@@ -53,6 +37,19 @@ define(function() {
       code = "script:watchValue('data/" + path + "', function(" + newValue + ")\n" + code + "end)\n";
       return code;
     },
+    // -- Event --------
+    "lha_event": function(block) {
+      var code = Blockly.Lua.statementToCode(block, 'DO');
+      var event = block.getFieldValue('EVENT');
+      code = "script:subscribeEvent('" + event + "', function()\n" + code + "end)\n";
+      return code;
+    },
+    "lha_schedule": function(block) {
+      var code = Blockly.Lua.statementToCode(block, 'DO');
+      var value = block.getFieldValue('VALUE');
+      code = "script:registerSchedule('" + value + "', function()\n" + code + "end)\n";
+      return code;
+    },
     "lha_timer": function(block) {
       var name = block.getFieldValue('NAME');
       var value = block.getFieldValue('VALUE');
@@ -64,14 +61,22 @@ define(function() {
       var name = block.getFieldValue('NAME');
       return "script:clearTimer(" + textToLua(name) + ")\n";
     },
+    "lha_fire_event": function(block) {
+      var value = block.getFieldValue('VALUE');
+      var args = Blockly.Lua.valueToCode(block, 'ARGS', Blockly.JavaScript.ORDER_NONE);
+      return "script:fireExtensionEvent(" + textToLua(value) + ", table.unpack(" + args + "))\n";
+    },
+    // -- Expression --------
     "lha_to_string": function(block) {
       var value = Blockly.Lua.valueToCode(block, 'VALUE', Blockly.JavaScript.ORDER_NONE);
-      var code = "tostring(" + value + ")";
-      return [code, Blockly.JavaScript.ORDER_MEMBER];
+      return ["tostring(" + value + ")", Blockly.JavaScript.ORDER_MEMBER];
+    },
+    "lha_type": function(block) {
+      var value = Blockly.Lua.valueToCode(block, 'VALUE', Blockly.JavaScript.ORDER_NONE);
+      return ["type(" + value + ")", Blockly.JavaScript.ORDER_MEMBER];
     },
     "lha_time": function(block) {
-      var code = "os.time()";
-      return [code, Blockly.JavaScript.ORDER_MEMBER];
+      return ["os.time()", Blockly.JavaScript.ORDER_MEMBER];
     },
     "lha_parse_time": function(block) {
       var value = Blockly.Lua.valueToCode(block, 'VALUE', Blockly.JavaScript.ORDER_NONE);
@@ -94,6 +99,7 @@ define(function() {
       }
       return [code, Blockly.JavaScript.ORDER_MEMBER];
     },
+    // -- Experimental --------
     "lha_get_field": function(block) {
       var name = block.getFieldValue('NAME');
       var obj = getVariableName(block, 'OBJECT');
@@ -107,6 +113,29 @@ define(function() {
       var value = Blockly.Lua.valueToCode(block, 'VALUE', Blockly.JavaScript.ORDER_NONE);
       //return "if type(" + obj + ") == 'table' then\n" + obj + "[" + textToLua(name) + "] = " + value + "\nend\n";
       return obj + nameToLuaKey(name) + " = " + value + "\n";
+    },
+    "lha_log": function(block) {
+      var level = block.getFieldValue('LEVEL')
+      var message = Blockly.Lua.valueToCode(block, 'MESSAGE', Blockly.JavaScript.ORDER_NONE);
+      return "logger:log(logger." + level + ", tostring(" + message + "))\n";
+    },
+    "lha_require": function(block) {
+      var name = block.getFieldValue('NAME');
+      var code = 'script:require(' + textToLua(name) + ')';
+      return [code, Blockly.JavaScript.ORDER_MEMBER];
+    },
+    "lha_call": function(block) {
+      var fn = Blockly.Lua.valueToCode(block, 'FUNCTION', Blockly.JavaScript.ORDER_NONE);
+      var args = Blockly.Lua.valueToCode(block, 'ARGS', Blockly.JavaScript.ORDER_NONE);
+      //var code = "(function(...) local fn = " + fn + "; if type(fn) == 'function' then return fn(...); end; end)(" + value + ")";
+      var code = fn + "(table.unpack(" + args + "))";
+      return [code, Blockly.JavaScript.ORDER_MEMBER];
+    },
+    "lha_call_no_return": function(block) {
+      var fn = Blockly.Lua.valueToCode(block, 'FUNCTION', Blockly.JavaScript.ORDER_NONE);
+      var args = Blockly.Lua.valueToCode(block, 'ARGS', Blockly.JavaScript.ORDER_NONE);
+      var code = fn + "(table.unpack(" + args + "))";
+      return code + "\n";
     }
   };
 

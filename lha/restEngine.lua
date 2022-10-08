@@ -112,6 +112,9 @@ local REST_EXTENSIONS = {
         extension:publishEvent('poll')
       end
     end,
+    ['test(extension)?method=POST'] = function(exchange, extension)
+      extension:publishEvent('test')
+    end,
     ['refreshThingsDescription(extension)?method=POST'] = function(exchange, extension)
       local engine = exchange:getAttribute('engine')
       if extension:isActive() then
