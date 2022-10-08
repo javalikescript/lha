@@ -9,7 +9,7 @@ local Url = require('jls.net.Url')
 local strings = require('jls.util.strings')
 local json = require('jls.util.json')
 local Map = require('jls.util.Map')
-local Date = require('jls.util.Date')
+local utils = require('lha.utils')
 
 local Thing = require('lha.Thing')
 
@@ -164,6 +164,13 @@ local function onZWaveNode(node)
   end
 end
 
+local function onZWaveNodes(nodes)
+  thingsByNodeId = {}
+  for _, node in ipairs(nodes) do
+    onZWaveNode(node)
+  end
+end
+
 local function onZWaveEvent(event)
   logger:info('Z-Wave '..tostring(event.source)..' event "'..tostring(event.event)..'"')
   -- see https://zwave-js.github.io/node-zwave-js/#/api/node?id=zwavenode-events
@@ -174,8 +181,7 @@ local function onZWaveEvent(event)
         --logger:info('Z-Wave JS event on thing: '..json.stringify(event, 2))
         updateThingFromNodeInfo(thing, event.args)
         if thing:hasProperty('lastseen') then
-          local lastseen = string.sub(Date:new():toISOString(true), 1, 16)..'Z'
-          thing:updatePropertyValue('lastseen', lastseen)
+          thing:updatePropertyValue('lastseen', utils.timeToString())
         end
       else
         if logger:isLoggable(logger.FINE) then
@@ -227,9 +233,7 @@ local function startMqtt(mqttConfig)
       if t and t.success then
         logger:fine('Z-Wave JS API "'..apiName..'": '..json.stringify(t, 2))
         if apiName == 'getNodes' then
-          for _, node in ipairs(t.result) do
-            onZWaveNode(node)
-          end
+          onZWaveNodes(t.result)
         end
       end
     end
@@ -283,15 +287,14 @@ end
 
 local function startListeningWebSocket(webSocket)
   sendWebSocket(webSocket, 'start_listening'):next(function(result)
+    logger:info('Z-Wave start_listening %d nodes', #result.state.nodes)
     --logger:info('Z-Wave start_listening result: '..json.stringify(result, 2))
     if extension:getConfiguration().dumpNodes then
       logger:info('Z-Wave dumping nodes')
       local File = require('jls.io.File')
       File:new('zwave-js.json'):write(json.stringify(result, 2))
     end
-    for _, node in ipairs(result.state.nodes) do
-      onZWaveNode(node)
-    end
+    onZWaveNodes(result.state.nodes)
   end)
 end
 
@@ -371,6 +374,10 @@ local function cleanup()
 end
 
 local function setThingPropertyValue(thing, name, value)
+  local property = thing:getProperty(name)
+  if not (property and property:isWritable()) then
+    return
+  end
   if webSocket and not webSocket:isClosed() then
     local nodeId
     for id, th in pairs(thingsByNodeId) do
@@ -378,30 +385,33 @@ local function setThingPropertyValue(thing, name, value)
         nodeId = id
       end
     end
-    if nodeId and thing:hasType(Thing.CAPABILITIES.MultiLevelSwitch) and thing:hasProperty(name) then
-      sendWebSocket(webSocket, {
-        command = 'node.set_value',
-        nodeId = nodeId,
-        valueId = {
-          commandClass = CC.SWITCH_MULTILEVEL,
-          property = 'targetValue'
-        },
-        value = value
-      }):next(function()
-        logger:info('Z-Wave nodeId '..tostring(nodeId)..' state set done')
-        thing:updatePropertyValue(name, value)
-      end, function(reason)
-        logger:info('Z-Wave nodeId '..tostring(nodeId)..' state set failed '..tostring(reason))
-        thing:updatePropertyValue(name, value)
-      end)
-      return
+    if nodeId then
+      if thing:hasType(Thing.CAPABILITIES.MultiLevelSwitch) then
+        sendWebSocket(webSocket, {
+          command = 'node.set_value',
+          nodeId = nodeId,
+          valueId = {
+            commandClass = CC.SWITCH_MULTILEVEL,
+            property = 'targetValue'
+          },
+          value = value
+        }):next(function()
+          logger:info('Z-Wave nodeId %s set value %s done', nodeId, name)
+          thing:updatePropertyValue(name, value)
+        end, function(reason)
+          logger:info('Z-Wave nodeId %s set value failed due to %s', nodeId, reason)
+          thing:updatePropertyValue(name, value)
+        end)
+        return
+      end
+    else
+      logger:warn('Z-Wave unable to set value %s, nodeId not found for thing %s', name, thing:getId())
     end
   end
   thing:updatePropertyValue(name, value)
 end
 
 extension:subscribeEvent('things', function()
-  thingsByNodeId = {}
   thingsMap = extension:getThingsByDiscoveryKey()
   for _, thing in pairs(thingsMap) do
     thing.setPropertyValue = setThingPropertyValue
