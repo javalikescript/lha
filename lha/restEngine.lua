@@ -162,8 +162,15 @@ local REST_ADMIN = {
   end,
   ['reboot?method=POST'] = function(exchange)
     event:setTimeout(function()
-      exchange.attributes.engine:stop()
-      runtime.exit(11)
+      local engine = exchange:getAttribute('engine')
+      engine:stop()
+      --local installName = 'lha_reboot_install.zip'
+      --local installFile = File:new(engine.rootDir, installName)
+      --if installFile:isFile() then
+      --  logger:info('Installing "%s"', installName)
+      --  ZipFile.unzipTo(installFile, engine.rootDir)
+      --end
+      runtime.halt(11)
     end, 100)
     return 'In progress'
   end,
