@@ -50,10 +50,11 @@
       "type": "field_dropdown",
       "name": "EVENT",
       "options": [
+        [ "never", "-disabled-" ],
         [ "startup", "startup" ],
         [ "polling", "poll" ],
-        [ "testing", "test" ],
-        [ "shutdown", "shutdown" ]
+        [ "shutdown", "shutdown" ],
+        [ "testing", "test" ]
       ]
     }],
     "message1": "do %1",

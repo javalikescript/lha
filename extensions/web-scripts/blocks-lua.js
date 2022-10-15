@@ -76,7 +76,7 @@ define(function() {
       return ["type(" + value + ")", Blockly.JavaScript.ORDER_MEMBER];
     },
     "lha_time": function(block) {
-      return ["os.time()", Blockly.JavaScript.ORDER_MEMBER];
+      return ["utils.time()", Blockly.JavaScript.ORDER_MEMBER];
     },
     "lha_hms": function(block) {
       var value = block.getFieldValue('VALUE');
