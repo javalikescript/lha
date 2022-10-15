@@ -397,13 +397,9 @@ return class.create(function(engine)
     local thing, thingId, thingConfiguration = self:getThingByDiscoveryKey(extensionId, discoveryKey)
     if thing then
       logger:info('The thing "'..tostring(thingId)..'" is already available')
-      return
+      return thing
     end
     if thingId and thingConfiguration then
-      if thingConfiguration.active then
-        logger:info('The thing "'..tostring(thingId)..'" is already active')
-        return
-      end
       thingConfiguration.active = true
       if not keepDescription then
         thingConfiguration.description = discoveredThing:asThingDescription()
@@ -425,6 +421,7 @@ return class.create(function(engine)
     end
     logger:info('The thing "'..tostring(thingId)..'" has been added')
     --self:publishEvent('things')
+    return thing
   end
 
   function engine:refreshThingDescription(thingId)

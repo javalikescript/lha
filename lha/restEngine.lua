@@ -52,9 +52,16 @@ local function refreshThingsDescription(engine, extension)
       for _, thingId in ipairs(thingIds) do
         local extensionId, discoveryKey = engine:getThingDiscoveryKey(thingId)
         if engine:getDiscoveredThing(extensionId, discoveryKey) then
-          engine:addDiscoveredThing(extensionId, discoveryKey)
+          local discoveredThing = engine:addDiscoveredThing(extensionId, discoveryKey)
           local thing = things[thingId]
           things[thingId] = nil
+          -- keep title and description
+          local thingConfiguration = engine:getThingConfigurationById(thingId)
+          local thingDescription = thingConfiguration and thingConfiguration.description
+          discoveredThing:setTitle(thing:getTitle())
+          discoveredThing:setDescription(thing:getDescription())
+          thingDescription.title = thing:getTitle()
+          thingDescription.description = thing:getDescription()
           logger:fine('Thing "'..thing:getTitle()..'" ('..thingId..') discovered')
         end
       end
