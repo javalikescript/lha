@@ -56,15 +56,37 @@ function utils.removeEmptyPaths(t)
   return c
 end
 
+utils.time = os.time
+
 function utils.dateToString(date)
   return string.sub(date:toISOString(true), 1, 16)..'Z'
 end
 
 function utils.timeToString(time)
   if type(time) ~= 'number' then
-    time = os.time()
+    time = utils.time()
   end
   return utils.dateToString(Date:new(time * 1000))
+end
+
+function utils.dateFromString(value)
+  return Date:new(Date.fromISOString(value))
+end
+
+function utils.timeFromString(value)
+  return (Date.fromISOString(value) or 0) // 1000
+end
+
+function utils.hms(h, m, s)
+  return (tonumber(h) or 0) + (tonumber(m) or 0) / 60 + (tonumber(s) or 0) / 3600
+end
+
+function utils.parseHms(value)
+  return utils.hms(string.match(value, '(%d+):?(%d*):?(%d*)'))
+end
+
+function utils.timeToHms(value)
+  return utils.parseHms(os.date('%H:%M:%S', value))
 end
 
 return utils

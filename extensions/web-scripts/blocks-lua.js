@@ -14,7 +14,7 @@ define(function() {
   }
   function getVariableName(block, fieldName) {
     var fieldValue = block.getFieldValue(fieldName);
-    return Blockly.Lua.nameDB_.getName(fieldValue, Blockly.Names.NameType.VARIABLE);
+    return Blockly.Lua.variableDB_.getName(fieldValue, Blockly.Variables.NAME_TYPE);
   }
 
   return {
@@ -78,14 +78,22 @@ define(function() {
     "lha_time": function(block) {
       return ["os.time()", Blockly.JavaScript.ORDER_MEMBER];
     },
+    "lha_hms": function(block) {
+      var value = block.getFieldValue('VALUE');
+      var hms = value.split(':').map(function(v) {
+        return parseInt(v, 10);
+      });
+      var code = '' + hms.reverse().reduce(function(pv, cv) {return cv + pv / 60}, 0);
+      return [code, Blockly.JavaScript.ORDER_MEMBER];
+    },
     "lha_parse_time": function(block) {
       var value = Blockly.Lua.valueToCode(block, 'VALUE', Blockly.JavaScript.ORDER_NONE);
-      var code = "((Date.fromISOString(tostring(" + value + ")) or 0) // 1000)";
+      var code = "(utils.timeFromString(tostring(" + value + ")) or 0)";
       return [code, Blockly.JavaScript.ORDER_MEMBER];
     },
     "lha_format_time": function(block) {
       var value = Blockly.Lua.valueToCode(block, 'VALUE', Blockly.JavaScript.ORDER_NONE);
-      var code = "Date:new((tonumber(" + value + ") or 0) * 1000):toISOString(true, true)";
+      var code = "utils.timeToString(tonumber(" + value + ") or 0)";
       return [code, Blockly.JavaScript.ORDER_MEMBER];
     },
     "lha_date": function(block) {
@@ -93,7 +101,7 @@ define(function() {
       var value = Blockly.Lua.valueToCode(block, 'VALUE', Blockly.JavaScript.ORDER_NONE);
       var code;
       if (field === 'H.ms') {
-        code = "(function(h, m, s) return tonumber(h) + tonumber(m) / 60 + tonumber(s) / 3600; end)(string.match(os.date('%H %M %S', " + value + "), '(%d+) (%d+) (%d+)'))";
+        code = "utils.timeToHms(" + value + ")";
       } else {
         code = "tonumber(os.date('%" + field + "', " + value + "))";
       }

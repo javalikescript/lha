@@ -15,6 +15,7 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
       "local script = ...",
       "local logger = require('jls.lang.logger')",
       "local Date = require('jls.util.Date')",
+      "local utils = require('lha.utils')",
       ""
     ];
     var varNames = workspace.getAllVariables().map(function(v) {return v.name;});
@@ -78,7 +79,10 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
       exportAs(exportToLua(workspace), 'script.lua');
     });
     workspace.registerButtonCallback('exportXml', function() {
-      exportAs(exportToXml(workspace), 'script.xml');
+      exportAs(exportToXml(workspace), 'blocks.xml');
+    });
+    workspace.registerButtonCallback('importXml', function() {
+      self.$refs.uploadInput.click();
     });
     return workspace;
   };
@@ -230,6 +234,20 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
             self.scriptId = scriptId;
             self.refresh();
           }
+        });
+      },
+      uploadThenSave: function(event) {
+        var input = event.target;
+        if (input.files.length !== 1) {
+          return;
+        }
+        var self = this;
+        fetch('/engine/scriptFiles/' + self.scriptId + '/blocks.xml', {
+          method: 'PUT',
+          body: input.files[0]
+        }).then(function() {
+          toaster.toast('Blocks uploaded');
+          self.refresh();
         });
       },
       onLogs: onLogs,

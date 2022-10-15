@@ -8,6 +8,7 @@
     </div>
   </template>
   <template slot="bar-right">
+    <input v-on:change="uploadThenSave" type="file" accept=".xml" ref="uploadInput" style="display: none;" />
     <button v-on:click="onDelete().then(function(){ app.replacePage('scripts'); })" title="Delete"><i class="fa fa-trash"></i>&nbsp;Delete</button>
     <button v-on:click="onApply()" title="Save then reload"><i class="fas fa-redo"></i></button>
     <button v-on:click="onTest()" title="Test"><i class="fas fa-vial"></i></button>

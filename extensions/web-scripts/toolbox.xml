@@ -1,11 +1,12 @@
 <xml id="scriptsEditorBlocklyToolbox" style="display: none">
   <!--  expanded="true" -->
   <category name="Menu" colour="24">
-    <button text="Save" callbackKey="save"></button>
     <button text="Reload" callbackKey="refresh"></button>
     <button text="Clear" callbackKey="clear"></button>
     <button text="Export Lua" callbackKey="exportLua"></button>
     <button text="Export XML" callbackKey="exportXml"></button>
+    <button text="Import XML" callbackKey="importXml"></button>
+    <button text="Save" callbackKey="save"></button>
     <button text="Delete" callbackKey="delete"></button>
   </category>
   <sep></sep>
@@ -25,6 +26,7 @@
     <block type="lha_type"></block>
     <block type="lha_to_string"></block>
     <block type="lha_time"></block>
+    <block type="lha_hms"></block>
     <block type="lha_date"></block>
     <block type="lha_parse_time"></block>
     <block type="lha_format_time"></block>

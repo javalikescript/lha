@@ -158,6 +158,16 @@
     "output": null,
     "colour": "$lhaExpressionColor"
   },
+  "lha_hms": {
+    "message0": "hour %1",
+    "args0": [{
+      "type": "field_input",
+      "name": "VALUE",
+      "text": "00:00"
+    }],
+    "output": null,
+    "colour": "$lhaExpressionColor"
+  },
   "lha_parse_time": {
     "message0": "parse date time from %1",
     "args0": [{
