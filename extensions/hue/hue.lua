@@ -26,7 +26,7 @@ end
 local function setupBridgeThing()
   bridgeThing = extension:syncDiscoveredThingByKey('bridge', function()
     return Thing:new('Bridge', 'The Hue bridge', {'MultiLevelSensor'}):addPropertiesFromNames('connected', 'reachable')
-  end)
+  end, bridgeThing)
 end
 
 extension:subscribeEvent('things', function()

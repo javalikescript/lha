@@ -136,7 +136,7 @@ local controllerThing
 local function setupControllerThing()
   controllerThing = extension:syncDiscoveredThingByKey('controller', function()
     return Thing:new('Controller', 'The Z-Wave controller', {'MultiLevelSensor'}):addPropertiesFromNames('connected')
-  end)
+  end, controllerThing)
 end
 
 local function onZWaveNode(node)
@@ -416,6 +416,7 @@ local function setThingPropertyValue(thing, name, value)
 end
 
 extension:subscribeEvent('things', function()
+  setupControllerThing()
   thingsMap = extension:getThingsByDiscoveryKey()
   for _, thing in pairs(thingsMap) do
     thing.setPropertyValue = setThingPropertyValue
@@ -426,7 +427,6 @@ extension:subscribeEvent('poll', function()
   logger:info('Polling %s extension, %d node ids', extension:getPrettyName(), Map.size(thingsByNodeId))
   local pollTime = utils.time()
   local minPingTime = pollTime - 6 * 3600
-  setupControllerThing()
   if webSocket and not webSocket:isClosed() then
     for nodeId, thing in pairs(thingsByNodeId) do
       logger:fine('Z-Wave polling nodeId %s', nodeId)

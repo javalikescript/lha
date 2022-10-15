@@ -410,7 +410,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
   -- @tparam string key The uniq string identifying the thing in this extension.
   -- @tparam function create The function to call in order to create the thing.
   -- @return the thing associated to the discovery key.
-  function extension:syncDiscoveredThingByKey(key, create, ...)
+  function extension:syncDiscoveredThingByKey(key, create, previousThing)
     local discoveredThing = self.discoveredThings[key]
     local thing = self:getThingByDiscoveryKey(key)
     if discoveredThing then
@@ -418,20 +418,21 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
         if logger:isLoggable(logger.FINE) then
           logger:fine('the thing "'..key..'" on extension '..self.id..' is now managed by the engine')
         end
-        -- sync properties
-        for name, property in pairs(discoveredThing:getProperties()) do
-          local value = property:getValue()
-          if value ~= nil then
-            thing:updatePropertyValue(name, value)
-          end
+        for name, value in pairs(discoveredThing:getPropertyValues()) do
+          thing:updatePropertyValue(name, value)
         end
         self.discoveredThings[key] = nil
       else
         return discoveredThing
       end
     elseif not thing and create then
-      local createdThing = create(...)
+      local createdThing = create()
       self:discoverThing(key, createdThing)
+      if previousThing then
+        for name, value in pairs(previousThing:getPropertyValues()) do
+          createdThing:updatePropertyValue(name, value)
+        end
+      end
       return createdThing
     end
     return thing
