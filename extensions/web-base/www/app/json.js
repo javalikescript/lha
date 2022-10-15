@@ -306,7 +306,7 @@ Vue.component('json', {
   },
   watch: { 
     obj: {
-      handler(newValue) {
+      handler: function(newValue) {
         this.refresh();
       },
       immediate: true

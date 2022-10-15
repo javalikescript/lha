@@ -50,7 +50,7 @@ var propertiesVue = new Vue({
     toggleFilter: function(event) {
       this.filter = !this.filter;
       if (this.filter) {
-        this.$nextTick(() => {
+        this.$nextTick(function() {
           tryFocus(findChild(findParent(findAncestor(event.target, 'button')), 'input'));
         });
       }
