@@ -189,6 +189,15 @@ local PROPERTY_METADATA_BY_NAME = {
     readOnly = true,
     unit = 'date time'
   },
+  lastupdated = {
+    [AT_TYPE] = PROPERTY_TYPES.DateTimeProperty,
+    type = 'string',
+    title = 'Last Updated',
+    description = 'The date where the thing was last updated',
+    configuration = true,
+    readOnly = true,
+    unit = 'date time'
+  },
   reachable = {
     [AT_TYPE] = PROPERTY_TYPES.BooleanProperty,
     type = 'boolean',

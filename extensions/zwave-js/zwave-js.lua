@@ -9,9 +9,9 @@ local Url = require('jls.net.Url')
 local strings = require('jls.util.strings')
 local json = require('jls.util.json')
 local Map = require('jls.util.Map')
-local utils = require('lha.utils')
 
 local Thing = require('lha.Thing')
+local utils = require('lha.utils')
 
 --logger = logger:getClass():new(); logger:setLevel(logger.FINE)
 
@@ -89,7 +89,7 @@ local function createThingFromNode(node)
     }, 0)
   end
   if thing then
-    return thing:addPropertiesFromNames('lastseen')
+    return thing:addPropertiesFromNames('lastseen', 'lastupdated')
   end
 end
 
@@ -180,8 +180,12 @@ local function onZWaveEvent(event)
       if thing then
         --logger:info('Z-Wave JS event on thing: '..json.stringify(event, 2))
         updateThingFromNodeInfo(thing, event.args)
+        local time = utils.timeToString()
         if thing:hasProperty('lastseen') then
-          thing:updatePropertyValue('lastseen', utils.timeToString())
+          thing:updatePropertyValue('lastseen', time)
+        end
+        if thing:hasProperty('lastupdated') then
+          thing:updatePropertyValue('lastupdated', time)
         end
       else
         if logger:isLoggable(logger.FINE) then
@@ -419,23 +423,44 @@ extension:subscribeEvent('things', function()
 end)
 
 extension:subscribeEvent('poll', function()
-  logger:info('Polling '..extension:getPrettyName()..' extension')
+  logger:info('Polling %s extension, %d node ids', extension:getPrettyName(), Map.size(thingsByNodeId))
+  local pollTime = utils.time()
+  local minPingTime = pollTime - 6 * 3600
   setupControllerThing()
   if webSocket and not webSocket:isClosed() then
-    for nodeId in pairs(thingsByNodeId) do
-      logger:fine('Z-Wave polling nodeId '..tostring(nodeId))
+    for nodeId, thing in pairs(thingsByNodeId) do
+      logger:fine('Z-Wave polling nodeId %s', nodeId)
+      -- get state will dump node, getValue for each getDefinedValueIDs
       sendWebSocket(webSocket, {
         command = 'node.get_state',
         nodeId = nodeId
-      }):next(function(results)
+      }):next(function(result)
         if logger:isLoggable(logger.FINE) then
           if logger:isLoggable(logger.FINEST) then
-            logger:finest('Z-Wave nodeId '..tostring(nodeId)..' state: '..json.stringify(results))
+            logger:finest('Z-Wave nodeId %s state: %s', nodeId, json.stringify(result))
           else
-            logger:fine('Z-Wave nodeId '..tostring(nodeId)..' state polled')
+            logger:fine('Z-Wave nodeId %s state polled', nodeId)
           end
         end
-        onZWaveNode(results.state)
+        onZWaveNode(result.state)
+        local lastseen = thing:getProperty('lastseen')
+        if lastseen and (not lastseen:getValue() or utils.timeFromString(lastseen:getValue()) < minPingTime) then
+          logger:fine('Z-Wave pinging nodeId %s', nodeId)
+          -- TODO find a better way to update lastseen, ping polling is thing dependent
+          return sendWebSocket(webSocket, {
+            command = 'node.ping',
+            nodeId = nodeId
+          }):next(function(result)
+            --logger:info('Z-Wave nodeId %s ping: %s', nodeId, json.stringify(result))
+            if result.responded then
+              thing:updatePropertyValue('lastseen', utils.timeToString(pollTime))
+            else
+              logger:fine('Z-Wave nodeId %s did not respond to ping', nodeId)
+            end
+          end)
+        end
+      end):catch(function(reason)
+        logger:fine('Z-Wave unable to poll/ping nodeId %s due to %s', nodeId, reason)
       end)
     end
   else

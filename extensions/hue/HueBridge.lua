@@ -9,6 +9,7 @@ local Date = require('jls.util.Date')
 local Map = require('jls.util.Map')
 
 local Thing = require('lha.Thing')
+local utils = require('lha.utils')
 
 --[[
   ZigBee Home Automation
@@ -137,7 +138,7 @@ local namesByDevice = {
   [DEVICE.Consumption] = {'consumption'},
 }
 
-local defaultNames = {'lastseen'}
+local defaultNames = {'lastseen', 'lastupdated'}
 for device, names in pairs(namesByDevice) do
   for _, name in ipairs(defaultNames) do
     table.insert(names, name)
@@ -301,9 +302,14 @@ end
 local function computeLastSeen(info, name, hueBridge)
   local value = info.lastseen -- "2022-08-24T15:51Z"
   if type(value) == 'string' then
-    -- we may need to parse/format to apply the bridge delay
-    --return hueBridge:parseDateTime(value)
-    return value
+    return utils.timeToString(hueBridge:parseDateTime(value))
+  end
+end
+
+local function computeLastUpdated(info, name, hueBridge)
+  local value = (info.state or {}).lastupdated -- "2022-10-12T08:46:35.779"
+  if type(value) == 'string' then
+    return utils.timeToString(hueBridge:parseDateTime(value))
   end
 end
 
@@ -337,6 +343,7 @@ local computeFnByName = {
   temperature = computeTemperature,
   enabled = computeEnabled,
   lastseen = computeLastSeen,
+  lastupdated = computeLastUpdated,
   buttonOn = computeButtonEvent,
   buttonOff = computeButtonEvent,
   buttonDimUp = computeButtonEvent,
@@ -378,9 +385,9 @@ return require('jls.lang.class').create(function(hueBridge)
     else
       self.delta = 0
     end
-    logger:info('Using bridge delta time: '..tostring(self.delta))
+    logger:info('Using bridge delta time: %d (ms)', self.delta)
     if config.devicename then
-      logger:info('Hue device is '..tostring(config.devicename))
+      logger:info('Hue device is %s', config.devicename)
     end
     if config.websocketport then
       -- config.websocketnotifyall
@@ -463,9 +470,9 @@ return require('jls.lang.class').create(function(hueBridge)
 
   function hueBridge:parseDateTime(dt)
     --logger:info('parseDateTime('..tostring(dt)..'['..type(dt)..'])')
-    local d = Date.fromISOString(dt, true)
+    local d = Date.fromISOString(dt, true) -- default to UTC
     if d then
-      return d + self.delta
+      return (d + self.delta) // 1000
     end
   end
 

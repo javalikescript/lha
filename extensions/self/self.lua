@@ -2,7 +2,6 @@ local extension = ...
 
 local logger = require('jls.lang.logger')
 local loader = require('jls.lang.loader')
-local Date = require('jls.util.Date')
 
 local luv = loader.tryRequire('luv')
 
@@ -198,7 +197,7 @@ curl http://localhost:8080/things
 ]]
 
 local function refreshThings()
-  local time = Date.now()
+  local time = utils.time()
   local engine = extension:getEngine()
   local minBattery = 100
   local minLastseen = time
@@ -218,7 +217,7 @@ local function refreshThings()
         elseif propertyName == 'lastseen' then
           value = property:getValue()
           if type(value) == 'string' then
-            value = Date.fromISOString(value)
+            value = utils.timeFromString(value)
             --logger:info('Thing '..thingId..' lastseen: '..tostring(value)..'/'..tostring(time))
             if value and value < minLastseen then
               minLastseen = value
@@ -231,7 +230,7 @@ local function refreshThings()
   thingsThing:updatePropertyValue('battery', minBattery)
   value = 0
   if minLastseen < time then
-    value = (time - minLastseen) // 60000
+    value = (time - minLastseen) // 60
   end
   thingsThing:updatePropertyValue('lastseen', value)
   thingsThing:updatePropertyValue('count', count)
