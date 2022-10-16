@@ -73,6 +73,12 @@ define(['./web-tools.xml'], function(toolsTemplate) {
           app.clearCache();
         });
       },
+      saveData: function() {
+        fetch('/engine/admin/data/save', {method: 'POST'}).then(function() {
+          toaster.toast('Data saved');
+          app.clearCache();
+        });
+      },
       reloadExtensions: function() {
         fetch('/engine/admin/reloadExtensions/all', {method: 'POST'}).then(function() {
           toaster.toast('Extensions reloaded');

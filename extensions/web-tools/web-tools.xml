@@ -25,6 +25,7 @@
     <button v-on:click="reloadExtensions"><i class="fas fa-redo"></i>&nbsp;Reload the Extensions</button>
     <button v-on:click="reloadScripts"><i class="fas fa-redo"></i>&nbsp;Reload the Scripts</button>
     <button v-on:click="saveConfig"><i class="far fa-save"></i>&nbsp;Save Configuration</button>
+    <button v-on:click="saveData"><i class="far fa-save"></i>&nbsp;Save Data</button>
     <p>Lua</p>
     <textarea ref="lua" v-model="lua" spellcheck="false" rows="12" wrap="off" style="width: 100%; resize: none;" placeholder="Enter your Lua code here"></textarea>
     <button v-on:click="execute"><i class="fas fa-redo"></i>&nbsp;Execute</button>

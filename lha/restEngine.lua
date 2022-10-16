@@ -157,6 +157,12 @@ local REST_ADMIN = {
       return 'Done'
     end
   },
+  data = {
+    save = function(exchange)
+      exchange.attributes.engine.dataHistory:saveJson()
+      return 'Done'
+    end
+  },
   ['reloadExtensions?method=POST'] = function(exchange)
     local mode = RestHttpHandler.shiftPath(exchange:getAttribute('path'))
     exchange.attributes.engine:reloadExtensions(mode == 'full', true)
