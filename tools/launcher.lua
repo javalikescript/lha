@@ -1,3 +1,12 @@
 _G.JLS_USE_XPCALL = true
-require('lha.Engine').launch(require('jls.lang.system').getArguments())
+local engine = require('lha.Engine').launch(require('jls.lang.system').getArguments())
+local hasLuv, luvLib = pcall(require, 'luv')
+if hasLuv then
+  local signal = luvLib.new_signal()
+  luvLib.ref(signal)
+  luvLib.signal_start(signal, 'sigint', function()
+    luvLib.unref(signal)
+    engine:stop()
+  end)
+end
 require('jls.lang.event'):loop()
