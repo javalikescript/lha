@@ -309,9 +309,9 @@
     <div>
       <div class="hover-container">
         <span v-on:click.exact="toggle()" v-on:click.alt.exact="toggleAll()">
-          <i v-if="hasContent" :class="['fa', open ? 'fa-chevron-down' : 'fa-chevron-right']"></i>
+          <i v-if="hasContent" :class="['fa', open ? 'fa-chevron-down' : 'fa-chevron-right']" title="Use the alt key to toggle all"></i>
           {{ label }}
-          <span class="required" v-if="schema.required">*</span>
+          <span class="required" v-if="schema.required" title="The value is required">*</span>
         </span>
         <span class="hover-hide">
           <i class="fa fa-trash" v-if="isRemovable" v-on:click="removeItem" title="Remove"></i>
@@ -332,11 +332,11 @@
     <div v-if="schema.description === 'string'">
       <span>{{ schema.description }}</span>
     </div>
-    <ul class="json-properties" v-show="open" v-if="hasProperties">
+    <ul v-if="isProperties" class="json-properties" v-show="open">
       <li is="json-item" v-for="n in propertyNames" :key="n" :name="n" :pobj="obj" :obj="obj[n]" :schema="schema.properties[n]" :root="root"></li>
     </ul>
-    <ul class="json-items" v-show="open" v-if="isList">
-      <li is="json-item" v-for="(so, i) in obj" :key="i" :name="String(i + 1)" :pobj="obj" :obj="so" :schema="schema.items" :root="root"></li>
+    <ul v-else-if="isList" class="json-items" v-show="open">
+      <li v-if="hasList" is="json-item" v-for="(so, i) in obj" :key="i" :name="String(i + 1)" :pobj="obj" :obj="so" :schema="schema.items" :root="root"></li>
       <li>
         <button v-on:click="addItem" title="Add Item"><i class="fa fa-plus"></i>&nbsp;Add {{ label }} Item</button>
       </li>

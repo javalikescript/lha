@@ -187,7 +187,7 @@ Vue.component('json-item', {
       return (Array.isArray(schema.enum) || Array.isArray(schema.enumValues)) &&
         ((schema.type === 'string') || (schema.type === 'number') || (schema.type === 'integer'));
     },
-    hasProperties: function() {
+    isProperties: function() {
       var schema = this.schema;
       return (schema.type === 'object') && (typeof schema.properties === 'object');
     },
@@ -241,8 +241,11 @@ Vue.component('json-item', {
         }
       }
     },
-    isList: function() {
+    hasList: function() {
       return (this.schema.type === 'array') && (typeof this.schema.items === 'object') && Array.isArray(this.obj);
+    },
+    isList: function() {
+      return (this.schema.type === 'array') && (typeof this.schema.items === 'object');
     },
     isRemovable: function() {
       return Array.isArray(this.pobj);
