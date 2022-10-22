@@ -175,7 +175,7 @@ Vue.component('json-item', {
     label: function() {
       var title = this.schema.title;
       if (title) {
-        if (this.name) {
+        if (this.name && (strcasecmp(title, this.name) !== 0)) {
           return title + ' (' + this.name + ')';
         }
         return title;

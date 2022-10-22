@@ -239,7 +239,7 @@ local PROPERTY_METADATA_BY_NAME = {
 }
 
 --- The Thing class represents a device.
--- See https://iot.mozilla.org/wot/
+-- See https://webthings.io/api/ https://webthings.io/schemas/
 -- @type Thing
 return require('jls.lang.class').create(function(thing)
 
@@ -307,15 +307,15 @@ return require('jls.lang.class').create(function(thing)
     return self
   end
 
-  function thing:addType(type)
-    if not self:hasType(type) then
-      table.insert(self.type, type)
+  function thing:addType(sType)
+    if not self:hasType(sType) then
+      table.insert(self.type, sType)
     end
     return self
   end
 
-  function thing:hasType(type)
-    return List.indexOf(self.type, type) ~= nil
+  function thing:hasType(sType)
+    return List.indexOf(self.type, sType) ~= nil
   end
 
   --- Adds a property to this thing.
