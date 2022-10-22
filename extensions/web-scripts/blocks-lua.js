@@ -14,7 +14,7 @@ define(function() {
   }
   function getVariableName(block, fieldName) {
     var fieldValue = block.getFieldValue(fieldName);
-    return Blockly.Lua.variableDB_.getName(fieldValue, Blockly.Variables.NAME_TYPE);
+    return Blockly.Lua.nameDB_.getName(fieldValue, Blockly.Names.NameType.VARIABLE);
   }
 
   return {
