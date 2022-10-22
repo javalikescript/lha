@@ -113,6 +113,38 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
     }
   }
 
+  function processTile(tileDef, things, properties) {
+    var type = tileDef.type;
+    var values = [];
+    var paths = [];
+    forEachPropertyType(things, type, function(thing, thingId, property, propertyName) {
+      if (thing.archiveData && !property.configuration) {
+        paths.push(thingId + '/' + propertyName);
+      }
+      var props = properties[thingId];
+      if (props && isValidValue(props[propertyName])) {
+        values.push(props[propertyName]);
+      }
+    }, tileDef.thingIds);
+    var value = undefined;
+    if (values.length > 0) {
+      var valueType = typeof values[0];
+      if (valueType === 'number') {
+        value = values.reduce(function(s, v) { return s + v; }, 0) / values.length
+      } else if (valueType === 'boolean') {
+        value = values.indexOf(true) >= 0;
+      }
+    }
+    //console.log('value: ' + value + ', type: ' + type, values);
+    return assignMap({}, tileDef, {
+      title: oneOf(tileDef.title, type, 'n/a'),
+      paths: paths,
+      count: values.length,
+      value: value,
+      unit: formatUnit(unitByType[type])
+    });
+  }
+
   var extensionId = 'web-dashboard';
   var extensionName = 'Dashboard';
 
@@ -122,7 +154,7 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
       config: {},
       things: [],
       properties: {},
-      tiles: [],
+      rows: [],
       lastChange: null,
       changeTimer: null
     },
@@ -162,46 +194,29 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
       },
       processThings: function(config, things, properties) {
         //console.log('processThings()', config, things, properties);
-        var tiles = [];
-        var tilesDef = config.tiles;
-        if (tilesDef) {
-          for (var i = 0; i < tilesDef.length; i++) {
-            var tileDef = tilesDef[i];
-            var type = tileDef.type;
-            var values = [];
-            var paths = [];
-            forEachPropertyType(things, type, function(thing, thingId, property, propertyName) {
-              if (thing.archiveData && !property.configuration) {
-                paths.push(thingId + '/' + propertyName);
+        var rows = [];
+        var rowsDef = config.rows;
+        if (rowsDef) {
+          for (var i = 0; i < rowsDef.length; i++) {
+            var rowDef = rowsDef[i];
+            var tilesDef = rowDef.tiles;
+            if (tilesDef) {
+              var tiles = [];
+              for (var j = 0; j < tilesDef.length; j++) {
+                var tileDef = tilesDef[j];
+                var tile = processTile(tileDef, things, properties);
+                //console.log('tile', JSON.stringify(tile, undefined, 2), JSON.stringify(tileDef, undefined, 2));
+                tiles.push(tile);
               }
-              var props = properties[thingId];
-              if (props && isValidValue(props[propertyName])) {
-                values.push(props[propertyName]);
-              }
-            }, tileDef.thingIds);
-            var value = undefined;
-            if (values.length > 0) {
-              var valueType = typeof values[0];
-              if (valueType === 'number') {
-                value = values.reduce(function(s, v) { return s + v; }, 0) / values.length
-              } else if (valueType === 'boolean') {
-                value = values.indexOf(true) >= 0;
-              }
+              rows.push({
+                title: oneOf(rowDef.title, 'n/a'),
+                tiles: tiles
+              });
             }
-            //console.log('value: ' + value + ', type: ' + type, values);
-            var tile = assignMap({}, tileDef, {
-              title: oneOf(tileDef.title, type, 'n/a'),
-              paths: paths,
-              count: values.length,
-              value: value,
-              unit: formatUnit(unitByType[type])
-            });
-            //console.log('tile', JSON.stringify(tile, undefined, 2), JSON.stringify(tileDef, undefined, 2));
-            tiles.push(tile);
           }
         }
-        //console.log('tiles', JSON.stringify(tiles, undefined, 2));
-        this.tiles = tiles;
+        //console.log('rows', JSON.stringify(rows, undefined, 2));
+        this.rows = rows;
         this.lastChange = new Date();
         if (this.changeTimer) {
           window.clearTimeout(this.changeTimer);

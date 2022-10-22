@@ -271,6 +271,9 @@ article.tiles, .tile-container {
   padding: 1rem;
   width: 100%;
 }
+.tile-row {
+  width: 100%;
+}
 .tile {
   height: 18rem;
   width: 18rem;
