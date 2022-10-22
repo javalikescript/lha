@@ -201,7 +201,7 @@
       <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
       <!-- fa fa-minus -->
       <button v-on:click="onDisable().then(function(){ app.back(); })" title="Disable"><i class="fa fa-trash"></i></button>
-      <button v-on:click="onSave()" title="Save"><i class="fas fa-save"></i></button>
+      <button v-if="schema" v-on:click="onSave()" title="Save"><i class="fas fa-save"></i></button>
       <button v-on:click="onReload" title="Reload"><i class="fas fa-redo"></i></button>
       <button v-on:click="onRefreshThings" title="Refresh Things"><i class="fas fa-recycle"></i></button>
     </template>
@@ -209,9 +209,9 @@
       <section>
         <p>{{ extension.info.name }}</p>
         <p>{{ extension.info.description }}</p>
-        <json v-if="schema" :name="'Configuration'" :obj="extension.config" :schema="schema"></json>
       </section>
-      <section>
+      <section v-if="schema">
+        <json :name="'Configuration'" :obj="extension.config" :schema="schema"></json>
         <button v-on:click="onSave()"><i class="far fa-save"></i>&nbsp;Save</button>
       </section>
     </article>
@@ -237,7 +237,7 @@
         <json v-if="schema" :name="'Configuration'" :obj="extension.config" :schema="schema"></json>
       </section>
       <section>
-        <button v-on:click="onAdd().then(function(){ app.replacePage('extensions'); })"><i class="fa fa-plus"></i>&nbsp;Add</button>
+        <button v-on:click="onAdd().then(function(){ app.replacePage('extensions'); })"><i class="fa fa-plus"></i>&nbsp;Add Extension</button>
         <button v-on:click="app.back()">Cancel</button>
       </section>
     </article>
@@ -307,26 +307,29 @@
 <script type="text/x-template" id="json-item-template">
   <li class="json">
     <div>
-      <div>
-        <span v-on:click="toggle">
+      <div class="hover-container">
+        <span v-on:click.exact="toggle()" v-on:click.alt.exact="toggleAll()">
           <i v-if="hasContent" :class="['fa', open ? 'fa-chevron-down' : 'fa-chevron-right']"></i>
-          {{ label }}:
+          {{ label }}
+          <span class="required" v-if="schema.required">*</span>
         </span>
-        <i class="fa fa-trash" v-if="isRemovable" v-on:click="removeItem" title="Remove"></i>
-        <i class="fas fa-caret-up" v-if="canMove(-1)" v-on:click="moveItem(-1)" title="Move Up"></i>
-        <i class="fas fa-caret-down" v-if="canMove(1)" v-on:click="moveItem(1)" title="Move Down"></i>
+        <span class="hover-hide">
+          <i class="fa fa-trash" v-if="isRemovable" v-on:click="removeItem" title="Remove"></i>
+          <i class="fas fa-caret-up" v-if="canMove(-1)" v-on:click="moveItem(-1)" title="Move Up"></i>
+          <i class="fas fa-caret-down" v-if="canMove(1)" v-on:click="moveItem(1)" title="Move Down"></i>
+        </span>
       </div>
-      <input v-if="hasStringValue && !hasEnumValues" v-model="value" type="text" placeholder="String Value">
-      <input v-if="hasNumberValue && !hasEnumValues" v-model="value" type="number" placeholder="Number Value">
-      <label v-if="hasBooleanValue" class="switch big">
+      <select v-if="hasEnumValues" v-model="value">
+        <option v-for="ev in enumValues" :value="ev.const">{{ev.title}}</option>
+      </select>
+      <input v-else-if="schema.type === 'string'" v-model="value" :readonly="schema.readOnly" :type="schema.writeOnly ? 'password' : 'text'" placeholder="String Value">
+      <input v-else-if="schema.type === 'number' || schema.type === 'integer'" v-model="value" :readonly="schema.readOnly" type="number" placeholder="Number Value">
+      <label v-else-if="schema.type === 'boolean'" class="switch big">
         <input type="checkbox" v-model="value" />
         <span class="slider"></span>
       </label>
-      <select v-if="hasEnumValues && (hasStringValue || hasNumberValue)" v-model="value">
-        <option v-for="ev in enumValues" :value="ev.const">{{ev.title}}</option>
-      </select>
     </div>
-    <div v-if="hasDescription">
+    <div v-if="schema.description === 'string'">
       <span>{{ schema.description }}</span>
     </div>
     <ul class="json-properties" v-show="open" v-if="hasProperties">

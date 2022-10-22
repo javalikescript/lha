@@ -127,19 +127,40 @@ function populateJsonSchema(schema, enumsById) {
 function populateJson(schema, obj) {
   if (schema && schema.type) {
     if (!isJsonType(obj, schema.type)) {
-      obj = newJsonItem(schema.type);
+      if (isJsonType(schema.default, schema.type)) {
+        obj = schema.default;
+      } else {
+        obj = newJsonItem(schema.type);
+      }
     }
     if ((schema.type === 'object') && schema.properties) {
       for (var k in schema.properties) {
         obj[k] = populateJson(schema.properties[k], obj[k]);
       }
     } else if ((schema.type === 'array') && schema.items) {
-      for (var i = 0; i < obj.length; i++) {
+      var l = obj.length;
+      if ((typeof schema.minItems === 'number') && (schema.minItems > l)) {
+        l = schema.minItems;
+      }
+      for (var i = 0; i < l; i++) {
         obj[i] = populateJson(schema.items, obj[i]);
       }
     }
   }
   return obj;
+}
+
+function isJsonItem(comp) {
+  return comp.$options.name === 'json-item';
+}
+
+function forEachJsonItem(comp, fn) {
+  comp.$children.forEach(function(child) {
+    if (isJsonItem(child)) {
+      fn(child);
+      forEachJsonItem(child, fn);
+    }
+  });
 }
 
 Vue.component('json-item', {
@@ -152,7 +173,7 @@ Vue.component('json-item', {
   template: '#json-item-template',
   computed: {
     label: function() {
-      var title = this.schema && this.schema.title;
+      var title = this.schema.title;
       if (title) {
         if (this.name) {
           return title + ' (' + this.name + ')';
@@ -161,34 +182,25 @@ Vue.component('json-item', {
       }
       return this.name || 'Value';
     },
-    hasDescription: function() {
-      return this.schema && (typeof this.schema.description === 'string');
-    },
-    hasStringValue: function() {
-      return this.schema && (this.schema.type === 'string');
-    },
     hasEnumValues: function() {
       var schema = this.schema;
-      return schema && (Array.isArray(schema.enum) || Array.isArray(schema.enumValues));
-    },
-    hasNumberValue: function() {
-      var schema = this.schema;
-      return schema && ((schema.type === 'number') || (schema.type === 'integer'));
-    },
-    hasBooleanValue: function() {
-      return this.schema && (this.schema.type === 'boolean');
+      return (Array.isArray(schema.enum) || Array.isArray(schema.enumValues)) &&
+        ((schema.type === 'string') || (schema.type === 'number') || (schema.type === 'integer'));
     },
     hasProperties: function() {
       var schema = this.schema;
-      return schema && (schema.type === 'object') && (typeof schema.properties === 'object');
+      return (schema.type === 'object') && (typeof schema.properties === 'object');
     },
     propertyNames: function() {
       var names = [];
       var objectNames = [];
       var arrayNames = [];
       for (var name in this.schema.properties) {
-        var propertyType = this.schema.properties[name].type;
-        switch(propertyType) {
+        var propertySchema = this.schema.properties[name];
+        if (propertySchema.format === 'hidden') {
+          continue;
+        }
+        switch(propertySchema.type) {
           case 'array':
             arrayNames.push(name);
             break;
@@ -223,7 +235,6 @@ Vue.component('json-item', {
         return this.obj;
       },
       set: function(val) {
-        //console.log('value()', val, this.$vnode.key);
         var v = parseJsonItemValue(this.schema.type, val, true);
         if ((v !== null) && (v !== undefined)) {
           this.pobj[this.$vnode.key] = v;
@@ -231,19 +242,18 @@ Vue.component('json-item', {
       }
     },
     isList: function() {
-      return this.schema && (this.schema.type === 'array') && (typeof this.schema.items === 'object') && Array.isArray(this.obj);
+      return (this.schema.type === 'array') && (typeof this.schema.items === 'object') && Array.isArray(this.obj);
     },
     isRemovable: function() {
       return Array.isArray(this.pobj);
     },
     hasContent: function() {
-      return this.schema && ((this.schema.type === 'array') || (this.schema.type === 'object'));
+      return ((this.schema.type === 'array') || (this.schema.type === 'object'));
     }
   },
   methods: {
     addItem: function() {
-      if (this.schema && (this.schema.type === 'array') && (typeof this.schema.items === 'object') && Array.isArray(this.obj)) {
-        console.log('addItem()', this.obj, this.schema);
+      if ((this.schema.type === 'array') && (typeof this.schema.items === 'object') && Array.isArray(this.obj)) {
         var item = populateJson(this.schema.items);
         this.obj.push(item);
         this.$forceUpdate();
@@ -264,14 +274,14 @@ Vue.component('json-item', {
       var index = this.getItemIndex();
       if (index !== -1) {
         this.pobj.splice(index, 1);
-        this.root.$forceUpdate();
+        this.$parent.$forceUpdate();
       }
     },
     canMove: function(delta) {
       var index = this.getItemIndex();
       if (index !== -1) {
         var newIndex = index + delta;
-        return (newIndex >= 0) && (newIndex < this.pobj.length)
+        return (newIndex >= 0) && (newIndex < this.pobj.length);
       }
       return false;
     },
@@ -284,10 +294,20 @@ Vue.component('json-item', {
         this.root.$forceUpdate();
       }
     },
-    toggle: function() {
-      if (this.schema && ((this.schema.type === 'array') || (this.schema.type === 'object'))) {
-        this.open = !this.open
+    toggle: function(value) {
+      if (((this.schema.type === 'array') || (this.schema.type === 'object'))) {
+        if (typeof value !== 'boolean') {
+          value = !this.open;
+        }
+        this.open = value;
       }
+    },
+    toggleAll: function() {
+      this.toggle();
+      var open = this.open;
+      forEachJsonItem(this, function(comp) {
+        comp.toggle(open);
+      });
     }
   }
 });

@@ -44,7 +44,8 @@
             },
             "password": {
               "title": "The user password",
-              "type": "string"
+              "type": "string",
+              "writeOnly": true
             }
           }
         }

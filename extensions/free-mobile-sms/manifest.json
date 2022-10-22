@@ -17,7 +17,8 @@
       },
       "pass": {
         "title": "Password",
-        "type": "string"
+        "type": "string",
+        "writeOnly": true
       }
     }
   }

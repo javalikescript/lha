@@ -88,6 +88,16 @@ div.splash {
   text-align: center;
   z-index: 1000;
 }
+span.required {
+  color: red;
+  font-weight: bold;
+}
+.hover-container:hover .hover-hide {
+  display: unset;
+}
+.hover-container .hover-hide {
+  display: none;
+}
 .theme_boot > div.toaster,
 :not(.theme_boot) > div.splash {
   display: none;

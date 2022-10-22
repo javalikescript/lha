@@ -13,7 +13,8 @@
       },
       "user": {
         "title": "Bridge API username",
-        "type": "string"
+        "type": "string",
+        "writeOnly": true
       },
       "useWebSocket": {
         "title": "Enable WebSocket",
