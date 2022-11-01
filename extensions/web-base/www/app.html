@@ -81,7 +81,7 @@
   <app-page id="things" title="Things">
     <template slot="bar-right">
       <input v-if="filter" v-model="query" type="text" placeholder="Type to filter">
-      <button v-on:click="filter = !filter"><i class="fas fa-search"></i></button>
+      <button v-on:click="toggleFilter(event)"><i class="fas fa-search"></i></button>
       <button v-on:click="app.toPage('addThings')"><i class="fa fa-plus"></i></button>
       <button v-if="edit" v-on:click="onSave" title="Save"><i class="far fa-save"></i></button>
       <button v-on:click="onShow" title="Refresh"><i class="fas fa-sync"></i></button>
@@ -179,7 +179,7 @@
   <app-page id="extensions" title="Extensions">
     <template slot="bar-right">
       <input v-if="filter" v-model="query" type="text" placeholder="Type to filter">
-      <button v-on:click="filter = !filter"><i class="fas fa-search"></i></button>
+      <button v-on:click="toggleFilter(event)"><i class="fas fa-search"></i></button>
       <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
       <button v-on:click="app.toPage('addExtensions')" title="Add"><i class="fa fa-plus"></i></button>
     </template>

@@ -27,6 +27,14 @@ var extensionsVue =new Vue({
       app.getExtensions().then(function(extensions) {
         self.extensions = extensions;
       });
+    },
+    toggleFilter: function(event) {
+      this.filter = !this.filter;
+      if (this.filter) {
+        this.$nextTick(function() {
+          tryFocus(findChild(findParent(findAncestor(event.target, 'button')), 'input'));
+        });
+      }
     }
   }
 });

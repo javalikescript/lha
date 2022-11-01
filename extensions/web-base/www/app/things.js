@@ -90,6 +90,14 @@ var thingsVue = new Vue({
         app.clearCache();
         self.edit = false;
       });
+    },
+    toggleFilter: function(event) {
+      this.filter = !this.filter;
+      if (this.filter) {
+        this.$nextTick(function() {
+          tryFocus(findChild(findParent(findAncestor(event.target, 'button')), 'input'));
+        });
+      }
     }
   }
 });
