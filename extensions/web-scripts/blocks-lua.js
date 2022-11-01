@@ -86,6 +86,10 @@ define(function() {
       var code = '' + hms.reverse().reduce(function(pv, cv) {return cv + pv / 60}, 0);
       return [code, Blockly.JavaScript.ORDER_MEMBER];
     },
+    "lha_day": function(block) {
+      var value = block.getFieldValue('NAME');
+      return [value, Blockly.JavaScript.ORDER_MEMBER];
+    },
     "lha_parse_time": function(block) {
       var value = Blockly.Lua.valueToCode(block, 'VALUE', Blockly.JavaScript.ORDER_NONE);
       var code = "(utils.timeFromString(tostring(" + value + ")) or 0)";
