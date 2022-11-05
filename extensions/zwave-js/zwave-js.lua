@@ -24,6 +24,16 @@ local CC = {
   BATTERY = 128,
 }
 
+local SIGNAL_ORDER_PROPERTY = {
+  ['@type'] = 'LevelProperty',
+  title = 'Signal Order',
+  type = 'integer',
+  -- stop, hg, eco, -2, -1, comfort
+  description = 'The signal order as a level, 0, 20, 30, 40, 50, 99 from stop to comfort',
+  minimum = 0,
+  maximum = 99
+}
+
 local function getNodeName(node, default)
   if node.name and node.name ~= '' then
     return node.name
@@ -76,17 +86,13 @@ local function createThingFromNode(node)
       Thing.CAPABILITIES.TemperatureSensor,
     }):addPropertiesFromNames('humidity', 'temperature', 'battery')
   elseif productLabel == 'ZMNHUD' then
+    thing = Thing:new(getNodeName(node, 'Pilot Wire'), 'Pilot Wire Switch (DIN version)', {
+      Thing.CAPABILITIES.MultiLevelSwitch,
+    }):addProperty('value', SIGNAL_ORDER_PROPERTY, 0)
+  elseif productLabel == 'ZMNHJD' then
     thing = Thing:new(getNodeName(node, 'Pilot Wire'), 'Pilot Wire Switch', {
       Thing.CAPABILITIES.MultiLevelSwitch,
-    }):addProperty('value', {
-      ['@type'] = 'LevelProperty',
-      title = 'Signal Order',
-      type = 'integer',
-      -- stop, hg, eco, -2, -1, comfort
-      description = 'The signal order as a level, 0, 20, 30, 40, 50, 99 from stop to comfort',
-      minimum = 0,
-      maximum = 99
-    }, 0)
+    }):addProperty('value', SIGNAL_ORDER_PROPERTY, 0):addPropertiesFromNames('temperature')
   end
   if thing then
     return thing:addPropertiesFromNames('lastseen', 'lastupdated')
