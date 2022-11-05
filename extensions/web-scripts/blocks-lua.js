@@ -37,6 +37,20 @@ define(function() {
       code = "script:watchValue('data/" + path + "', function(" + newValue + ")\n" + code + "end)\n";
       return code;
     },
+    "lha_data_path": function(block) {
+      var path = block.getFieldValue('PATH');
+      return [textToLua(path), Blockly.JavaScript.ORDER_MEMBER];
+    },
+    "lha_get_data_path": function(block) {
+      var path = Blockly.Lua.valueToCode(block, 'PATH', Blockly.JavaScript.ORDER_NONE);
+      var code = "script:getDataValue(" + path + ")";
+      return [code, Blockly.JavaScript.ORDER_MEMBER];
+    },
+    "lha_set_data_path": function(block) {
+      var path = Blockly.Lua.valueToCode(block, 'PATH', Blockly.JavaScript.ORDER_NONE);
+      var value = Blockly.Lua.valueToCode(block, 'VALUE', Blockly.JavaScript.ORDER_NONE);
+      return "script:setDataValue(" + path + ", " + value + ")\n";
+    },
     // -- Event --------
     "lha_event": function(block) {
       var code = Blockly.Lua.statementToCode(block, 'DO');

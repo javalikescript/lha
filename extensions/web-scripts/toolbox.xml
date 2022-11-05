@@ -3,6 +3,7 @@
   <category name="Menu" colour="24">
     <button text="Reload" callbackKey="refresh"></button>
     <button text="Clear" callbackKey="clear"></button>
+    <button text="Show Lua" callbackKey="showLua"></button>
     <button text="Export Lua" callbackKey="exportLua"></button>
     <button text="Export XML" callbackKey="exportXml"></button>
     <button text="Import XML" callbackKey="importXml"></button>
@@ -20,7 +21,6 @@
     <block type="lha_schedule"></block>
     <block type="lha_timer"></block>
     <block type="lha_clear_timer"></block>
-    <block type="lha_fire_event"></block>
   </category>
   <category name="Expression" colour="78">
     <block type="lha_type"></block>
@@ -34,6 +34,10 @@
   </category>
   <category name="Experimental" colour="0">
     <block type="lha_log"></block>
+    <block type="lha_fire_event"></block>
+    <block type="lha_data_path"></block>
+    <block type="lha_get_data_path"></block>
+    <block type="lha_set_data_path"></block>
     <block type="lha_get_field"></block>
     <block type="lha_set_field"></block>
     <block type="lha_require"></block>

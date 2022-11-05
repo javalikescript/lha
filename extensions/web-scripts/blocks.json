@@ -1,5 +1,6 @@
 {
   "lha_get_data": {
+    "tooltip" : "Gets a thing property value",
     "message0": "get %1",
     "args0": [{
       "type": "field_dropdown",
@@ -10,6 +11,7 @@
     "colour": "$lhaDataColor"
   },
   "lha_set_data": {
+    "tooltip" : "Sets a thing property value",
     "message0": "set %1 %2",
     "args0": [{
       "type": "field_dropdown",
@@ -24,6 +26,7 @@
     "colour": "$lhaDataColor"
   },
   "lha_watch_data": {
+    "tooltip" : "Triggers an action on a thing property value change",
     "message0": "watch %1",
     "args0": [{
       "type": "field_dropdown",
@@ -41,10 +44,12 @@
       "type": "input_statement",
       "name": "DO"
     }],
+    "inputsInline": true,
     "colour": "$lhaDataColor"
   },
 
   "lha_event": {
+    "tooltip" : "Triggers an action on an event",
     "message0": "on %1",
     "args0": [{
       "type": "field_dropdown",
@@ -66,6 +71,7 @@
     "colour": "$lhaEventColor"
   },
   "lha_schedule": {
+    "tooltip" : "Triggers an action on a schedule",
     "message0": "every %1",
     "args0": [{
       "type": "field_input",
@@ -80,6 +86,7 @@
     "colour": "$lhaEventColor"
   },
   "lha_timer": {
+    "tooltip" : "Triggers an action after a delay",
     "message0": "set timer %1",
     "args0": [{
       "type": "field_input",
@@ -105,11 +112,13 @@
       "type": "input_statement",
       "name": "DO"
     }],
+    "inputsInline": true,
     "previousStatement": null,
     "nextStatement": null,
     "colour": "$lhaEventColor"
   },
   "lha_clear_timer": {
+    "tooltip" : "Clears a timer",
     "message0": "clear timer %1",
     "args0": [{
       "type": "field_input",
@@ -120,23 +129,9 @@
     "nextStatement": null,
     "colour": "$lhaEventColor"
   },
-  "lha_fire_event": {
-    "message0": "fire %1 with %2",
-    "args0": [{
-      "type": "field_input",
-      "name": "VALUE",
-      "text": "custom event"
-    }, {
-      "type": "input_value",
-      "name": "ARGS",
-      "check": "Array"
-    }],
-    "previousStatement": null,
-    "nextStatement": null,
-    "colour": "$lhaEventColor"
-  },
 
   "lha_to_string": {
+    "tooltip" : "A string representing the value",
     "message0": "to String %1",
     "args0": [{
       "type": "input_value",
@@ -146,6 +141,7 @@
     "colour": "$lhaExpressionColor"
   },
   "lha_type": {
+    "tooltip" : "The type of the value, string/number/boolean/table",
     "message0": "type %1",
     "args0": [{
       "type": "input_value",
@@ -155,12 +151,14 @@
     "colour": "$lhaExpressionColor"
   },
   "lha_time": {
+    "tooltip" : "The current time in seconds since epoch",
     "message0": "get time",
     "args0": [],
     "output": null,
     "colour": "$lhaExpressionColor"
   },
   "lha_hms": {
+    "tooltip" : "A decimal hour, h.ms",
     "message0": "hour %1",
     "args0": [{
       "type": "field_input",
@@ -171,7 +169,8 @@
     "colour": "$lhaExpressionColor"
   },
   "lha_day": {
-    "message0": "day %1",
+    "tooltip" : "A weekday, from 0 to 6",
+    "message0": "%1",
     "args0": [{
       "type": "field_dropdown",
       "name": "NAME",
@@ -189,6 +188,7 @@
     "colour": "$lhaExpressionColor"
   },
   "lha_parse_time": {
+    "tooltip" : "The time in seconds since epoch corresponding to the ISO 8601 string value",
     "message0": "parse date time from %1",
     "args0": [{
       "type": "input_value",
@@ -198,6 +198,7 @@
     "colour": "$lhaExpressionColor"
   },
   "lha_format_time": {
+    "tooltip" : "The ISO 8601 date from the time in seconds since epoch",
     "message0": "format date time from %1",
     "args0": [{
       "type": "input_value",
@@ -207,6 +208,7 @@
     "colour": "$lhaExpressionColor"
   },
   "lha_date": {
+    "tooltip" : "The date time field value from the time in seconds since epoch",
     "message0": "get date field %1 from %2",
     "args0": [{
       "type": "field_dropdown",
@@ -231,6 +233,7 @@
   },
 
   "lha_log": {
+    "tooltip" : "Logs the specified message",
     "message0": "log %1 %2",
     "args0": [{
       "type": "field_dropdown",
@@ -253,7 +256,60 @@
     "nextStatement": null,
     "colour": "$lhaExperimentalColor"
   },
+  "lha_fire_event": {
+    "tooltip" : "Fires a custom event",
+    "message0": "fire %1 with %2",
+    "args0": [{
+      "type": "field_input",
+      "name": "VALUE",
+      "text": "custom event"
+    }, {
+      "type": "input_value",
+      "name": "ARGS",
+      "check": "Array"
+    }],
+    "previousStatement": null,
+    "nextStatement": null,
+    "colour": "$lhaExperimentalColor"
+  },
+  "lha_data_path": {
+    "tooltip" : "The path corresponding to the thing property",
+    "message0": "%1",
+    "args0": [{
+      "type": "field_dropdown",
+      "name": "PATH",
+      "options": "$eventThingPathOptions"
+    }],
+    "output": null,
+    "colour": "$lhaExperimentalColor"
+  },
+  "lha_get_data_path": {
+    "tooltip" : "Gets a thing property value by its path",
+    "message0": "get %1",
+    "args0": [{
+      "type": "input_value",
+      "name": "PATH"
+    }],
+    "output": null,
+    "colour": "$lhaExperimentalColor"
+  },
+  "lha_set_data_path": {
+    "tooltip" : "Sets a thing property value by its path",
+    "message0": "set %1 to %2",
+    "args0": [{
+      "type": "input_value",
+      "name": "PATH"
+    }, {
+      "type": "input_value",
+      "name": "VALUE"
+    }],
+    "inputsInline": true,
+    "previousStatement": null,
+    "nextStatement": null,
+    "colour": "$lhaExperimentalColor"
+  },
   "lha_get_field": {
+    "tooltip" : "Gets a field value from an object",
     "message0": "get %1 field %2",
     "args0": [{
       "type": "field_variable",
@@ -267,6 +323,7 @@
     "colour": "$lhaExperimentalColor"
   },
   "lha_set_field": {
+    "tooltip" : "Sets a field value to an object",
     "message0": "set %1 field %2 to %3",
     "args0": [{
       "type": "field_variable",
@@ -284,6 +341,7 @@
     "colour": "$lhaExperimentalColor"
   },
   "lha_require": {
+    "tooltip" : "Requires a module by its name",
     "message0": "require %1",
     "args0": [{
       "type": "field_input",
@@ -294,6 +352,7 @@
     "colour": "$lhaExperimentalColor"
   },
   "lha_call": {
+    "tooltip" : "Calls a function with an argument list",
     "message0": "call %1 with %2",
     "args0": [{
       "type": "input_value",
@@ -307,6 +366,7 @@
     "colour": "$lhaExperimentalColor"
   },
   "lha_call_no_return": {
+    "tooltip" : "Calls a function with an argument list",
     "message0": "call %1 with %2",
     "args0": [{
       "type": "input_value",

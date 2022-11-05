@@ -75,6 +75,10 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
     });
     workspace.registerButtonCallback('delete', self.onDelete);
     workspace.registerButtonCallback('save', self.onSave);
+    workspace.registerButtonCallback('showLua', function() {
+      var win = window.open('', 'Lua', 'popup=yes,scrollbars=yes,resizable=yes,toolbar=no,location=no,directories=no,status=no,menubar=no');
+      win.document.body.innerHTML = '<pre>' + exportToLua(workspace) + '</pre>';
+    });
     workspace.registerButtonCallback('exportLua', function() {
       exportAs(exportToLua(workspace), 'script.lua');
     });
