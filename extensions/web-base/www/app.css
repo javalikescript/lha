@@ -92,10 +92,16 @@ span.required {
   color: red;
   font-weight: bold;
 }
-.hover-container:hover .hover-hide {
+.hover-container:hover .hover-visible {
+  visibility: unset;
+}
+.hover-container .hover-visible {
+  visibility: hidden;
+}
+.hover-container:hover .hover-show {
   display: unset;
 }
-.hover-container .hover-hide {
+.hover-container .hover-show {
   display: none;
 }
 .theme_boot > div.toaster,
