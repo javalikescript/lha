@@ -117,9 +117,11 @@ new Vue({
       app.toPage('data-chart', this.thingId + '/' + propertyName);
     },
     disableThing: function() {
-      return fetch('/engine/things/' + this.thingId, {method: 'DELETE'}).then(function() {
-        toaster.toast('Thing disabled');
-        app.clearCache();
+      return confirmation.ask('Disable the thing?').then(function() {
+        return fetch('/engine/things/' + this.thingId, {method: 'DELETE'}).then(function() {
+          toaster.toast('Thing disabled');
+          app.clearCache();
+        });
       });
     },
     onEdit: function() {
