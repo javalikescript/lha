@@ -79,10 +79,10 @@ return class.create(Thing, function(engineThing, super)
         end
         property:setValue(value)
       else
-        logger:warn('Invalid value on update property "'..name..'"')
+        logger:warn('Invalid value on update property "%s" for thing "%s"', name, self:getTitle())
       end
     else
-      logger:warn('Cannot update unknown property "'..name..'"')
+      logger:warn('Cannot update unknown property "%s" for thing "%s"', name, self:getTitle())
     end
   end
 
