@@ -149,7 +149,7 @@ section > header button {
 section > article {
   transition: height 1s ease;
   height: calc(100% - 5rem);
-  overflow: auto;
+  overflow-y: auto;
   width: 100%;
 }
 section > article a,
@@ -340,7 +340,8 @@ article.tiles, .tile-container {
 
 article.cards, .card-container {
   padding: 1rem;
-  width: 100%;
+  height: calc(100% - 7rem);
+  width: calc(100% - 2rem);
 }
 section > article > section, .card {
   width: calc(100% - 4rem);
