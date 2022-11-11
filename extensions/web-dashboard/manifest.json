@@ -2,88 +2,107 @@
   "name": "Dashboard",
   "description": "Expose things on dashboard",
   "dependencies": ["web-base"],
-  "version": "0.1",
+  "version": "0.2",
   "script": "../web-base/web-ext.lua",
   "schema": {
     "type": "object",
     "properties": {
-      "rows": {
-        "title": "Rows",
+      "tiles": {
+        "title": "Tiles",
         "type": "array",
         "items": {
-          "title": "Row",
-          "type": "object",
-          "properties": {
-            "title": {
-              "title": "Title",
-              "type": "string",
-              "required": true
-            },
-            "tiles": {
-              "title": "Tiles",
-              "type": "array",
-              "items": {
-                "title": "Tile",
-                "type": "object",
-                "properties": {
-                  "title": {
-                    "title": "Title",
-                    "type": "string",
-                    "required": true
-                  },
-                  "type": {
-                    "title": "The property type",
-                    "type": "string",
-                    "default": "LevelProperty",
-                    "required": true,
-                    "enumValues": [
-                      {"const": "AlarmProperty", "title": "Alarm"},
-                      {"const": "ApparentPowerProperty", "title": "Apparent Power"},
-                      {"const": "BarometricPressureProperty", "title": "Barometric Pressure"},
-                      {"const": "BooleanProperty", "title": "Boolean"},
-                      {"const": "CurrentProperty", "title": "Current"},
-                      {"const": "HumidityProperty", "title": "Humidity"},
-                      {"const": "LeakProperty", "title": "Leak"},
-                      {"const": "LevelProperty", "title": "Level"},
-                      {"const": "LockedProperty", "title": "Locked"},
-                      {"const": "MotionProperty", "title": "Motion"},
-                      {"const": "OnOffProperty", "title": "On/Off"},
-                      {"const": "OpenProperty", "title": "Open"},
-                      {"const": "SmokeProperty", "title": "Smoke"},
-                      {"const": "TemperatureProperty", "title": "Temperature"}
-                    ],
-                    "enumValues-NotUsed": [
-                      {"const": "BrightnessProperty", "title": "Brightness"},
-                      {"const": "ColorModeProperty", "title": "Color Mode"},
-                      {"const": "ColorProperty", "title": "Color"},
-                      {"const": "ColorTemperatureProperty", "title": "Color Temperature"},
-                      {"const": "ConcentrationProperty", "title": "Concentration"},
-                      {"const": "DensityProperty", "title": "Density"},
-                      {"const": "FrequencyProperty", "title": "Frequency"},
-                      {"const": "HeatingCoolingProperty", "title": "Heating Cooling"},
-                      {"const": "ImageProperty", "title": "Image"},
-                      {"const": "InstantaneousPowerFactorProperty", "title": "Instantaneous Power Factor"},
-                      {"const": "InstantaneousPowerProperty", "title": "Instantaneous Power"},
-                      {"const": "PushedProperty", "title": "Pushed"},
-                      {"const": "TargetTemperatureProperty", "title": "Target Temperature"},
-                      {"const": "ThermostatModeProperty", "title": "Thermostat Mode"},
-                      {"const": "VideoProperty", "title": "Video"},
-                      {"const": "VoltageProperty", "title": "Voltage"}
-                    ]
-                  },
-                  "thingIds": {
-                    "title": "Things",
-                    "type": "array",
-                    "items": {
-                      "title": "Thing Id",
-                      "type": "string",
-                      "enumVar": "thingIds"
-                    }
-                  }
+          "oneOf": [{
+            "title": "Things Tile",
+            "type": "object",
+            "properties": {
+              "title": {
+                "title": "Title",
+                "type": "string",
+                "required": true
+              },
+              "type": {
+                "title": "The property type",
+                "type": "string",
+                "default": "LevelProperty",
+                "required": true,
+                "enumValues": [
+                  {"const": "AlarmProperty", "title": "Alarm"},
+                  {"const": "ApparentPowerProperty", "title": "Apparent Power"},
+                  {"const": "BarometricPressureProperty", "title": "Barometric Pressure"},
+                  {"const": "BooleanProperty", "title": "Boolean"},
+                  {"const": "CurrentProperty", "title": "Current"},
+                  {"const": "HumidityProperty", "title": "Humidity"},
+                  {"const": "LeakProperty", "title": "Leak"},
+                  {"const": "LevelProperty", "title": "Level"},
+                  {"const": "LockedProperty", "title": "Locked"},
+                  {"const": "MotionProperty", "title": "Motion"},
+                  {"const": "OnOffProperty", "title": "On/Off"},
+                  {"const": "OpenProperty", "title": "Open"},
+                  {"const": "SmokeProperty", "title": "Smoke"},
+                  {"const": "TemperatureProperty", "title": "Temperature"}
+                ],
+                "enumValues-NotUsed": [
+                  {"const": "BrightnessProperty", "title": "Brightness"},
+                  {"const": "ColorModeProperty", "title": "Color Mode"},
+                  {"const": "ColorProperty", "title": "Color"},
+                  {"const": "ColorTemperatureProperty", "title": "Color Temperature"},
+                  {"const": "ConcentrationProperty", "title": "Concentration"},
+                  {"const": "DensityProperty", "title": "Density"},
+                  {"const": "FrequencyProperty", "title": "Frequency"},
+                  {"const": "HeatingCoolingProperty", "title": "Heating Cooling"},
+                  {"const": "ImageProperty", "title": "Image"},
+                  {"const": "InstantaneousPowerFactorProperty", "title": "Instantaneous Power Factor"},
+                  {"const": "InstantaneousPowerProperty", "title": "Instantaneous Power"},
+                  {"const": "PushedProperty", "title": "Pushed"},
+                  {"const": "TargetTemperatureProperty", "title": "Target Temperature"},
+                  {"const": "ThermostatModeProperty", "title": "Thermostat Mode"},
+                  {"const": "VideoProperty", "title": "Video"},
+                  {"const": "VoltageProperty", "title": "Voltage"}
+                ]
+              },
+              "thingIds": {
+                "title": "Things",
+                "type": "array",
+                "items": {
+                  "title": "Thing Id",
+                  "type": "string",
+                  "enumVar": "thingIds"
                 }
               }
             }
-          }
+          }, {
+            "title": "Properties Tile",
+            "type": "object",
+            "properties": {
+              "title": {
+                "title": "Title",
+                "type": "string",
+                "required": true
+              },
+              "propertyPaths": {
+                "title": "Properties",
+                "type": "array",
+                "items": {
+                  "title": "Thing Property Path",
+                  "type": "string",
+                  "enumVar": "propertyPaths"
+                }
+              }
+            }
+          }, {
+            "title": "Separator",
+            "type": "object",
+            "properties": {
+              "title": {
+                "title": "Title",
+                "type": "string"
+              },
+              "separator": {
+                "format": "hidden",
+                "const": true
+              }
+            }
+          }]
         }
       }
     }

@@ -77,7 +77,7 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
     return value;
   }
 
-  function oneOf() {
+  function firstOf() {
     for (var i = 0; i < arguments.length; i++) {
       var value = arguments[i];
       if (isValidValue(value)) {
@@ -87,6 +87,37 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
     return Math.round((Math.pow(10, value / 10000) - 1) * 100) / 100;
   }
 
+  function reduce(values) {
+    if (values.length > 0) {
+      var valueType = typeof values[0];
+      if (valueType === 'number') {
+        return values.reduce(function(s, v) { return s + v; }, 0) / values.length
+      } else if (valueType === 'boolean') {
+        return values.indexOf(true) >= 0;
+      }
+    }
+  }
+
+  function forEachPropertyPath(things, paths, fn, type) {
+    for (var i = 0; i < paths.length; i++) {
+      var path = paths[i];
+      var parts = path.split('/');
+      var thingId = parts[0];
+      var name = parts[1];
+      var thing = things[thingId];
+      if (thing) {
+        var property = thing.properties[name];
+        if (property) {
+          if ((property['@type'] === type) || (type === undefined)) {
+            if (fn(thing, thingId, property, name) === true) {
+              return;
+            }
+          }
+        }
+      }
+    }
+  }
+
   function forEachPropertyType(things, type, fn, thingIds) {
     if (isEmpty(thingIds)) {
       thingIds = Object.keys(things);
@@ -94,30 +125,41 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
     for (var i = 0; i < thingIds.length; i++) {
       var thingId = thingIds[i];
       var thing = things[thingId];
-      if (!thing) {
-        continue;
-      }
-      var property = undefined;
-      var propertyName = undefined;
-      for (var name in thing.properties) {
-        property = thing.properties[name];
-        var propType = property['@type'];
-        if (propType === type) {
-          propertyName = name;
-          break;
+      if (thing) {
+        for (var name in thing.properties) {
+          var property = thing.properties[name];
+          if (property['@type'] === type) {
+            if (fn(thing, thingId, property, name) === true) {
+              return;
+            }
+            break;
+          }
         }
-      }
-      if (propertyName) {
-        fn(thing, thingId, property, propertyName);
       }
     }
   }
 
+  function processEachTileProperty(tileDef, things, fn) {
+    if (tileDef.type) {
+      forEachPropertyType(things, tileDef.type, fn, tileDef.thingIds);
+    } else if (tileDef.propertyPaths) {
+      var type;
+      forEachPropertyPath(things, tileDef.propertyPaths, function(thing, thingId, property, propertyName) {
+        type = property['@type'];
+        return true;
+      });
+      forEachPropertyPath(things, tileDef.propertyPaths, fn, type);
+    }
+  }
+
   function processTile(tileDef, things, properties) {
-    var type = tileDef.type;
-    var values = [];
+    if (tileDef.separator) {
+      return assignMap({}, tileDef);
+    }
     var paths = [];
-    forEachPropertyType(things, type, function(thing, thingId, property, propertyName) {
+    var type = null;
+    var values = [];
+    processEachTileProperty(tileDef, things, function(thing, thingId, property, propertyName) {
       if (thing.archiveData && !property.configuration) {
         paths.push(thingId + '/' + propertyName);
       }
@@ -125,19 +167,11 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
       if (props && isValidValue(props[propertyName])) {
         values.push(props[propertyName]);
       }
-    }, tileDef.thingIds);
-    var value = undefined;
-    if (values.length > 0) {
-      var valueType = typeof values[0];
-      if (valueType === 'number') {
-        value = values.reduce(function(s, v) { return s + v; }, 0) / values.length
-      } else if (valueType === 'boolean') {
-        value = values.indexOf(true) >= 0;
-      }
-    }
+    });
+    var value = reduce(values);
     //console.log('value: ' + value + ', type: ' + type, values);
     return assignMap({}, tileDef, {
-      title: oneOf(tileDef.title, type, 'n/a'),
+      title: firstOf(tileDef.title, type, 'n/a'),
       paths: paths,
       count: values.length,
       value: value,
@@ -154,7 +188,7 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
       config: {},
       things: [],
       properties: {},
-      rows: [],
+      tiles: [],
       lastChange: null,
       changeTimer: null
     },
@@ -194,29 +228,18 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
       },
       processThings: function(config, things, properties) {
         //console.log('processThings()', config, things, properties);
-        var rows = [];
-        var rowsDef = config.rows;
-        if (rowsDef) {
-          for (var i = 0; i < rowsDef.length; i++) {
-            var rowDef = rowsDef[i];
-            var tilesDef = rowDef.tiles;
-            if (tilesDef) {
-              var tiles = [];
-              for (var j = 0; j < tilesDef.length; j++) {
-                var tileDef = tilesDef[j];
-                var tile = processTile(tileDef, things, properties);
-                //console.log('tile', JSON.stringify(tile, undefined, 2), JSON.stringify(tileDef, undefined, 2));
-                tiles.push(tile);
-              }
-              rows.push({
-                title: oneOf(rowDef.title, 'n/a'),
-                tiles: tiles
-              });
-            }
+        var tiles = [];
+        var tilesDef = config.tiles;
+        if (tilesDef) {
+          for (var j = 0; j < tilesDef.length; j++) {
+            var tileDef = tilesDef[j];
+            var tile = processTile(tileDef, things, properties);
+            //console.log('tile', JSON.stringify(tile, undefined, 2), JSON.stringify(tileDef, undefined, 2));
+            tiles.push(tile);
           }
         }
-        //console.log('rows', JSON.stringify(rows, undefined, 2));
-        this.rows = rows;
+        //console.log('tiles', JSON.stringify(tiles, undefined, 2));
+        this.tiles = tiles;
         this.lastChange = new Date();
         if (this.changeTimer) {
           window.clearTimeout(this.changeTimer);
@@ -237,7 +260,7 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
         app.getThingsById().then(function(things) {
           var promises = [];
           var newValue = !tile.value;
-          forEachPropertyType(things, tile.type, function(thing, thingId, property, propertyName) {
+          processEachTileProperty(tile, things, function(thing, thingId, property, propertyName) {
             if (!property.readOnly) {
               var valueByName = {};
               valueByName[propertyName] = newValue;

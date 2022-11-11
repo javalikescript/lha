@@ -6,24 +6,26 @@
     <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
   </template>
   <article>
-    <div class="tile-container" v-for="row in rows">
-      <div class="tile-row">
-        <h1>{{ row.title }}</h1>
-      </div>
-      <div class="tile" v-on:click="onTileClicked(tile)" v-for="tile in row.tiles">
-        <div class="bar">
-          <span>{{ tile.title }}</span>
-          <div>
-            <button v-if="tile.paths.length > 0" v-on:click="openHistoricalData(tile.paths)"><i class="fas fa-chart-line"></i></button>
+    <div class="tile-container">
+      <template v-for="tile in tiles">
+        <div v-if="tile.separator" class="tile-row">
+          <h1>{{ tile.title }}</h1>
+        </div>
+        <div v-else class="tile" v-on:click="onTileClicked(tile)">
+          <div class="bar">
+            <span>{{ tile.title }}</span>
+            <div>
+              <button v-if="tile.paths.length > 0" v-on:click="openHistoricalData(tile.paths)"><i class="fas fa-chart-line"></i></button>
+            </div>
+          </div>
+          <p class="tile-value" v-if="typeof tile.value === 'boolean'"><i :class="['fas', formatValue(tile)]"></i></p>
+          <p class="tile-value" v-else>{{ formatValue(tile) }}</p>
+          <div class="bar">
+            <div/>
+            <span>{{ tile.unit }}</span>
           </div>
         </div>
-        <p class="tile-value" v-if="typeof tile.value === 'boolean'"><i :class="['fas', formatValue(tile)]"></i></p>
-        <p class="tile-value" v-else>{{ formatValue(tile) }}</p>
-        <div class="bar">
-          <div/>
-          <span>{{ tile.unit }}</span>
-        </div>
-      </div>
+      </template>
     </div>
   </article>
 </app-page>
