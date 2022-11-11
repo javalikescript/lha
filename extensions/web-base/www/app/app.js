@@ -197,17 +197,62 @@ var app = new Vue({
       return this.fetchWithCache('/engine/properties');
     },
     getEnumsById: function() {
-      var enumsById = {};
-      return this.getThings().then(function(things) {
-        var thingIds = things.map(function(thing) {
+      var self = this;
+      return this.getWithCache('?enumsById', function() {
+        return self.getThings().then(function(things) {
+          var thingIds = things.map(function(thing) {
+            return {
+              const: thing.thingId,
+              title: thing.title + ' - ' + thing.description
+            };
+          });
+          var countByTitle = {};
+          for (var i = 0; i < things.length; i++) {
+            var thing = things[i];
+            var count = countByTitle[thing.title] || 0;
+            countByTitle[thing.title] = count + 1;
+          }
+          var propertyPaths = [];
+          var allPropertyPaths = [];
+          var readablePropertyPaths = [];
+          var writablePropertyPaths = [];
+          for (var i = 0; i < things.length; i++) {
+            var thing = things[i];
+            for (var name in thing.properties) {
+              var property = thing.properties[name];
+              var title = thing.title;
+              if (countByTitle[title] > 1) {
+                title += ' - ' + thing.description;
+              }
+              var option = {
+                const: thing.thingId + '/' + name,
+                title: title + ' / ' + property.title
+              };
+              allPropertyPaths.push(option);
+              if (!property.writeOnly && !property.configuration) {
+                propertyPaths.push(option);
+              }
+              if (!property.readOnly) {
+                writablePropertyPaths.push(option);
+              }
+              if (!property.writeOnly) {
+                readablePropertyPaths.push(option);
+              }
+            }
+          }
+          thingIds.sort(compareByTitle);
+          propertyPaths.sort(compareByTitle);
+          allPropertyPaths.sort(compareByTitle);
+          readablePropertyPaths.sort(compareByTitle);
+          writablePropertyPaths.sort(compareByTitle);
           return {
-            const: thing.thingId,
-            title: thing.title + ' - ' + thing.description
+            propertyPaths: propertyPaths,
+            allPropertyPaths: allPropertyPaths,
+            readablePropertyPaths: readablePropertyPaths,
+            writablePropertyPaths: writablePropertyPaths,
+            thingIds: thingIds
           };
         });
-        thingIds.sort(compareByTitle);
-        enumsById.thingIds = thingIds;
-        return enumsById;
       });
     }
   }

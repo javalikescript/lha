@@ -9,6 +9,9 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
     }
     return matches;
   }
+  function enumToOptions(e) {
+    return [e.title, e.const];
+  }
   function exportToLua(workspace) {
     //Blockly.Lua.INFINITE_LOOP_TRAP = 'if(--window.LoopTrap == 0) throw "Infinite loop.";\n';
     var lines = [
@@ -204,35 +207,12 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
           this.workspace = loadBlockly(this);
         }
         var self = this;
-        app.getThings().then(function(things) {
+        app.getEnumsById().then(function(enumsById) {
           // Prepare data fields
-          var getThingPathOptions = [];
-          var setThingPathOptions = [];
-          var eventThingPathOptions = [];
-          if (things && things.length > 0) {
-            // thing in things thing.title
-            for (var i = 0; i < things.length; i++) {
-              var thing = things[i];
-              for (var name in thing.properties) {
-                var property = thing.properties[name];
-                var option = [
-                  thing.title + ' - ' + property.title,
-                  thing.thingId + '/' + name
-                ];
-                if (!property.readOnly) {
-                  setThingPathOptions.push(option);
-                }
-                if (!property.writeOnly) {
-                  getThingPathOptions.push(option);
-                }
-                eventThingPathOptions.push(option);
-              }
-            }
-          }
           assignMap(blockEnv, {
-            getThingPathOptions: getThingPathOptions,
-            setThingPathOptions: setThingPathOptions,
-            eventThingPathOptions: eventThingPathOptions
+            getThingPathOptions: enumsById.readablePropertyPaths.map(enumToOptions),
+            setThingPathOptions: enumsById.writablePropertyPaths.map(enumToOptions),
+            eventThingPathOptions: enumsById.allPropertyPaths.map(enumToOptions)
           });
           if (scriptId) {
             self.scriptId = scriptId;
