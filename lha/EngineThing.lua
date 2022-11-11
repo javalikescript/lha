@@ -55,10 +55,10 @@ return class.create(Thing, function(engineThing, super)
       if property:isWritable() then
         self:updatePropertyValue(name, value)
       else
-        logger:warn('Cannot set property "'..name..'"')
+        logger:warn('Cannot set property "%s" for thing "%s"', name, self:getTitle())
       end
     else
-      logger:warn('Cannot set unknown property "'..name..'"')
+      logger:warn('Cannot set unknown property "%s" for thing "%s"', name, self:getTitle())
     end
   end
 

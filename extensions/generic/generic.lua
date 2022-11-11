@@ -40,7 +40,7 @@ local function isEmpty(value)
   return value == nil or value == '' or (type(value) == 'table' and next(value) == nil)
 end
 
-local function oneOf(...)
+local function firstOf(...)
   local l = select('#', ...)
   if l > 0 then
     local values = {...}
@@ -58,9 +58,9 @@ local mdKeys = {'type', '@type', 'unit', 'title', 'description', 'enum', 'minimu
 local function createThing(thingConfig)
   local typeSet = Map:new()
   typeSet:add('GenericThing')
-  local thing = Thing:new(oneOf(thingConfig.title, 'Generic Thing'), oneOf(thingConfig.description, 'Generic Thing'))
+  local thing = Thing:new(firstOf(thingConfig.title, 'Generic Thing'), firstOf(thingConfig.description, 'Generic Thing'))
   for _, propertyConfig in ipairs(thingConfig.properties) do
-    local name = oneOf(propertyConfig.name, 'value')
+    local name = firstOf(propertyConfig.name, 'value')
     local sType = tostring(propertyConfig.type)
     local fType = sType
     if propertyConfig.readOnly then

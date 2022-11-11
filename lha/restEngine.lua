@@ -62,6 +62,13 @@ local function refreshThingsDescription(engine, extension)
           discoveredThing:setDescription(thing:getDescription())
           thingDescription.title = thing:getTitle()
           thingDescription.description = thing:getDescription()
+          -- restore values
+          local values = thing:getPropertyValues()
+          for name, value in pairs(values) do
+            if thing:getPropertyValue(name) == nil then
+              discoveredThing:updatePropertyValue(name, value)
+            end
+          end
           logger:fine('Thing "'..thing:getTitle()..'" ('..thingId..') discovered')
         end
       end
