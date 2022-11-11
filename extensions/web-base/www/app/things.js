@@ -153,17 +153,18 @@ new Vue({
         }
       }
       var thingId = this.thingId;
-      var p;
+      var resolved = Promise.resolve();
+      var p = resolved;
       if (Object.keys(modifiedProps).length > 0) {
-        p = fetch('/things/' + thingId + '/properties', {
-          method: 'PUT',
-          body: JSON.stringify(modifiedProps)
-        }).then(function() {
-          toaster.toast('Properties updated');
-          app.clearCache();
+        p = p.then(function() {
+          return fetch('/things/' + thingId + '/properties', {
+            method: 'PUT',
+            body: JSON.stringify(modifiedProps)
+          }).then(function() {
+            toaster.toast('Properties updated');
+            app.clearCache();
+          });
         });
-      } else {
-        p = Promise.resolve();
       }
       if (Object.keys(modifiedThing).length > 0) {
         p = p.then(function() {
@@ -176,6 +177,12 @@ new Vue({
           });
         });
       }
+      if (p !== resolved) {
+        var self = this;
+        p = p.then(function() {
+          return self.onShow();
+        });
+      }
       return p;
     },
     onShow: function(thingId) {
@@ -185,7 +192,7 @@ new Vue({
       }
       this.thing = {};
       var self = this;
-      fetch('/things/' + self.thingId).then(function(response) {
+      return fetch('/things/' + self.thingId).then(function(response) {
         return response.json();
       }).then(function(thing) {
         self.thing = thing;
