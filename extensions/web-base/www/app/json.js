@@ -43,6 +43,9 @@ function getJsonType(obj) {
 }
 
 function isJsonType(obj, type) {
+  if (type === undefined) {
+    return getJsonType(obj) !== 'undefined';
+  }
   return getJsonType(obj) === normalizeJsonType(type);
 }
 
@@ -113,14 +116,20 @@ function browseJsonSchema(schema, fn) {
   }
 }
 
-function copyObject(obj) {
-  return JSON.parse(JSON.stringify(obj));
+function browseJsonRootSchema(schema, fn) {
+  if (typeof schema['$defs'] === 'object') {
+    var defs = schema['$defs'];
+    for (var k in defs) {
+      browseJsonSchema(defs[k], fn);
+    }
+  }
+  browseJsonSchema(schema, fn);
 }
 
 function populateJsonSchema(schema, enumsById) {
   if (hasSchema(schema)) {
-    schema = copyObject(schema);
-    browseJsonSchema(schema, function(s) {
+    schema = deepCopy(schema);
+    browseJsonRootSchema(schema, function(s) {
       if ('enumVar' in s) {
         var enumValues = enumsById[s.enumVar];
         if (enumValues) {
@@ -134,10 +143,25 @@ function populateJsonSchema(schema, enumsById) {
   return false;
 }
 
-function guessOfSchemaIndex(schemas, obj) {
+function unrefSchema(rootSchema, schema) {
+  var ref = schema['$ref'];
+  if ((typeof ref === 'string') && startsWith(ref, '#/$defs/')) {
+    var defs = rootSchema['$defs'];
+    if (typeof defs === 'object') {
+      var name = ref.substring(8);
+      var def = defs[name];
+      if (typeof def === 'object') {
+        return def;
+      }
+    }
+  }
+  return schema;
+}
+
+function guessOfSchemaIndex(rootSchema, schemas, obj) {
   if (Array.isArray(schemas)) {
     for (var index = 0; index < schemas.length; index++) {
-      var schema = schemas[index];
+      var schema = unrefSchema(rootSchema, schemas[index]);
       if (isJsonType(obj, schema.type)) {
         if ((schema.type === 'object') && (typeof schema.properties === 'object')) {
           var match = true;
@@ -166,19 +190,26 @@ function guessOfSchemaIndex(schemas, obj) {
   return -1;
 }
 
-function populateJson(schema, obj) {
+function populateJson(rootSchema, schema, obj) {
   if (schema) {
-    if (schema.type) {
+    schema = unrefSchema(rootSchema, schema);
+    if (schema.const !== undefined) {
+      obj = schema.const;
+    } else if (schema.type) {
       if (!isJsonType(obj, schema.type)) {
-        if (isJsonType(schema.default, schema.type)) {
+        if (schema.default !== undefined) {
           obj = schema.default;
         } else {
           obj = newJsonItem(schema.type);
         }
       }
       if ((schema.type === 'object') && schema.properties) {
+        var oo = obj;
+        if (!schema.additionalProperties) {
+          obj = {};
+        }
         for (var k in schema.properties) {
-          obj[k] = populateJson(schema.properties[k], obj[k]);
+          obj[k] = populateJson(rootSchema, schema.properties[k], oo[k]);
         }
       } else if ((schema.type === 'array') && schema.items) {
         var l = obj.length;
@@ -186,15 +217,15 @@ function populateJson(schema, obj) {
           l = schema.minItems;
         }
         for (var i = 0; i < l; i++) {
-          obj[i] = populateJson(schema.items, obj[i]);
+          obj[i] = populateJson(rootSchema, schema.items, obj[i]);
         }
       }
     } else {
-      var of = schema.anyOf || schema.oneOf;
-      if (Array.isArray(of)) {
-        var index = guessOfSchemaIndex(of, obj);
+      var ofSchemas = schema.anyOf || schema.oneOf;
+      if (Array.isArray(ofSchemas)) {
+        var index = guessOfSchemaIndex(rootSchema, ofSchemas, obj);
         if (index >= 0) {
-          obj = populateJson(of[index], obj);
+          obj = populateJson(rootSchema, ofSchemas[index], obj);
         }
       }
     }
@@ -229,7 +260,7 @@ function findJsonItem(comp, fn) {
 }
 
 Vue.component('json-item', {
-  props: ['name', 'obj', 'pobj', 'schema', 'root'],
+  props: ['name', 'obj', 'pobj', 'schema', 'rootSchema'],
   data: function() {
     return {
       open: true
@@ -248,11 +279,14 @@ Vue.component('json-item', {
       return this.name || 'Value';
     },
     propertyNames: function() {
+      if (typeof this.schema.properties !== 'object') {
+        return [];
+      }
       var names = [];
       var objectNames = [];
       var arrayNames = [];
       for (var name in this.schema.properties) {
-        var propertySchema = this.schema.properties[name];
+        var propertySchema = unrefSchema(this.rootSchema, this.schema.properties[name]);
         if (propertySchema.format === 'hidden') {
           continue;
         }
@@ -299,18 +333,18 @@ Vue.component('json-item', {
     },
     ofIndex: {
       get: function() {
-        var schemas = this.schema.anyOf || this.schema.oneOf;
+        var ofSchemas = this.schema.anyOf || this.schema.oneOf;
         var index = -1;
-        if (Array.isArray(schemas)) {
-          index = guessOfSchemaIndex(schemas, this.obj);
+        if (Array.isArray(ofSchemas)) {
+          index = guessOfSchemaIndex(this.rootSchema, ofSchemas, this.obj);
         }
         return index;
       },
       set: function(val) {
-        var schemas = this.schema.anyOf || this.schema.oneOf;
+        var ofSchemas = this.schema.anyOf || this.schema.oneOf;
         var index = parseInt(val, 10);
-        if (!isNaN(index) && (index >= 0) && (index < schemas.length)) {
-          var obj = populateJson(schemas[index]);
+        if (!isNaN(index) && (index >= 0) && (index < ofSchemas.length)) {
+          var obj = populateJson(this.rootSchema, ofSchemas[index], this.obj);
           this.obj = obj;
           this.pobj[this.$vnode.key] = obj;
           this.updateParent();
@@ -318,10 +352,11 @@ Vue.component('json-item', {
       }
     },
     ofSchemaLabels: function() {
-      var schemas = this.schema.anyOf || this.schema.oneOf;
-      if (Array.isArray(schemas)) {
-        return schemas.map(function(ofSchema, index) {
-          return ofSchema.title || String(index + 1);
+      var ofSchemas = this.schema.anyOf || this.schema.oneOf;
+      if (Array.isArray(ofSchemas)) {
+        return ofSchemas.map(function(ofSchema, index) {
+          var schema = unrefSchema(this.rootSchema, ofSchema);
+          return schema.title || String(index + 1);
         });
       }
       return [];
@@ -353,7 +388,7 @@ Vue.component('json-item', {
     isList: function() {
       return (this.schema.type === 'array') && (typeof this.schema.items === 'object');
     },
-    isRemovable: function() {
+    isListItem: function() {
       return Array.isArray(this.pobj);
     },
     hasContent: function() {
@@ -361,9 +396,9 @@ Vue.component('json-item', {
         return true;
       }
       if (this.schema.type === undefined) {
-        var schemas = this.schema.anyOf || this.schema.oneOf;
-        if (Array.isArray(schemas)) {
-          var schema = schemas[this.ofIndex];
+        var ofSchemas = this.schema.anyOf || this.schema.oneOf;
+        if (Array.isArray(ofSchemas)) {
+          var schema = unrefSchema(this.rootSchema, ofSchemas[this.ofIndex]);
           if (schema && ((schema.type === 'array') || (schema.type === 'object'))) {
             return true;
           }
@@ -382,7 +417,7 @@ Vue.component('json-item', {
     },
     addItem: function() {
       if ((this.schema.type === 'array') && (typeof this.schema.items === 'object') && Array.isArray(this.obj)) {
-        var item = populateJson(this.schema.items);
+        var item = populateJson(this.rootSchema, this.schema.items);
         this.obj.push(item);
         this.$forceUpdate();
       } else {
@@ -403,6 +438,15 @@ Vue.component('json-item', {
       if (index !== -1) {
         this.pobj.splice(index, 1);
         this.updateParent();
+      }
+    },
+    insertItem: function() {
+      var index = this.getItemIndex();
+      if (index !== -1) {
+        var item = populateJson(this.rootSchema, this.schema);
+        this.pobj.splice(index, 0, item);
+        this.updateParent();
+        // TODO shift open values
       }
     },
     canMove: function(delta) {
@@ -451,7 +495,7 @@ Vue.component('json', {
     refresh: function() {
       //console.log('refresh()', this.schema, this.obj);
       if ((typeof this.schema === 'object') && (typeof this.obj === 'object')) {
-        populateJson(this.schema, this.obj);
+        populateJson(this.schema, this.schema, this.obj);
         //console.log('populateJson() ' + JSON.stringify(this.obj, undefined, 2));
       }
     }

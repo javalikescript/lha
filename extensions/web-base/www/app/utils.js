@@ -88,7 +88,10 @@ function deepMap(value, fn) {
   return m;
 }
 
-function deepCopy(value) {
+function deepCopy(value, useParse) {
+  if (useParse) {
+    return JSON.parse(JSON.stringify(value));
+  }
   return deepMap(value, function(v) {return v;});
 }
 
@@ -147,10 +150,17 @@ function toggleFullScreen() {
 }
 
 function endsWith(value, search, length) {
-  if ((length === undefined) || (length > this.length)) {
+  if ((length === undefined) || (length > value.length)) {
     length = value.length;
   }
   return value.substring(length - search.length, length) === search;
+}
+
+function startsWith(value, search, position) {
+  if ((position === undefined) || (position < 0)) {
+    position = 0;
+  }
+  return value.substring(position, position + search.length) === search;
 }
 
 function extname(path, invert) {

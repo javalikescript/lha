@@ -315,8 +315,9 @@
         <span v-else v-on:click.exact="toggle()" v-on:click.alt.exact="toggleAll()">{{ label }}</span>
         <span class="required" v-if="schema.required" title="The value is required">*</span>
       </span>
-      <span class="hover-visible">
-        <i class="fa fa-trash" v-if="isRemovable" v-on:click="removeItem" title="Remove"></i>
+      <span class="hover-visible" v-if="isListItem">
+        <i class="fa fa-plus" v-on:click="insertItem" title="Insert"></i>
+        <i class="fa fa-trash" v-on:click="removeItem" title="Remove"></i>
         <i class="fas fa-caret-up" v-if="canMove(-1)" v-on:click="moveItem(-1)" title="Move Up"></i>
         <i class="fas fa-caret-down" v-if="canMove(1)" v-on:click="moveItem(1)" title="Move Down"></i>
       </span>
@@ -324,7 +325,7 @@
     <div v-if="typeof schema.description === 'string'" v-show="open">
       <i>{{ schema.description }}</i>
     </div>
-    <json-item v-if="hasOfSchema" :schema="ofSchemas[ofIndex]" :key="ofKey" :name="name" :pobj="pobj" :obj="obj" v-show="open"></json-item>
+    <json-item v-if="hasOfSchema" :schema="unrefSchema(rootSchema, ofSchemas[ofIndex])" :key="ofKey" :name="name" :pobj="pobj" :obj="obj" :rootSchema="rootSchema" v-show="open"></json-item>
     <select v-else-if="hasEnumValues" v-model="value">
       <option v-for="ev in enumValues" :value="ev.const">{{ev.title}}</option>
     </select>
@@ -335,10 +336,10 @@
       <span class="slider"></span>
     </label>
     <ul v-else-if="isProperties" class="json-properties" v-show="open">
-      <li is="json-item" v-for="n in propertyNames" :key="n" :name="n" :pobj="obj" :obj="obj[n]" :schema="schema.properties[n]"></li>
+      <li is="json-item" v-for="n in propertyNames" :key="n" :name="n" :pobj="obj" :obj="obj[n]" :schema="unrefSchema(rootSchema, schema.properties[n])" :rootSchema="rootSchema"></li>
     </ul>
     <ul v-else-if="isList" class="json-items" v-show="open">
-      <li v-if="hasList" is="json-item" v-for="(so, i) in obj" :key="i" :name="String(i + 1)" :pobj="obj" :obj="so" :schema="schema.items"></li>
+      <li v-if="hasList" is="json-item" v-for="(so, i) in obj" :key="i" :name="String(i + 1)" :pobj="obj" :obj="so" :schema="unrefSchema(rootSchema, schema.items)" :rootSchema="rootSchema"></li>
       <li>
         <button v-on:click="addItem" title="Add Item"><i class="fa fa-plus"></i>&nbsp;Add {{ label }} Item</button>
       </li>
@@ -347,7 +348,7 @@
 </script>
 <script type="text/x-template" id="json-template">
   <ul class="json-root">
-    <json-item :name="name" :pobj="null" :obj="obj" :schema="schema"></json-item>
+    <json-item :name="name" :pobj="null" :obj="obj" :schema="unrefSchema(schema, schema)" :rootSchema="schema"></json-item>
   </ul>
 </script>
 <script type="text/x-template" id="dialog-template" tabindex="-1">
