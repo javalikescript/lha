@@ -65,7 +65,7 @@ return class.create(Thing, function(engineThing, super)
   function engineThing:updatePropertyValue(name, value)
     local property = self:getProperty(name)
     if property then
-      if isValidValue(value) then
+      if isValidValue(value) and property:isValidValue(value) then
         local path = self.thingId..'/'..name
         local prev
         if property:isReadable() then
