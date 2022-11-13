@@ -491,6 +491,14 @@ input:checked + .slider:before {
   }    
 }
 @media all and (max-width: 799px) {
+  .tile {
+    height: 16rem;
+    width: 16rem;
+  }
+  .tile p.tile-value {
+    font-size: 4rem;
+    line-height: 5rem;
+  }  
   section > article > section {
     max-width: 60rem;
   }
