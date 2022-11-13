@@ -30,6 +30,7 @@ local SIGNAL_ORDER_PROPERTY = {
   type = 'integer',
   -- stop, hg, eco, -2, -1, comfort
   description = 'The signal order as a level, 0, 20, 30, 40, 50, 99 from stop to comfort',
+  --enum = {0, 20, 30, 40, 50, 99},
   minimum = 0,
   maximum = 99
 }
@@ -406,7 +407,7 @@ local function setThingPropertyValue(thing, name, value)
           },
           value = value
         }):next(function()
-          logger:info('Z-Wave nodeId %s set value %s done', nodeId, name)
+          logger:info('Z-Wave nodeId %s set value "%s" done', nodeId, name)
           thing:updatePropertyValue(name, value)
         end, function(reason)
           logger:info('Z-Wave nodeId %s set value failed due to %s', nodeId, reason)
@@ -415,7 +416,12 @@ local function setThingPropertyValue(thing, name, value)
         return
       end
     else
-      logger:warn('Z-Wave unable to set value %s, nodeId not found for thing %s', name, thing:getId())
+      logger:warn('Z-Wave unable to set value "%s", nodeId not found for thing id %s "%s"', name, thing:getId(), thing:getTitle())
+      if logger:isLoggable(logger.INFO) then
+        for id, th in pairs(thingsByNodeId) do
+          logger:info('node id "%s" mapped to thing id %s "%s"', id, th:getId(), th:getTitle())
+        end
+      end
     end
   end
   thing:updatePropertyValue(name, value)
