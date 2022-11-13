@@ -157,9 +157,12 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
       return assignMap({}, tileDef);
     }
     var paths = [];
-    var type = null;
+    var type = tileDef.type;
     var values = [];
     processEachTileProperty(tileDef, things, function(thing, thingId, property, propertyName) {
+      if (!type) {
+        type = property['@type'];
+      }
       if (thing.archiveData && !property.configuration) {
         paths.push(thingId + '/' + propertyName);
       }
@@ -176,6 +179,15 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
       count: values.length,
       value: value,
       unit: formatUnit(unitByType[type])
+    });
+  }
+
+  function putThingPropertyValue(thingId, propertyName, newValue) {
+    var valueByName = {};
+    valueByName[propertyName] = newValue;
+    return fetch('/things/' + thingId + '/properties', {
+      method: 'PUT',
+      body: JSON.stringify(valueByName)
     });
   }
 
@@ -257,17 +269,15 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
         if ((typeof tile.value !== 'boolean') && (tile.value !== undefined)) {
           return Promise.reject('Unsupported value');
         }
+        // if the property has enum then we could roll over values
         app.getThingsById().then(function(things) {
           var promises = [];
           var newValue = !tile.value;
           processEachTileProperty(tile, things, function(thing, thingId, property, propertyName) {
             if (!property.readOnly) {
-              var valueByName = {};
-              valueByName[propertyName] = newValue;
-              promises.push(fetch('/things/' + thingId + '/properties', {
-                method: 'PUT',
-                body: JSON.stringify(valueByName)
-              }));
+              if (property.type === 'boolean') {
+                promises.push(putThingPropertyValue(thingId, propertyName, newValue));
+              }
             }
           }, tile.thingIds);
           if (promises.length > 0) {
