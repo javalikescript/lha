@@ -275,7 +275,7 @@ article.tiles, .tile-container {
   flex-wrap: wrap;
   align-content: flex-start;
   padding: 1rem;
-  width: 100%;
+  width: calc(100% - 2rem);
 }
 .tile-row {
   width: 100%;
