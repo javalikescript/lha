@@ -2,7 +2,7 @@ local extension = ...
 
 local logger = require('jls.lang.logger')
 local Promise = require('jls.lang.Promise')
-local protectedCall = require('jls.lang.protectedCall')
+local Exception = require('jls.lang.Exception')
 local mqtt = require('jls.net.mqtt')
 local WebSocket = require('jls.net.http.ws').WebSocket
 local Url = require('jls.net.Url')
@@ -330,7 +330,7 @@ local function startWebSocket(wsConfig)
     if logger:isLoggable(logger.FINEST) then
       logger:finest('Z-Wave WebSocket received '..tostring(payload))
     end
-    local status, message = protectedCall(json.decode, payload)
+    local status, message = Exception.pcall(json.decode, payload)
     if status and message and message.type then
       if message.type == 'event' and message.event then
         if logger:isLoggable(logger.FINER) then

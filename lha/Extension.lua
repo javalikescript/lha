@@ -1,7 +1,7 @@
 local logger = require('jls.lang.logger')
 local loader = require('jls.lang.loader')
 local event = require('jls.lang.event')
-local protectedCall = require('jls.lang.protectedCall')
+local Exception = require('jls.lang.Exception')
 local File = require('jls.io.File')
 local json = require('jls.util.json')
 local tables = require('jls.util.tables')
@@ -512,12 +512,12 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     local scriptFn = self:loadScript()
     if scriptFn then
       self:initConfiguration()
-      local status, err = protectedCall(scriptFn, self)
+      local status, err = Exception.pcall(scriptFn, self)
       if status then
         self.lastModified = lastModified
         self.loaded = true
       else
-        logger:warn('Cannot load extension "'..self:getPrettyName()..'" due to "'..tostring(err)..'"')
+        logger:warn('Cannot load extension "%s" due to %s', self:getPrettyName(), err)
         self.manifest = {}
       end
     else
