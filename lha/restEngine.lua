@@ -236,13 +236,15 @@ local REST_ADMIN = {
       engine:saveThingValues()
       engine.configHistory:saveJson()
       engine.dataHistory:saveJson()
-      ZipFile.zipTo(backup, engine:getWorkDirectory():listFiles(function(file)
+      return ZipFile.zipToAsync(backup, engine:getWorkDirectory():listFiles(function(file)
         return file:getName() ~= 'tmp'
-      end))
-      engine.configHistory:removeJson()
-      engine.dataHistory:removeJson()
-      engine:getThingValuesFile():delete()
-      return backup:getName()
+      end)):finally(function()
+        engine.configHistory:removeJson()
+        engine.dataHistory:removeJson()
+        engine:getThingValuesFile():delete()
+      end):next(function()
+        return backup:getName()
+      end)
     end,
     ['deploy?method=POST'] = function(exchange)
       local backupName = exchange:getRequest():getBody() or 'lha_backup.zip'
