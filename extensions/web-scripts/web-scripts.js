@@ -21,7 +21,8 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
       "local utils = require('lha.utils')",
       ""
     ];
-    var varNames = workspace.getAllVariables().map(function(v) {return v.name;});
+    var varRegExp = new RegExp('^[a-zA-Z_][a-zA-Z0-9_]*$'); // Protection against invalid variable names
+    var varNames = workspace.getAllVariables().map(function(v) {return v.name;}).filter(function(n) {return varRegExp.test(n)});
     varNames.sort();
     if (varNames.length > 0) {
       lines.push('local ' + varNames.join(', '), '');
@@ -79,14 +80,15 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
     workspace.registerButtonCallback('delete', self.onDelete);
     workspace.registerButtonCallback('save', self.onSave);
     workspace.registerButtonCallback('showLua', function() {
-      var win = window.open('', 'Lua', 'popup=yes,scrollbars=yes,resizable=yes,toolbar=no,location=no,directories=no,status=no,menubar=no');
+      var win = window.open('', 'Lua-' + self.scriptId, 'popup=yes,scrollbars=yes,resizable=yes,toolbar=no,location=no,directories=no,status=no,menubar=no');
+      win.document.title = 'Lua ' + self.name;
       win.document.body.innerHTML = '<pre>' + exportToLua(workspace) + '</pre>';
     });
     workspace.registerButtonCallback('exportLua', function() {
-      exportAs(exportToLua(workspace), 'script.lua');
+      exportAs(exportToLua(workspace), 'lha-script-' + self.name.replace(/\W/g, '-') + '.lua');
     });
     workspace.registerButtonCallback('exportXml', function() {
-      exportAs(exportToXml(workspace), 'blocks.xml');
+      exportAs(exportToXml(workspace), 'lha-blocks-' + self.name.replace(/\W/g, '-') + '.xml');
     });
     workspace.registerButtonCallback('importXml', function() {
       self.$refs.uploadInput.click();
@@ -105,7 +107,7 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
     Blockly.Blocks[name] = (function (name, block) {
       return {
         init: function() {
-          console.log('init block ' + name);
+          //console.log('init block ' + name);
           var b = deepMap(block, function(v) {
             if ((typeof v === 'string') && (v.charAt(0) === '$')) {
               var vv = blockEnv[v.substring(1)]
