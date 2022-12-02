@@ -232,6 +232,7 @@ local REST_ADMIN = {
     ['create?method=POST'] = function(exchange)
       local engine = exchange:getAttribute('engine')
       local ts = Date.timestamp()
+      -- TODO add host name in file name
       local backup = File:new(engine:getTemporaryDirectory(), 'lha_backup.'..ts..'.zip')
       engine:saveThingValues()
       engine.configHistory:saveJson()
@@ -257,22 +258,31 @@ local REST_ADMIN = {
       local workDir = engine:getWorkDirectory()
       local workNew = File:new(workDir:getParentFile(), 'work_new')
       local workOld = File:new(workDir:getParentFile(), 'work_old')
-      workNew:deleteRecursive()
-      workOld:deleteRecursive()
-      workNew:mkdir()
-      ZipFile.unzipTo(backup, workNew)
-      local tmpDir = File:new(workNew, 'tmp')
-      local tmpNew = File:new(workNew, 'tmp')
-      engine:stop()
-      if tmpDir:isDirectory() then
-        tmpDir:renameTo(tmpNew)
-      else
-        tmpNew:mkdir()
+      if not (workNew:deleteRecursive() and workNew:mkdir() and workOld:deleteRecursive()) then
+        HttpExchange.internalServerError(exchange)
+        return false
       end
-      workDir:renameTo(workOld)
-      workNew:renameTo(workDir)
-      engine:start()
-      workOld:deleteRecursive()
+      if not ZipFile.unzipTo(backup, workNew) then
+        HttpExchange.badRequest(exchange)
+        return false
+      end
+      local tmpDir = File:new(workDir, 'tmp')
+      local tmpNew = File:new(workNew, 'tmp')
+      event:setTimeout(function()
+        engine:stop() -- stops the HTTP server
+        if tmpDir:isDirectory() then
+          tmpDir:renameTo(tmpNew)
+        else
+          tmpNew:mkdir()
+        end
+        if workDir:renameTo(workOld) and workNew:renameTo(workDir) then
+          engine:start()
+          workOld:deleteRecursive()
+        else
+          logger:warn('Fail to deploy, please check and re start manually')
+        end
+      end, 100)
+      return 'In progress'
     end
   },
   getLogLevel = function(exchange)
