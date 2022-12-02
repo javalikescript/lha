@@ -5,14 +5,14 @@
     <button v-on:click="reloadHistoricalData" title="Refresh"><i class="fas fa-sync"></i></button>
   </template>
   <article class="content">
-    <div style="text-align: center;">
+    <div style="text-align: center; min-width: 640px;">
       <select v-model="path" v-on:change="openPath">
         <option value="" disabled selected>(Choose something)</option>
         <optgroup  v-for="thing in things" :label="thing.title" v-if="thing.archiveData">
           <option v-for="(property, name) in thing.properties" v-if="!(property.configuration || property.writeOnly)" :value="thing.thingId + '/' + name">{{ property.title }}</option>
         </optgroup>
       </select>
-      <span>Duration:</span>
+      <span class="show-l">Duration:</span>
       <select v-model="duration" v-on:change="reloadHistoricalData">
         <option value="7200">2 hours</option>
         <option value="21600">6 hours</option>
@@ -30,7 +30,7 @@
         <option value="63072000">2 years</option>
         <option value="315360000">10 years</option>
       </select>
-      <span>Period:</span>
+      <span class="show-l">Period:</span>
       <select v-model="period" v-on:change="reloadHistoricalData">
         <option value="0">Auto</option>
         <option value="60">1 min</option>
@@ -42,11 +42,13 @@
         <option value="21600">6 hours</option>
         <option value="86400">24 hours</option>
       </select>
-      <span>To:</span>
+      <span class="show-l">To:</span>
       <select v-model="toDays" v-on:change="reloadHistoricalData">
         <option value="0">Now</option>
         <option value="1">1 day ago</option>
         <option value="2">2 days ago</option>
+        <option value="3">3 days ago</option>
+        <option value="5">5 days ago</option>
         <option value="7">1 week ago</option>
         <option value="14">2 weeks ago</option>
         <option value="21">3 weeks ago</option>
@@ -55,28 +57,23 @@
         <option value="180">6 months ago</option>
         <option value="365">1 year ago</option>
       </select>
-      <!--
-        <select v-model="chartType">
-          <option value="line">Lines</option>
-          <option value="bar">Bars</option>
-        </select>
-      -->
+      <select class="show-xl" v-model="chartType" v-on:change="reloadHistoricalData">
+        <option value="line">Lines</option>
+        <option value="bar">Bars</option>
+      </select>
       <select v-model="chartBeginAtZero" v-on:change="reloadHistoricalData">
         <option value="false">Centered</option>
         <option value="true">Zero based</option>
       </select>
-      <!--
-        <span>Tension:</span>
-        <select v-model="chartTension">
-          <option value="0">None</option>
-          <option value="0.1">Low</option>
-          <option value="0.4">High</option>
-        </select>
-      -->
-    </div>
-    <div style="position: relative; height:40vh; width:80vw">
-      <!-- style="height: 320px; " style="position: relative; "  height="400" -->
-      <canvas id="chart-data-view-canvas"></canvas>
+      <span class="show-xl">Tension:</span>
+      <select class="show-xl" v-model="chartTension" v-on:change="reloadHistoricalData">
+        <option value="0">None</option>
+        <option value="0.1">Low</option>
+        <option value="0.4">High</option>
+      </select>
+      <div style="position: relative; width:90%; margin-left: 5%;">
+        <canvas id="chart-data-view-canvas"></canvas>
+      </div>
     </div>
   </article>
 </app-page>
