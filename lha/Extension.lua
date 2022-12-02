@@ -169,6 +169,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
       end
     end
     if next(configuration) == nil then
+      -- ensure that configuration is detected as an object by adding a property
       configuration.active = false
     end
   end

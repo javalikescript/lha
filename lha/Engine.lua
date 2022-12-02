@@ -489,6 +489,12 @@ return class.create(function(engine)
         end
       end
       file:delete()
+    else
+      -- if the engine stopped unexpectedly then the values are not available
+      -- the main issue is about generic things not archived
+      -- the values are not all in the historical data
+      -- we could 1) regularly save the values as for the configuration
+      -- we could 2) save values in the generic extension
     end
   end
 

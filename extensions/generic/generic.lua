@@ -131,6 +131,7 @@ local function discoverThings(extension)
   local thingsByKey = extension:getThingsByDiscoveryKey()
   createThings(thingsByKey, configuration.basicThings)
   createThings(thingsByKey, configuration.things)
+  -- we could add an option to save the thing value
 end
 
 extension:subscribeEvent('things', function()
