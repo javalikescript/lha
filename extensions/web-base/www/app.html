@@ -325,7 +325,7 @@
     <div v-if="typeof schema.description === 'string'" v-show="open">
       <i>{{ schema.description }}</i>
     </div>
-    <json-item v-if="hasOfSchema" :schema="unrefSchema(rootSchema, ofSchemas[ofIndex])" :key="ofKey" :name="name" :pobj="pobj" :obj="obj" :rootSchema="rootSchema" v-show="open"></json-item>
+    <json-item v-if="hasOfSchema" :schema="ofSchema" :key="ofKey" :name="name" :pobj="pobj" :obj="obj" :rootSchema="rootSchema" v-show="open"></json-item>
     <select v-else-if="hasEnumValues" v-model="value">
       <option v-for="ev in enumValues" :value="ev.const">{{ev.title}}</option>
     </select>
@@ -348,7 +348,7 @@
 </script>
 <script type="text/x-template" id="json-template">
   <ul class="json-root">
-    <json-item :name="name" :pobj="null" :obj="obj" :schema="unrefSchema(schema, schema)" :rootSchema="schema"></json-item>
+    <json-item :name="name" :pobj="false" :obj="obj" :schema="unrefSchema(schema, schema)" :rootSchema="schema"></json-item>
   </ul>
 </script>
 <script type="text/x-template" id="dialog-template" tabindex="-1">
