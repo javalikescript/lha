@@ -1,4 +1,6 @@
-var extensionsVue =new Vue({
+(function() {
+
+registerPageVue(new Vue({
   el: '#extensions',
   data: {
     extensions: [],
@@ -37,13 +39,13 @@ var extensionsVue =new Vue({
       }
     }
   }
-});
+}), 'fa-plus-circle');
 
-function onShow(extensionId) {
+function onShowExtension(extensionId) {
   if (extensionId) {
     this.extensionId = extensionId;
   }
-  Promise.all([
+  return Promise.all([
     fetch('/engine/extensions/' + this.extensionId).then(getJson),
     app.getEnumsById()
   ]).then(apply(this, function(extension, enumsById) {
@@ -112,7 +114,7 @@ new Vue({
         });
       }
     },
-    onShow: onShow
+    onShow: onShowExtension
   }
 });
 
@@ -157,8 +159,8 @@ new Vue({
         toaster.toast('Extension added');
       });
     },
-    onShow: onShow
+    onShow: onShowExtension
   }
 });
 
-registerPageVue(extensionsVue, 'fa-plus-circle');
+})();

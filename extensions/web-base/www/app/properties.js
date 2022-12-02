@@ -1,4 +1,4 @@
-var propertiesVue = new Vue({
+registerPageVue(new Vue({
   el: '#properties',
   data: {
     edit: false,
@@ -29,9 +29,7 @@ var propertiesVue = new Vue({
       }).then(function(result) {
         extensionsById = result;
         return fetch('/engine/properties');
-      }).then(function(response) {
-        return response.json();
-      }).then(function(properties) {
+      }).then(getJson).then(function(properties) {
         self.properties = [];
         for (var i = 0; i < things.length; i++) {
           var thing = things[i];
@@ -56,6 +54,4 @@ var propertiesVue = new Vue({
       }
     }
   }
-});
-
-registerPageVue(propertiesVue, 'fa-list');
+}), 'fa-list');

@@ -52,18 +52,41 @@ function getLocationPath() {
 app.$on('page-selected', function(id, path) {
   window.location.replace(window.location.pathname + '#' + formatNavigationPath(id, path));
 });
+
 window.addEventListener('hashchange', function() {
   app.navigateTo(getLocationPath());
 });
 
-var webBaseConfig = {};
-var startCountDown = 1;
-var webSocket = null;
-
-function setupWebSocket() {
-  if (!webSocket) {
+/************************************************************
+ * Load web base configuration and addons
+ ************************************************************/
+ Promise.all([
+  fetch('/engine/configuration/extensions/web-base').then(getJson),
+  fetch('addon/').then(getJson)
+]).then(function(results) {
+  var webBaseConfig = results[0].value || {};
+  if (webBaseConfig.title) {
+    document.title = webBaseConfig.title;
+    homePage.title = webBaseConfig.title;
+  }
+  if (webBaseConfig.theme) {
+    var body = document.getElementsByTagName('body')[0];
+    body.setAttribute('class', 'theme_' + webBaseConfig.theme);
+  }
+  var addons = results[1];
+  if (Array.isArray(addons)) {
+    return Promise.all(addons.map(function(addon) {
+      console.log('loading addon ' + addon.id);
+      return new Promise(function(resolve) {
+        require(['addon/' + addon.id + '/' + addon.script], resolve);
+      })
+    }));
+  }
+}).then(function() {
+  app.navigateTo(getLocationPath());
+  function setupWebSocket() {
     var protocol = location.protocol.replace('http', 'ws');
-    webSocket = new WebSocket(protocol + '//' + location.host + '/ws/');
+    var webSocket = new WebSocket(protocol + '//' + location.host + '/ws/');
     webSocket.onmessage = function(event) {
       //console.log('webSocket.onmessage', event);
       if (event.data) {
@@ -72,49 +95,8 @@ function setupWebSocket() {
     };
     webSocket.onclose = function() {
       webSocket = null;
+      setTimeout(setupWebSocket, 3000);
     };
   }
-}
-
-var countDownStart = function() {
-  startCountDown--;
-  if (startCountDown === 0) {
-    countDownStart = undefined;
-    if (webBaseConfig.theme) {
-      setTheme(webBaseConfig.theme);
-    }
-    app.navigateTo(getLocationPath());
-    setupWebSocket();
-  }
-};
-
-startCountDown++;
-fetch('/engine/configuration/extensions/web-base').then(function(response) {
-  return response.json();
-}).then(function(response) {
-  webBaseConfig = response.value || {};
-  if (webBaseConfig.title) {
-    document.title = webBaseConfig.title;
-    homePage.title = webBaseConfig.title;
-  }
-  countDownStart();
-}, function() {
-  webBaseConfig = {};
-  countDownStart();
+  setupWebSocket();
 });
-
-startCountDown++;
-fetch('addon/').then(function(response) {
-  return response.json();
-}).then(function(addons) {
-  if (Array.isArray(addons)) {
-    addons.forEach(function(addon) {
-      console.log('loading addon ' + addon.id);
-      startCountDown++;
-      require(['addon/' + addon.id + '/' + addon.script], countDownStart);
-    });
-  }
-  countDownStart();
-});
-
-countDownStart();

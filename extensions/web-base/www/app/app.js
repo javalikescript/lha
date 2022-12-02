@@ -1,9 +1,3 @@
-
-function setTheme(name) {
-  var body = document.getElementsByTagName('body')[0];
-  body.setAttribute('class', 'theme_' + name);
-}
-
 function formatNavigationPath(pageId, path) {
   var encodedPath = path ? path.split('/').map(function(part) { return encodeURIComponent(part); }).join('/') : '';
   return '/' + pageId + '/' + encodedPath;
@@ -412,7 +406,7 @@ var homePage = new Vue({
         if (tile.id) {
           app.toPage(tile.id);
         } else if (tile.url) {
-          window.open(tile.url,'_blank');
+          window.open(tile.url, '_blank');
         }
       }
     }
@@ -440,9 +434,7 @@ var homePage = new Vue({
   methods: {
     onShow: function() {
       var page = this;
-      fetch('/engine/admin/info').then(function(response) {
-        return response.json();
-      }).then(function(data) {
+      fetch('/engine/admin/info').then(getJson).then(function(data) {
         console.log('fetch(admin/info)', data);
         var clientTime = Math.round(Date.now() / 1000);
         var serverTime = data['Server Time'];

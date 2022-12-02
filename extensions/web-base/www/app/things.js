@@ -1,4 +1,4 @@
-var thingsVue = new Vue({
+registerPageVue(new Vue({
   el: '#things',
   data: {
     edit: false,
@@ -27,9 +27,7 @@ var thingsVue = new Vue({
       app.getThings().then(function(things) {
         self.things = things;
         return fetch('/engine/properties');
-      }).then(function(response) {
-        return response.json();
-      }).then(function(properties) {
+      }).then(getJson).then(function(properties) {
         self.propertiesById = {};
         for (var i = 0; i < self.things.length; i++) {
           var thing = self.things[i];
@@ -100,7 +98,7 @@ var thingsVue = new Vue({
       }
     }
   }
-});
+}), 'fa-circle');
 
 new Vue({
   el: '#thing',
@@ -192,14 +190,10 @@ new Vue({
       }
       this.thing = {};
       var self = this;
-      return fetch('/things/' + self.thingId).then(function(response) {
-        return response.json();
-      }).then(function(thing) {
+      return fetch('/things/' + self.thingId).then(getJson).then(function(thing) {
         self.thing = thing;
         return fetch('/things/' + self.thingId + '/properties');
-      }).then(function(response) {
-        return response.json();
-      }).then(function(properties) {
+      }).then(getJson).then(function(properties) {
         if (Array.isArray(properties)) {
           properties.sort(compareByTitle);
         }
@@ -218,9 +212,7 @@ new Vue({
     onShow: function() {
       this.things = [];
       var self = this;
-      fetch('/engine/discoveredThings').then(function(response) {
-        return response.json();
-      }).then(function(things) {
+      fetch('/engine/discoveredThings').then(getJson).then(function(things) {
         if (Array.isArray(things)) {
           things.sort(compareByTitle);
         }
@@ -260,4 +252,3 @@ new Vue({
   }
 });
 
-registerPageVue(thingsVue, 'fa-circle');
