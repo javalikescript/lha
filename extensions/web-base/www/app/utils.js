@@ -33,8 +33,18 @@ function apply(to, fn) {
   };
 }
 
+function call(to, fn) {
+  return function() {
+    return fn.apply(to, arguments);
+  };
+}
+
 function isEmpty(obj) {
-  return ((obj === null) || (obj === undefined)) || (Array.isArray(obj) && (obj.length === 0)) || (Object.keys(obj).length === 0);
+  return (obj === null) || (obj === undefined) || (typeof obj !== 'object') || (Array.isArray(obj) && (obj.length === 0)) || (Object.keys(obj).length === 0);
+}
+
+function isObject(obj) {
+  return (obj !== null) && (typeof obj === 'object');
 }
 
 function swapMap(m) {
@@ -170,6 +180,10 @@ function extname(path, invert) {
     return dotIndex <= slashIndex ? path : path.substring(0, dotIndex);
   }
   return dotIndex <= slashIndex ? '' : path.substring(dotIndex + 1);
+}
+
+function getJson(response) {
+  return response.json();
 }
 
 function rejectIfNotOk(response) {

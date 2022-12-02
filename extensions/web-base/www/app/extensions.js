@@ -39,6 +39,26 @@ var extensionsVue =new Vue({
   }
 });
 
+function onShow(extensionId) {
+  if (extensionId) {
+    this.extensionId = extensionId;
+  }
+  Promise.all([
+    fetch('/engine/extensions/' + this.extensionId).then(getJson),
+    app.getEnumsById()
+  ]).then(apply(this, function(extension, enumsById) {
+    if (extension && extension.manifest && extension.manifest.schema) {
+      this.schema = populateJsonSchema(extension.manifest.schema, enumsById);
+    } else {
+      this.schema = false;
+    }
+    this.extension = extension;
+  })).catch(call(this, function() {
+    this.schema = false;
+    this.extension = {config: {}, info: {}, manifest: {}};
+  }));
+}
+
 new Vue({
   el: '#extension',
   data: {
@@ -92,24 +112,7 @@ new Vue({
         });
       }
     },
-    onShow: function(extensionId) {
-      var self = this;
-      if (extensionId) {
-        this.extensionId = extensionId;
-      }
-      self.extension = {config: {}, info: {}, manifest: {}};
-      fetch('/engine/extensions/' + this.extensionId).then(function(response) {
-        return response.json();
-      }).then(function(extension) {
-        self.extension = extension;
-        return app.getEnumsById();
-      }).then(function(enumsById) {
-        if (self.extension && self.extension.manifest && self.extension.manifest.schema) {
-          self.schema = populateJsonSchema(self.extension.manifest.schema, enumsById);
-        }
-        //console.log('extension', self.extension, 'schema', JSON.stringify(self.schema, undefined, 2));
-      });
-    }
+    onShow: onShow
   }
 });
 
@@ -154,24 +157,7 @@ new Vue({
         toaster.toast('Extension added');
       });
     },
-    onShow: function(extensionId) {
-      if (extensionId) {
-        this.extensionId = extensionId;
-      }
-      this.extension = {config: {}, info: {}, manifest: {}};
-      var self = this;
-      fetch('/engine/extensions/' + this.extensionId).then(function(response) {
-        return response.json();
-      }).then(function(extension) {
-        self.extension = extension;
-        return app.getEnumsById();
-      }).then(function(enumsById) {
-        if (self.extension && self.extension.manifest && self.extension.manifest.schema) {
-          self.schema = populateJsonSchema(self.extension.manifest.schema, enumsById);
-        }
-        //console.log('extension', self.extension, 'schema', self.schema);
-      });
-    }
+    onShow: onShow
   }
 });
 

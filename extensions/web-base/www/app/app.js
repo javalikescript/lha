@@ -467,17 +467,16 @@ var homePage = new Vue({
   },
   methods: {
     onShow: function() {
-      var page = this;
-      fetch('/engine/schema').then(function(response) {
-        return response.json();
-      }).then(function(schemaData) {
-        fetch('/engine/configuration/engine').then(function(response) {
-          return response.json();
-        }).then(function(configData) {
-          page.schema = schemaData;
-          page.config = configData.value;
-        });
-      });
+      Promise.all([
+        fetch('/engine/schema').then(getJson),
+        fetch('/engine/configuration/engine').then(getJson)
+      ]).then(apply(this, function(schemaData, configData) {
+        this.schema = schemaData;
+        this.config = configData.value;
+      })).catch(call(this, function() {
+        this.schema = false;
+        this.config = {};
+      }));
     },
     backup: function() {
       var self = this;
