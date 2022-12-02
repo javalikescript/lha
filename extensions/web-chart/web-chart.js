@@ -129,7 +129,7 @@ define(['./web-chart.xml'], function(pageXml) {
     return dates;
   };
   var createChartDataSets = function(dataPointSet, datasets, prefix) {
-    console.log('createChartDataSets()', dataPointSet, datasets, prefix);
+    //console.log('createChartDataSets()', dataPointSet, datasets, prefix);
     if (dataPointSet.length === 0) {
       return [];
     }
@@ -176,7 +176,7 @@ define(['./web-chart.xml'], function(pageXml) {
           period = duration / 120; // how many data points
           period = Math.floor(period / 300) * 300; // round to 5 min
           period = Math.max(900, Math.min(period, SEC_IN_DAY)); // between 15 min to one day
-          console.log('auto period is ' + period);
+          //console.log('auto period is ' + period);
         }
         var toDays = parseInt(this.toDays, 10);
         var toDate = new Date(Date.now() - (toDays * SEC_IN_DAY * 1000));
@@ -227,7 +227,7 @@ define(['./web-chart.xml'], function(pageXml) {
         });
       },
       openPath: function() {
-        console.info('openPath() ' + this.path);
+        //console.info('openPath() ' + this.path);
         if (this.path) {
           app.toPage('data-chart', this.path);
         }
@@ -236,7 +236,7 @@ define(['./web-chart.xml'], function(pageXml) {
         if (path) {
           this.loadHistoricalData(path);
         }
-        console.log('onShow(' + path + ') path = "' + this.path + '"');
+        //console.log('onShow(' + path + ') path = "' + this.path + '"');
         var self = this;
         app.getThings().then(function(things) {
           self.things = things;
@@ -305,7 +305,7 @@ define(['./web-chart.xml'], function(pageXml) {
             });
           }
         });
-        console.info('chart', datasets, yAxes);
+        //console.info('chart', datasets, yAxes);
         this.chart = new Chart('chart-data-view-canvas', {
           type: this.chartType,
           data: {
@@ -330,7 +330,7 @@ define(['./web-chart.xml'], function(pageXml) {
               xAxes: [{
                 type: 'time',
                 time: {
-                  format: 'MM/DD/YYYY HH:mm',
+                  parser: 'MM/DD/YYYY HH:mm',
                   tooltipFormat: 'll HH:mm'
                 },
                 scaleLabel: {
