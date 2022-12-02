@@ -86,14 +86,19 @@ window.addEventListener('hashchange', function() {
   app.navigateTo(getLocationPath());
   function setupWebSocket() {
     var protocol = location.protocol.replace('http', 'ws');
-    var webSocket = new WebSocket(protocol + '//' + location.host + '/ws/');
+    var url = protocol + '//' + location.host + '/ws/';
+    var webSocket = new WebSocket(url);
     webSocket.onmessage = function(event) {
       //console.log('webSocket.onmessage', event);
       if (event.data) {
         app.onMessage(JSON.parse(event.data));  
       }
     };
+    webSocket.onopen = function() {
+      console.log('WebSocket opened at ' + url);
+    };
     webSocket.onclose = function() {
+      console.log('WebSocket closed');
       webSocket = null;
       setTimeout(setupWebSocket, 3000);
     };
