@@ -54,12 +54,17 @@ local function getNodeDeviceId(node)
 end
 
 local function getNodeDiscoveryId(node)
-  -- TODO use node id
   local nodeId = node.nodeId or node.id
   local deviceId = getNodeDeviceId(node)
   if nodeId and deviceId then
     return tostring(nodeId)..'-'..deviceId
   end
+end
+
+local function parseNodeDiscoveryId(discoveryId)
+  -- 8-345-82-4
+  local nodeId, deviceId = string.match(discoveryId, '^(%d+)%-(.+)$')
+  return nodeId, deviceId
 end
 
 local function findNodeValue(node, commandClass, property)
@@ -154,7 +159,7 @@ local function onZWaveNode(node)
       thing = createThingFromNode(node)
       if thing then
         if logger:isLoggable(logger.INFO) then
-          logger:info('Z-Wave node '..did..' found '..thing:getTitle()..' "'..thing:getDescription()..'"')
+          logger:info('Z-Wave node %s found %s "%s"', did, thing:getTitle(), thing:getDescription())
         end
         extension:discoverThing(did, thing)
       else
@@ -179,7 +184,7 @@ local function onZWaveNodes(nodes)
 end
 
 local function onZWaveEvent(event)
-  logger:info('Z-Wave '..tostring(event.source)..' event "'..tostring(event.event)..'"')
+  logger:fine('Z-Wave %s event "%s"', event.source, event.event)
   -- see https://zwave-js.github.io/node-zwave-js/#/api/node?id=zwavenode-events
   if event.source == 'node' then
     if event.event == 'value updated' and event.nodeId then
@@ -199,50 +204,61 @@ local function onZWaveEvent(event)
           logger:fine('Z-Wave JS event without thing: '..json.stringify(event, 2))
         end
       end
+    elseif event.event == 'statistics updated' and event.nodeId and event.statistics then
+      if logger:isLoggable(logger.FINE) then
+        logger:fine('Z-Wave JS node %s statistics updated: %s', event.nodeId, json.stringify(event.statistics))
+      end
     elseif event.event == 'ready' and event.node then
       onZWaveNode(event.node)
+    else
+      logger:info('Z-Wave node event "%s"', event.event)
+      if logger:isLoggable(logger.FINE) then
+        logger:fine('Z-Wave JS event: '..json.stringify(event, 2))
+      end
+      -- 'wake up' / sleep, dead / alive, 'statistics updated'
     end
-    -- wake up, sleep
+  elseif event.source == 'controller' and event.event == 'statistics updated' and event.statistics then
+    if logger:isLoggable(logger.FINE) then
+      logger:fine('Z-Wave JS controller statistics updated: '..json.stringify(event.statistics))
+    end
+  else
+    logger:info('Z-Wave %s event "%s"', event.source, event.event)
+    -- controller: node added, node removed
+    -- driver: error, driver ready, all nodes ready
   end
-  -- controller: node added, node removed
-  -- driver: error, driver ready, all nodes ready
 end
 
 ------------------------------------------------------------
 -- MQTT
 ------------------------------------------------------------
 
-local function startMqtt(mqttConfig)
-  local tUrl = Url.parse(mqttConfig.url)
+local function startMqtt(config)
+  local tUrl = Url.parse(config.mqttUrl)
   if tUrl.scheme ~= 'tcp' then
     logger:warn('Invalid scheme')
     return
   end
-  local apiTopic = mqttConfig.prefix..'/_CLIENTS/ZWAVE_GATEWAY-'..mqttConfig.name..'/api/'
-  local eventTopic = mqttConfig.prefix..'/_EVENTS_/ZWAVE_GATEWAY-'..mqttConfig.name..'/'
+  local apiTopic = config.prefix..'/_CLIENTS/ZWAVE_GATEWAY-'..config.name..'/api/'
+  local eventTopic = config.prefix..'/_EVENTS_/ZWAVE_GATEWAY-'..config.name..'/'
   local apiPattern = '^'..strings.escape(apiTopic)..'([^/]+)$'
-  local nodeStatusPattern = '^'..strings.escape(mqttConfig.prefix)..'/([^/]+)/([^/]+)/status$'
-  logger:info('Z-Wave JS API pattern "'..apiPattern..'"')
+  local nodeStatusPattern = '^'..strings.escape(config.prefix)..'/([^/]+)/([^/]+)/status$'
+  logger:info('Z-Wave JS API pattern "%s"', apiPattern)
   local mqttClient = mqtt.MqttClient:new()
   function mqttClient:onMessage(topicName, payload)
-    if logger:isLoggable(logger.FINER) then
-      logger:finer('Received on topic "'..topicName..'": '..payload)
-    end
+    logger:finer('Received on topic "%s": %s', topicName, payload)
     local nodeLocation, nodeName = string.match(topicName, nodeStatusPattern)
     if nodeLocation then
       local t = json.decode(payload)
       if t then
-        logger:info('Z-Wave JS node status "'..nodeLocation..'" "'..nodeName..'": '..json.stringify(t, 2))
+        logger:info('Z-Wave JS node status "%s" "%s": %s', nodeLocation, nodeName, json.stringify(t, 2))
       end
     end
     local apiName = string.match(topicName, apiPattern)
     if apiName then
-      if logger:isLoggable(logger.FINE) then
-        logger:fine('Z-Wave JS API "'..apiName..'": '..payload)
-      end
+      logger:fine('Z-Wave JS API "%s": %s', apiName, payload)
       local t = json.decode(payload)
       if t and t.success then
-        logger:fine('Z-Wave JS API "'..apiName..'": '..json.stringify(t, 2))
+        logger:fine('Z-Wave JS API "%s": %s', apiName, json.stringify(t, 2))
         if apiName == 'getNodes' then
           onZWaveNodes(t.result)
         end
@@ -250,15 +266,15 @@ local function startMqtt(mqttConfig)
     end
   end
   mqttClient:connect(tUrl.host, tUrl.port):next(function()
-    logger:info('Z-Wave JS connected to Broker "'..mqttConfig.url..'"')
-    local statusTopic = mqttConfig.prefix..'/+/+/status'
+    logger:info('Z-Wave JS connected to Broker "%s"', config.mqttUrl)
+    local statusTopic = config.prefix..'/+/+/status'
     local topicNames = {
       apiTopic..'+',
       statusTopic,
       eventTopic..'#', -- To remove
     }
-    mqttClient:subscribe(topicNames, mqttConfig.qos):next(function()
-      logger:info('Z-Wave JS subscribed to topics "'..table.concat(topicNames, '", "')..'"')
+    mqttClient:subscribe(topicNames, config.qos):next(function()
+      logger:info('Z-Wave JS subscribed to topics "%s"', table.concat(topicNames, '", "'))
       mqttClient:publish(apiTopic..'getNodes/set', '{}'):next(function()
         logger:info('Z-Wave JS getNodes published')
       end)
@@ -283,12 +299,12 @@ local function sendWebSocket(webSocket, message, options)
     error('Invalid message type '..type(message))
   end
   message.messageId = messageId
-  logger:finest('sendWebSocket('..tostring(message.command)..') '..messageId)
+  logger:finest('sendWebSocket(%s) %s', message.command, messageId)
   if options then
     Map.assign(message, options)
   end
   local textMsg = json.encode(message)
-  logger:finer('message: '..textMsg)
+  logger:finer('message: %s', textMsg)
   return webSocket:sendTextMessage(textMsg):next(function()
     local promise, cb = Promise.createWithCallback()
     webSocket.zwMsgCb[messageId] = cb
@@ -309,38 +325,36 @@ local function startListeningWebSocket(webSocket)
   end)
 end
 
-local function startWebSocket(wsConfig)
-  local webSocket = WebSocket:new(wsConfig.url)
+local function startWebSocket(config)
+  local webSocket = WebSocket:new(config.webSocketUrl)
   webSocket.zwMsgId = 0
   webSocket.zwMsgCb = {}
   webSocket:open():next(function()
     webSocket:readStart()
-    logger:info('Z-Wave JS WebSocket connected on '..tostring(wsConfig.url))
+    logger:info('Z-Wave JS WebSocket connected on %s', config.webSocketUrl)
     controllerThing:updatePropertyValue('connected', true)
     --sendWebSocket('set_api_schema', {schemaVersion = 15})
   end, function(reason)
     controllerThing:updatePropertyValue('connected', false)
-    logger:warn('Cannot open Z-Wave JS WebSocket on '..tostring(wsConfig.url)..' due to '..tostring(reason))
+    logger:warn('Cannot open Z-Wave JS WebSocket on %s due to %s', config.webSocketUrl, reason)
   end)
   webSocket.onClose = function()
     controllerThing:updatePropertyValue('connected', false)
     logger:warn('Z-Wave JS WebSocket closed')
   end
   webSocket.onTextMessage = function(_, payload)
-    if logger:isLoggable(logger.FINEST) then
-      logger:finest('Z-Wave WebSocket received '..tostring(payload))
-    end
+    logger:finest('Z-Wave WebSocket received %s', payload)
     local status, message = Exception.pcall(json.decode, payload)
     if status and message and message.type then
       if message.type == 'event' and message.event then
         if logger:isLoggable(logger.FINER) then
-          logger:finer('Z-Wave JS event: '..json.stringify(message.event, 2))
+          logger:finer('Z-Wave JS event: %s', json.stringify(message.event, 2))
         end
         onZWaveEvent(message.event)
       elseif message.type == 'result' then
         local cb = webSocket.zwMsgCb[message.messageId]
         if cb then
-          logger:finer('Z-Wave JS WebSocket result '..message.messageId)
+          logger:finer('Z-Wave JS WebSocket result %s', message.messageId)
           webSocket.zwMsgCb[message.messageId] = nil
           if message.success and message.result then
             cb(nil, message.result)
@@ -356,10 +370,10 @@ local function startWebSocket(wsConfig)
         -- command = 'driver.set_preferred_scale', scales = {temperature = 'Celsius'}
         startListeningWebSocket(webSocket)
       else
-        logger:warn('Z-Wave JS WebSocket unsupported message type '..tostring(message.type))
+        logger:warn('Z-Wave JS WebSocket unsupported message type %s', message.type)
       end
     else
-      logger:warn('Z-Wave WebSocket received invalid JSON payload '..tostring(payload))
+      logger:warn('Z-Wave WebSocket received invalid JSON payload %s', payload)
     end
   end
   return webSocket
@@ -407,10 +421,10 @@ local function setThingPropertyValue(thing, name, value)
           },
           value = value
         }):next(function()
-          logger:info('Z-Wave nodeId %s set value "%s" done', nodeId, name)
+          logger:fine('Z-Wave nodeId %s set value "%s" done', nodeId, name)
           thing:updatePropertyValue(name, value)
         end, function(reason)
-          logger:info('Z-Wave nodeId %s set value failed due to %s', nodeId, reason)
+          logger:warn('Z-Wave nodeId %s set value failed due to %s', nodeId, reason)
           thing:updatePropertyValue(name, value)
         end)
         return
@@ -481,10 +495,9 @@ extension:subscribeEvent('poll', function()
 end)
 
 local function checkWebSocket()
-  local wsConfig = extension:getConfiguration().websocket
-  if wsConfig and wsConfig.enable and (not webSocket or webSocket:isClosed()) then
-    logger:info('Z-Wave JS WebSocket connecting to '..tostring(wsConfig.url))
-    webSocket = startWebSocket(wsConfig)
+  local config = extension:getConfiguration()
+  if config.connection and config.connection.webSocketUrl and (not webSocket or webSocket:isClosed()) then
+    webSocket = startWebSocket(config.connection)
   end
 end
 
@@ -493,12 +506,12 @@ extension:subscribeEvent('heartbeat', function()
 end)
 
 extension:subscribeEvent('startup', function()
-  logger:info('Starting '..extension:getPrettyName()..' extension')
+  logger:info('Starting %s extension', extension:getPrettyName())
   cleanup()
   setupControllerThing()
-  local mqttConfig = extension:getConfiguration().mqtt
-  if mqttConfig and mqttConfig.enable then
-    mqttClient = startMqtt(mqttConfig)
+  local config = extension:getConfiguration()
+  if config.connection and config.connection.mqttUrl then
+    mqttClient = startMqtt(config.connection)
   end
   checkWebSocket()
 end)
