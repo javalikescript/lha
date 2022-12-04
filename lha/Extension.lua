@@ -152,7 +152,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
 
   function extension:initConfiguration()
     if logger:isLoggable(logger.FINEST) then
-      logger:finest('initializing configuration for extension '..self:getPrettyName())
+      logger:finest('initializing configuration for extension %s', self:getPrettyName())
     end
     local configuration = self:getConfiguration()
     if self.manifest.config then
@@ -193,7 +193,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
         fn(...)
       else
         if logger:isLoggable(logger.INFO) then
-          logger:info('minimum polling interval not reached ('..tostring(minIntervalSec + lastPollSec - pollSec)..'s)')
+          logger:info('minimum polling interval not reached (%ds) for extension %s', minIntervalSec + lastPollSec - pollSec, self:getPrettyName())
         end
       end
     end)

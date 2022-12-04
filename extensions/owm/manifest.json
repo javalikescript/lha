@@ -21,6 +21,7 @@
         "type": "string"
       },
       "maxPollingDelay": {
+        "title": "Minimum Call Interval in seconds",
         "type": "integer",
         "default": 600,
         "minimum": 0,
