@@ -1,0 +1,46 @@
+{
+  "name": "Ecowatt",
+  "description": "Expose the RTE Ecowatt signals",
+  "version": "1.0",
+  "script": "ecowatt.lua",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "oauth": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "title": "Authorization Server URL",
+            "pattern": "^https?://.+$",
+            "type": "string",
+            "default": "https://digital.iservices.rte-france.com/token/oauth/"
+          },
+          "clientId": {
+            "title": "Client Id",
+            "type": "string",
+            "required": true
+          },
+          "clientSecret": {
+            "title": "Client Secret",
+            "type": "string",
+            "writeOnly": true,
+            "required": true
+          }
+        }
+      },
+      "url": {
+        "title": "Ecowatt API URL",
+        "pattern": "^https?://.+$",
+        "type": "string",
+        "default": " https://digital.iservices.rte-france.com/open_api/ecowatt/v4/signals"
+      },
+      "minIntervalMin": {
+        "title": "Minimum Call Interval in minutes",
+        "type": "integer",
+        "default": 60,
+        "minimum": 0,
+        "maximum": 1440
+      }
+    }
+  }
+}
