@@ -74,10 +74,10 @@ return class.create(Thing, function(engineThing, super)
           end
           prev = property:getValue()
         end
+        property:setValue(value)
         if prev ~= value then
           self.engine:publishRootChange('data/'..path, value, prev)
         end
-        property:setValue(value)
       else
         logger:warn('Invalid value on update property "%s" for thing "%s"', name, self:getTitle())
       end
