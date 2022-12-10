@@ -50,6 +50,14 @@ local function createThing(targetName)
     enum = SIGNAL_ENUM,
     readOnly = true
   })
+  thing:addProperty('hourValue', {
+    ['@type'] = Thing.PROPERTY_TYPES.LevelProperty,
+    title = 'Hour Value',
+    type = 'integer',
+    description = 'Current hour value',
+    enum = SIGNAL_ENUM,
+    readOnly = true
+  })
   return thing
 end
 
@@ -84,7 +92,15 @@ extension:subscribePollEvent(function()
     })
   end):next(getJson):next(function(response)
     local signal = response.signals[1]
+    logger:info('Ecowatt message: %s', signal.message)
     ecowattThing:updatePropertyValue('dayValue', signal.dvalue)
+    local hour = Date:new():getHours()
+    for _, value in ipairs(signal.values) do
+      if value.pas == hour then
+        ecowattThing:updatePropertyValue('hourValue', value.hvalue)
+        break
+      end
+    end
   end):catch(function(reason)
     logger:warn('Unable to get Ecowatt signals, due to error: %s', reason)
   end)
