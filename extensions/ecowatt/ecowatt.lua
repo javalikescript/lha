@@ -36,6 +36,15 @@ local function getJson(response)
   return Promise.reject(string.format('%s: %s', status, reason))
 end
 
+local function updateHourValue(thing, name, values, hour)
+  for _, value in ipairs(values) do
+    if value.pas == hour then
+      thing:updatePropertyValue(name, value.hvalue)
+      break
+    end
+  end
+end
+
 
 -- 1 vert, 2 orange, 3 rouge
 local SIGNAL_ENUM = {1, 2, 3}
@@ -55,6 +64,22 @@ local function createThing(targetName)
     title = 'Hour Value',
     type = 'integer',
     description = 'Current hour value',
+    enum = SIGNAL_ENUM,
+    readOnly = true
+  })
+  thing:addProperty('nextDayValue', {
+    ['@type'] = Thing.PROPERTY_TYPES.LevelProperty,
+    title = 'Next Day Value',
+    type = 'integer',
+    description = 'Next day value',
+    enum = SIGNAL_ENUM,
+    readOnly = true
+  })
+  thing:addProperty('nextHourValue', {
+    ['@type'] = Thing.PROPERTY_TYPES.LevelProperty,
+    title = 'Next Hour Value',
+    type = 'integer',
+    description = 'Next hour value',
     enum = SIGNAL_ENUM,
     readOnly = true
   })
@@ -95,13 +120,19 @@ extension:subscribePollEvent(function()
     logger:info('Ecowatt message: %s', signal.message)
     ecowattThing:updatePropertyValue('dayValue', signal.dvalue)
     local hour = Date:new():getHours()
-    for _, value in ipairs(signal.values) do
-      if value.pas == hour then
-        ecowattThing:updatePropertyValue('hourValue', value.hvalue)
-        break
-      end
+    updateHourValue(ecowattThing, 'hourValue', signal.values, hour)
+    local nextSignal = response.signals[2]
+    logger:info('Ecowatt next message: %s', nextSignal.message)
+    ecowattThing:updatePropertyValue('nextDayValue', nextSignal.dvalue)
+    if hour < 23 then
+      hour = hour + 1
+    else
+      hour = 0
+      signal = nextSignal
     end
+    updateHourValue(ecowattThing, 'nextHourValue', signal.values, hour)
   end):catch(function(reason)
     logger:warn('Unable to get Ecowatt signals, due to error: %s', reason)
   end)
 end, configuration.minIntervalMin * 60)
+
