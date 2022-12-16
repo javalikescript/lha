@@ -115,8 +115,9 @@ new Vue({
       app.toPage('data-chart', this.thingId + '/' + propertyName);
     },
     disableThing: function() {
+      var thingId = this.thingId;
       return confirmation.ask('Disable the thing?').then(function() {
-        return fetch('/engine/things/' + this.thingId, {method: 'DELETE'}).then(function() {
+        return fetch('/engine/things/' + thingId, {method: 'DELETE'}).then(rejectIfNotOk).then(function() {
           toaster.toast('Thing disabled');
           app.clearCache();
         });
