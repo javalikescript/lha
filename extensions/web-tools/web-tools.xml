@@ -18,9 +18,9 @@
       <option value="all">All</option>
     </select>
     <p>Engine</p>
-    <button v-on:click="stopServer"><i class="fas fa-power-off"></i>&nbsp;Stop the Engine</button>
-    <button v-on:click="restartServer"><i class="fas fa-redo"></i>&nbsp;Restart the Engine</button>
-    <button v-on:click="rebootServer"><i class="fas fa-redo"></i>&nbsp;Reboot the Engine process</button>
+    <button v-on:click="stopServer" title="Stop the engine"><i class="fas fa-power-off"></i>&nbsp;Stop the Engine</button>
+    <button v-on:click="restartServer" title="Restart the engine in the same process"><i class="fas fa-redo"></i>&nbsp;Restart the Engine</button>
+    <button v-on:click="rebootServer" title="Stop the process with exit code 11"><i class="fas fa-redo"></i>&nbsp;Reboot the Engine process</button>
     <p>Advanced</p>
     <button v-on:click="reloadExtensions"><i class="fas fa-redo"></i>&nbsp;Reload the Extensions</button>
     <button v-on:click="reloadScripts"><i class="fas fa-redo"></i>&nbsp;Reload the Scripts</button>

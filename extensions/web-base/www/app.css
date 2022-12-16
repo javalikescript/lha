@@ -87,6 +87,7 @@ div.splash {
   vertical-align: middle;
   text-align: center;
   z-index: 1000;
+  background-color: inherit;
 }
 span.required {
   color: red;
