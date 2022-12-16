@@ -65,8 +65,8 @@ local function refreshThingsDescription(engine, extension)
           -- restore values
           local values = thing:getPropertyValues()
           for name, value in pairs(values) do
-            if thing:getPropertyValue(name) == nil then
-              logger:info('Restoring thing %s value %s %s', thing, name, value)
+            if discoveredThing:getPropertyValue(name) == nil then
+              logger:fine('Restoring thing %s value %s %s', thing, name, value)
               discoveredThing:updatePropertyValue(name, value)
             end
           end
