@@ -30,41 +30,41 @@ return class.create(function(engine)
 
     local rootDir = File:new(options.engine):getAbsoluteFile():getParentFile()
     utils.checkDirectoryOrExit(rootDir)
-    logger:fine('rootDir is '..rootDir:getPath())
+    logger:fine('rootDir is %s', rootDir:getPath())
     self.rootDir = rootDir
 
     -- setup
     local workDir = utils.getAbsoluteFile(options.work or 'work', rootDir)
     utils.checkDirectoryOrExit(workDir)
-    logger:fine('workDir is '..workDir:getPath())
+    logger:fine('workDir is %s', workDir:getPath())
     self.workDir = workDir
 
     local configurationDir = File:new(workDir, 'configuration')
-    logger:fine('configurationDir is '..configurationDir:getPath())
+    logger:fine('configurationDir is %s', configurationDir:getPath())
     utils.createDirectoryOrExit(configurationDir)
     self.configHistory = HistoricalTable:new(configurationDir, 'config')
 
     local dataDir = File:new(workDir, 'data')
-    logger:fine('dataDir is '..dataDir:getPath())
+    logger:fine('dataDir is %s', dataDir:getPath())
     utils.createDirectoryOrExit(dataDir)
     self.dataHistory = HistoricalTable:new(dataDir, 'data')
 
     self.extensionsDir = File:new(workDir, 'extensions')
-    logger:fine('extensionsDir is '..self.extensionsDir:getPath())
+    logger:fine('extensionsDir is %s', self.extensionsDir:getPath())
     utils.createDirectoryOrExit(self.extensionsDir)
 
     self.lhaExtensionsDir = nil
     if rootDir:getPath() ~= workDir:getPath() then
       self.lhaExtensionsDir = File:new(rootDir, 'extensions')
-      logger:fine('lhaExtensionsDir is '..self.lhaExtensionsDir:getPath())
+      logger:fine('lhaExtensionsDir is %s', self.lhaExtensionsDir:getPath())
     end
 
     self.scriptsDir = File:new(workDir, 'scripts')
-    logger:fine('scriptsDir is '..self.scriptsDir:getPath())
+    logger:fine('scriptsDir is %s', self.scriptsDir:getPath())
     utils.createDirectoryOrExit(self.scriptsDir)
 
     self.tmpDir = File:new(workDir, 'tmp')
-    logger:fine('tmpDir is '..self.tmpDir:getPath())
+    logger:fine('tmpDir is %s', self.tmpDir:getPath())
     utils.createDirectoryOrExit(self.tmpDir)
   end
 
@@ -120,9 +120,9 @@ return class.create(function(engine)
   function engine:startHTTPServer()
     local httpServer = HttpServer:new()
     httpServer:bind(self.options.address, self.options.port):next(function()
-      logger:info('Server bound to "'..tostring(self.options.address)..'" on port '..tostring(self.options.port))
+      logger:info('Server bound to "%s" on port %s', self.options.address, self.options.port)
     end, function(err) -- could failed if address is in use or hostname cannot be resolved
-      logger:warn('Cannot bind HTTP server to "'..tostring(self.options.address)..'" on port '..tostring(self.options.port)..' due to '..tostring(err))
+      logger:warn('Cannot bind HTTP server to "%s" on port %s due to %s', self.options.address, self.options.port, err)
       runtime.exit(98)
     end)
     httpServer:createContext('/engine/(.*)', RestHttpHandler:new(restEngine, {engine = self}))
@@ -187,7 +187,7 @@ return class.create(function(engine)
   function engine:setRootValue(path, value, publish)
     local previousValue, t, key = tables.setPath(self.root, path, value)
     if publish and previousValue ~= value then
-      logger:fine('engine:setRootValue() change('..path..', '..tostring(value)..', '..tostring(previousValue)..')')
+      logger:fine('engine:setRootValue() change(%s, %s, %s)', path, value, previousValue)
       self:publishRootChange(path, value, previousValue)
     end
     return previousValue, t, key
@@ -277,26 +277,26 @@ return class.create(function(engine)
   end
 
   function engine:loadExtensionFromDirectory(dir, type)
-    logger:info('Loading extension from directory "'..dir:getPath()..'"')
+    logger:info('Loading extension from directory "%s"', dir:getPath())
     local extension = Extension.read(self, dir, type)
     if extension then
       if self:getExtensionById(extension:getId()) then
-        logger:info('The extension '..extension:getId()..' already exists')
+        logger:info('The extension %s already exists', extension:getId())
         return nil
       end
       if extension:loadExtension() then
         self:addExtension(extension)
-        logger:info('Extension '..extension:getId()..' loaded')
+        logger:info('Extension %s loaded', extension:getId())
       else
-        logger:info('The extension '..dir:getPath()..' cannot be loaded')
+        logger:info('The extension %s cannot be loaded', dir:getPath())
       end
     else
-      logger:info('The extension '..dir:getPath()..' is ignored')
+      logger:info('The extension %s is ignored', dir:getPath())
     end
   end
 
   function engine:loadExtensionsFromDirectory(dir, type)
-    logger:info('Loading extensions from directory "'..dir:getPath()..'"')
+    logger:info('Loading extensions from directory "%s"', dir:getPath())
     for _, extensionDir in ipairs(dir:listFiles()) do
       if extensionDir:isDirectory() then
         self:loadExtensionFromDirectory(extensionDir, type)
@@ -384,15 +384,15 @@ return class.create(function(engine)
 
   -- Adds a thing to this engine.
   function engine:addDiscoveredThing(extensionId, discoveryKey, keepDescription)
-    logger:fine('addDiscoveredThing("'..tostring(extensionId)..'", "'..tostring(discoveryKey)..'")')
+    logger:fine('addDiscoveredThing("%s", "%s")', extensionId, discoveryKey)
     local discoveredThing = self:getDiscoveredThing(extensionId, discoveryKey)
     if not discoveredThing then
-      logger:info('The thing "'..tostring(extensionId)..'", "'..tostring(discoveryKey)..'" has not been discovered')
+      logger:info('The thing "%s", "%s" has not been discovered', extensionId, discoveryKey)
       return
     end
     local thing, thingId, thingConfiguration = self:getThingByDiscoveryKey(extensionId, discoveryKey)
     if thing then
-      logger:info('The thing "'..tostring(thingId)..'" is already available')
+      logger:info('The thing "%s" is already available', thingId)
       return thing
     end
     if thingId and thingConfiguration then
@@ -415,7 +415,7 @@ return class.create(function(engine)
     for name, value in pairs(discoveredThing:getPropertyValues()) do
       thing:updatePropertyValue(name, value)
     end
-    logger:info('The thing "'..tostring(thingId)..'" has been added')
+    logger:info('The thing "%s" has been added', thingId)
     --self:publishEvent('things')
     return thing
   end
@@ -424,7 +424,7 @@ return class.create(function(engine)
     local thing = self.things[thingId]
     local thingConfiguration = self:getThingConfigurationById(thingId)
     if thing and thingConfiguration then
-      logger:info('refreshThingDescription("'..tostring(thingId)..'") not implemented')
+      logger:info('refreshThingDescription("%s") not implemented', thingId)
     end
   end
 
@@ -435,6 +435,7 @@ return class.create(function(engine)
   function engine:disableThing(thingId)
     local thingConfiguration = self:getThingConfigurationById(thingId)
     if thingConfiguration then
+      logger:info('Disabling thing %s', thingId)
       thingConfiguration.active = false
       self.things[thingId] = nil
       --self:publishEvent('things')
@@ -465,7 +466,7 @@ return class.create(function(engine)
           end
         end
         if toRemove then
-          logger:info('thing "'..tostring(thingId)..'" ('..tostring(extensionId)..'/'..tostring(discoveryKey)..') removed')
+          logger:info('thing "%s" (%s/%s) removed', thingId, extensionId, discoveryKey)
           things[thingId] = nil
         end
       end

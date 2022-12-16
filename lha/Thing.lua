@@ -307,6 +307,10 @@ return require('jls.lang.class').create(function(thing)
     return self
   end
 
+  function thing:toString()
+    return self.title..' - '..self.description
+  end
+
   function thing:addType(sType)
     if not self:hasType(sType) then
       table.insert(self.type, sType)

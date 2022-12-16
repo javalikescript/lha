@@ -29,7 +29,7 @@ local function refreshThingsDescription(engine, extension)
   if #thingIds == 0 then
     return
   end
-  logger:info('Disabling '..tostring(#thingIds)..' things')
+  logger:info('Disabling %d things', #thingIds)
   things = {}
   for _, thingId in ipairs(thingIds) do
     local thing = engine:getThingById(thingId)
@@ -37,7 +37,7 @@ local function refreshThingsDescription(engine, extension)
     if thing and extensionId and discoveryKey then
       things[thingId] = thing
       engine:disableThing(thingId)
-      logger:info('Thing "'..thing:getTitle()..'" ('..thingId..' '..tostring(extensionId)..'/'..tostring(discoveryKey)..') disabled')
+      logger:info('Thing "%s" (%s %s/%s) disabled', thing:getTitle(), thingId, extensionId, discoveryKey)
     end
   end
   publisher:publishEvent('things')
@@ -48,7 +48,7 @@ local function refreshThingsDescription(engine, extension)
     local timer
     timer = event:setInterval(function()
       count = count + 1
-      logger:info('Discovering '..tostring(#thingIds)..' things '..tostring(count)..'/'..tostring(maxCount))
+      logger:info('Discovering %d things %d/%d', #thingIds, count, maxCount)
       for _, thingId in ipairs(thingIds) do
         local extensionId, discoveryKey = engine:getThingDiscoveryKey(thingId)
         if engine:getDiscoveredThing(extensionId, discoveryKey) then
@@ -66,19 +66,20 @@ local function refreshThingsDescription(engine, extension)
           local values = thing:getPropertyValues()
           for name, value in pairs(values) do
             if thing:getPropertyValue(name) == nil then
+              logger:info('Restoring thing %s value %s %s', thing, name, value)
               discoveredThing:updatePropertyValue(name, value)
             end
           end
-          logger:fine('Thing "'..thing:getTitle()..'" ('..thingId..') discovered')
+          logger:fine('Thing "%s" (%s) discovered', thing:getTitle(), thingId)
         end
       end
       thingIds = Map.skeys(things)
       if #thingIds == 0 or count >= maxCount then
         event:clearInterval(timer)
-        logger:info('Discovered ended, missing '..tostring(#thingIds)..' things')
+        logger:info('Discovered ended, missing %d things', #thingIds)
         for thingId, thing in pairs(things) do
           engine.things[thingId] = thing
-          logger:warn('Thing "'..thing:getTitle()..'" ('..thingId..') restored')
+          logger:warn('Thing "%s" (%s) restored', thing:getTitle(), thingId)
           local thingConfiguration = engine:getThingConfigurationById(thingId)
           if thingConfiguration then
             thingConfiguration.active = true

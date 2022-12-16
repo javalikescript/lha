@@ -95,6 +95,10 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     return self.id
   end
 
+  function extension:toString()
+    return self:getPrettyName()
+  end
+
   function extension:isLoaded()
     return self.loaded
   end
@@ -207,9 +211,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
   end
 
   function extension:reloadExtension()
-    if logger:isLoggable(logger.INFO) then
-      logger:info('extension:reloadExtension() '..self.id)
-    end
+    logger:info('Reload extension %s', self)
     self:cleanExtension()
     self:loadExtension()
   end
