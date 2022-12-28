@@ -75,7 +75,7 @@ div.toaster.hide {
   z-index: -900;
 }
 .theme_boot > div.pages,
-.theme_boot > div.toaster {
+.theme_boot > #toaster {
   display: none;
 }
 div.splash {
@@ -286,9 +286,7 @@ article.tiles, .tile-container {
   width: 18rem;
   background: transparent;
   border: 1px solid transparent;
-  /*
   border-radius: 0.5rem;
-  */
   box-shadow: 0 0 1px 1px rgba(0,0,0,0.1);
   box-sizing: border-box;
   margin-right: 0.5rem;
@@ -477,6 +475,10 @@ input:checked + .slider:before {
   }
   .card {
     max-width: 90rem;
+  }
+  .tile {
+    margin-right: 1rem;
+    margin-bottom: 1rem;
   }
 }
 @media all and (min-width: 800px) and (max-width: 1279px) {
