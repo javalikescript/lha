@@ -9,6 +9,21 @@
   <link rel="stylesheet" href="static/fa/css/all.min.css">
   <script src="static/promise.min.js" type="text/javascript" charset="utf-8"></script>
   <script src="static/fetch.umd.js" type="text/javascript" charset="utf-8"></script>
+  <script type="text/javascript">//<![CDATA[
+    if (navigator.userAgent.indexOf('Edge') >= 0) {
+      console.log('Edge detected');
+      var rawFetch = fetch;
+      fetch = function(input, init) {
+        var initCred = {credentials: 'same-origin'};
+        if (init === undefined) {
+          init = initCred;
+        } else if (typeof init === 'object') {
+          init = Object.assign(initCred, init);
+        }
+        return rawFetch(input, init);
+      };
+    }
+  //]]></script>
   <script src="static/v/vue.min.js" type="text/javascript" charset="utf-8"></script>
 </head>
 <body class="theme_boot">
@@ -399,25 +414,6 @@
 </script>
 <script src="static/moment.js" type="text/javascript"></script>
 <script src="static/chart/Chart.min.js"></script>
-<script type="text/javascript">
-//<!--
-  if (navigator.userAgent.indexOf('Edge') >= 0) {
-    console.log('Edge detected');
-    var rawFetch = fetch;
-    fetch = function(input, init) {
-      if (init === undefined) {
-        init = {};
-      }
-      if (typeof init === 'object') {
-        if (!init.credentials) {
-          init.credentials = 'include';
-        }
-      }
-      return rawFetch(input, init);
-    };
-  }
-//-->
-</script>
 <!-- blockly for web-script extension -->
 <script src="static/blockly/blockly_compressed.js"></script>
 <script src="static/blockly/blocks_compressed.js"></script>

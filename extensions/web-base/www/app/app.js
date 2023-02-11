@@ -11,6 +11,10 @@ function parseNavigationPath(path) {
   return matches
 }
 
+var fetchInitNoCache = {
+  cache: 'no-store'
+};
+
 /************************************************************
  * Main application
  ************************************************************/
@@ -148,7 +152,7 @@ var app = new Vue({
     },
     fetchWithCache: function(path, fn, text) {
       return this.getWithCache(path, function() {
-        return fetch(path).then(rejectIfNotOk).then(function(response) {
+        return fetch(path, fetchInitNoCache).then(rejectIfNotOk).then(function(response) {
           return text ? response.text() : response.json();
         }).then(function(value) {
           return fn ? fn(value) : value;
@@ -434,7 +438,7 @@ var homePage = new Vue({
   methods: {
     onShow: function() {
       var page = this;
-      fetch('/engine/admin/info').then(getJson).then(function(data) {
+      fetch('/engine/admin/info', fetchInitNoCache).then(getJson).then(function(data) {
         console.log('fetch(admin/info)', data);
         var clientTime = Math.round(Date.now() / 1000);
         var serverTime = data['Server Time'];
@@ -460,8 +464,8 @@ var homePage = new Vue({
   methods: {
     onShow: function() {
       Promise.all([
-        fetch('/engine/schema').then(getJson),
-        fetch('/engine/configuration/engine').then(getJson)
+        fetch('/engine/schema', fetchInitNoCache).then(getJson),
+        fetch('/engine/configuration/engine', fetchInitNoCache).then(getJson)
       ]).then(apply(this, function(schemaData, configData) {
         this.schema = schemaData;
         this.config = configData.value;
