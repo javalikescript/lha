@@ -41,9 +41,6 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     self.discoveredThings = {}
     self.lastModified = 0
     self.scheduler = Scheduler:new()
-    self.scheduleFn = function()
-      self.scheduler:runTo()
-    end
     self.watchers = {}
     self.changeFn = function(path, value, previousValue)
       for _, watcher in ipairs(self.watchers) do
@@ -228,17 +225,20 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
   end
 
   function extension:registerSchedule(schedule, fn)
-    local scheduleId = self.scheduler:schedule(schedule, fn)
-    if self.scheduler:hasSchedule() then
-      self:subscribeEvent('heartbeat', self.scheduleFn)
+    if not self.scheduler:hasSchedule() then
+      self.eventId = self:subscribeEvent('heartbeat', function()
+        self.scheduler:runTo()
+      end)
     end
+    local scheduleId = self.scheduler:schedule(schedule, fn)
     return scheduleId
   end
 
   function extension:unregisterSchedule(scheduleId)
     self.scheduler:removeSchedule(scheduleId)
     if not self.scheduler:hasSchedule() then
-      self:unsubscribeEvent('heartbeat', self.scheduleFn)
+      self:unsubscribeEvent('heartbeat', self.eventId)
+      self.eventId = nil
     end
     return scheduleId
   end
