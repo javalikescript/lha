@@ -161,6 +161,7 @@ extension:subscribeEvent('startup', function()
 
   local maxMessageSize = 1024
   local maxMessageCount = 60
+  local maxWebSocketLevel = Logger.LEVEL.FINE
   local warnMessages = RollingList:new(maxMessageCount // 3)
   local logMessages = RollingList:new(maxMessageCount - maxMessageCount // 3)
   function logMessages:onDropped(value)
@@ -171,6 +172,10 @@ extension:subscribeEvent('startup', function()
   local bufferMessages
   Logger.setLogRecorder(function(lgr, time, level, message)
     recordLog(lgr, time, level, message)
+    if level >= maxWebSocketLevel then
+      -- the websocket stack will emit logs
+      return
+    end
     if #message > maxMessageSize then
       message = string.sub(message, 1, maxMessageSize - 3)..'...'
     end
