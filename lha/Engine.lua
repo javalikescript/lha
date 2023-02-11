@@ -17,7 +17,7 @@ local Extension = require('lha.Extension')
 local EngineThing = require('lha.EngineThing')
 local restEngine = require('lha.restEngine')
 local restThings = require('lha.restThings')
-local tableHandler = require('lha.tableHandler')
+local TableHandler = require('lha.TableHandler')
 local utils = require('lha.utils')
 
 return class.create(function(engine)
@@ -127,12 +127,7 @@ return class.create(function(engine)
     end)
     httpServer:createContext('/engine/(.*)', RestHttpHandler:new(restEngine, {engine = self}))
     httpServer:createContext('/things/?(.*)', RestHttpHandler:new(restThings, {engine = self}))
-    httpServer:createContext('/engine/configuration/(.*)', tableHandler, {
-      path = 'configuration/',
-      editable = true,
-      engine = self,
-      publish = true
-    })
+    httpServer:createContext('/engine/configuration/(.*)', TableHandler:new(self, 'configuration/', true, true))
     httpServer:createContext('/engine/tmp/(.*)', FileHttpHandler:new(self.tmpDir, 'rw'))
     self.server = httpServer
   end
