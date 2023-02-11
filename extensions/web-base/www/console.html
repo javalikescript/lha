@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en" style="height: 100%; width: 100%;">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>App (Console)</title>
+</head>
+<body style="margin: 0; height: 100%; width: 100%; display: block; overflow: hidden;">
+  <iframe id="main" title="Main Frame" height="60%" width="100%" style="border: 0;" src="app.html"></iframe>
+  <div id="tools" style="height: 40%; width: 100%; overflow: auto;">
+    <div style="width: 100%;">
+      <button onclick="document.getElementById('console').innerHTML = '';">Clear</button>
+    </div>
+    <pre id="console"></pre>
+  </div>
+</body>
+<script type="text/javascript" charset="utf-8">
+var logs = [];
+(function() {
+  var consoleElement = document.getElementById('console');
+  function recordLog(record) {
+    record.time = Date.now();
+    var text = new Date(record.time).toISOString() + ' - ' + record.type + ' - ' + record.value.join(', ') + '\n';
+    //consoleElement.appendChild(document.createTextNode(text));
+    consoleElement.insertBefore(document.createTextNode(text), consoleElement.firstChild);
+    logs.push(record);
+    if (logs.length > 2000) {
+      logs.shift();
+    }
+  }
+  var controlCharRegExp = /[\u0000-\u001F\u007F-\u009F]/g;
+  function previewContent(s) {
+    if (s.length < 128) {
+      return s.replace(controlCharRegExp, ' ');
+    }
+    return s.substring(0, 64).replace(controlCharRegExp, ' ') + '...' + s.substring(s.length - 64).replace(controlCharRegExp, ' ');
+  }
+  function installLogs(window) {
+    var rawFetch = window.fetch;
+    window.fetch = function(resource, init) {
+      var s = '' + resource;
+      var p = rawFetch(resource, init);
+      p.then(function(r) {
+        if (r.ok) {
+          r.clone().text().then(function(t) {
+            recordLog({
+              type: 'response', 
+              value: [s, t.length, previewContent(t)]
+            });
+          }, function(e) {
+            recordLog({
+              type: 'response', 
+              value: ['failure', s, e, JSON.stringify(e, undefined, 2)]
+            });
+          });
+        }
+        recordLog({
+          type: 'fetch', 
+          value: [r.status || 0, s]
+        });
+      }, function(e) {
+        recordLog({
+          type: 'fetch', 
+          value: ['failure', s, e]
+        });
+      })
+      return p;
+    }
+    function installConsole(name) {
+      var fn = window.console[name];
+      return function() {
+        recordLog({
+          type: name, 
+          value: Array.from(arguments) 
+        });
+        fn.apply(window.console, arguments);
+      }
+    }
+    window.onerror = function(msg, url, lineNo, columnNo, error) {
+      recordLog({
+        type: 'exception',
+        value: [msg, url, lineNo, columnNo, error]
+      });
+      return false;
+    };
+    window.onunhandledrejection = function(e) {
+      recordLog({
+        type: 'promiseRejection',
+        value: [e.reason]
+      });
+    };
+    ['log', 'error', 'warn', 'debug'].forEach(function(name) {
+      window.console[name] = installConsole(name);
+    });
+    var clearFn = window.console.clear;
+    window.console.clear = function() {
+      logs = [];
+      clearFn.apply(window.console, arguments);
+    };
+    window.console.logs = logs;
+  }
+  for (var i = 0; i < frames.length; i++) {
+    installLogs(frames[i].window);
+  }
+})()
+</script>
+</html>
