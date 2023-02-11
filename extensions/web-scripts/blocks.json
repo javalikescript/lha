@@ -54,14 +54,7 @@
     "args0": [{
       "type": "field_dropdown",
       "name": "EVENT",
-      "options": [
-        [ "never", "-disabled-" ],
-        [ "startup", "startup" ],
-        [ "polling", "poll" ],
-        [ "shutdown", "shutdown" ],
-        [ "heartbeat", "heartbeat" ],
-        [ "testing", "test" ]
-      ]
+      "options": "$lhaEventNames"
     }],
     "message1": "do %1",
     "args1": [{
@@ -71,7 +64,7 @@
     "colour": "$lhaEventColor"
   },
   "lha_schedule": {
-    "tooltip" : "Triggers an action on a schedule",
+    "tooltip" : "Triggers an action on a schedule, minutes hours days months weekdays, ex: */5 1,3 2-4",
     "message0": "every %1",
     "args0": [{
       "type": "field_input",
@@ -256,13 +249,44 @@
     "nextStatement": null,
     "colour": "$lhaExperimentalColor"
   },
-  "lha_fire_event": {
-    "tooltip" : "Fires a custom event",
-    "message0": "fire %1 with %2",
+  "lha_on_event": {
+    "tooltip" : "Triggers an action on a custom event",
+    "message0": "on %1",
     "args0": [{
       "type": "field_input",
-      "name": "VALUE",
+      "name": "EVENT",
+      "check": "String",
       "text": "custom event"
+    }],
+    "message1": "new: %1",
+    "args1": [{
+      "type": "field_variable",
+      "name": "ARGS",
+      "variable": "args"
+    }],
+    "message2": "do %1",
+    "args2": [{
+      "type": "input_statement",
+      "name": "DO"
+    }],
+    "inputsInline": true,
+    "colour": "$lhaExperimentalColor"
+  },
+  "lha_fire_event": {
+    "tooltip" : "Fires a custom event",
+    "message0": "fire %1 to %2 with %3",
+    "args0": [{
+      "type": "field_input",
+      "name": "EVENT",
+      "text": "custom event"
+    }, {
+      "type": "field_dropdown",
+      "name": "TARGET",
+      "options": [
+        [ "me", "ME" ],
+        [ "others", "OTHERS" ],
+        [ "all", "ALL" ]
+      ]
     }, {
       "type": "input_value",
       "name": "ARGS",

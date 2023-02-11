@@ -101,6 +101,14 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
     lhaEventColor: 58,
     lhaExpressionColor: 78,
     lhaExperimentalColor: 0,
+    lhaEventNames: [
+      { const: "-disabled-", title: "never" },
+      { const: "startup", title: "startup" },
+      { const: "poll", title: "polling" },
+      { const: "shutdown", title: "shutdown" },
+      { const: "heartbeat", title: "heartbeat" },
+      { const: "test", title: "testing" }
+    ].map(enumToOptions)
   };
   // Register custom blocks
   for (var name in blocks) {

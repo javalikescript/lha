@@ -34,6 +34,7 @@
   </category>
   <category name="Experimental" colour="0">
     <block type="lha_log"></block>
+    <block type="lha_on_event"></block>
     <block type="lha_fire_event"></block>
     <block type="lha_data_path"></block>
     <block type="lha_get_data_path"></block>

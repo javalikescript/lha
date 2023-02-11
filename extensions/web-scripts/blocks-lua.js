@@ -75,10 +75,27 @@ define(function() {
       var name = block.getFieldValue('NAME');
       return "script:clearTimer(" + textToLua(name) + ")\n";
     },
+    "lha_on_event": function(block) {
+      var code = Blockly.Lua.statementToCode(block, 'DO');
+      var event = block.getFieldValue('EVENT');
+      var args = getVariableName(block, 'ARGS');
+      return "script:subscribeEvent(" + textToLua(event) + ", function(...)\n  local " + args + " = {...}\n" + code + "end)\n";
+    },
     "lha_fire_event": function(block) {
-      var value = block.getFieldValue('VALUE');
+      var event = block.getFieldValue('EVENT');
+      var target = block.getFieldValue('TARGET');
       var args = Blockly.Lua.valueToCode(block, 'ARGS', Blockly.JavaScript.ORDER_NONE);
-      return "script:fireExtensionEvent(" + textToLua(value) + ", table.unpack(" + args + "))\n";
+      var code = textToLua(event);
+      if ((typeof args === 'string') && (args.length > 0)) {
+        code += ", table.unpack(" + args + ")";
+      }
+      switch(target) {
+      case 'OTHERS':
+        return "script:fireExtensionEvent(" + code + ")\n";
+      case 'ALL':
+        return "script.engine:publishEvent(" + code + ")\n";
+      } // ME
+      return "script:publishEvent(" + code + ")\n";
     },
     // -- Expression --------
     "lha_to_string": function(block) {
