@@ -15,6 +15,6 @@
     <button v-on:click="app.back()" title="Close"><i class="fa fa-window-close"></i></button>
   </template>
   <article class="content">
-    <textarea v-model="text" spellcheck="false" wrap="off" style="height:  100%; width:  100%; border: none; margin: 0px; padding: 0px; resize: none; font-size: 2rem;" placeholder="Enter your note here"></textarea>
+    <textarea v-model="text" spellcheck="false" wrap="off" class="full" placeholder="Enter your note here"></textarea>
   </article>
 </app-page>

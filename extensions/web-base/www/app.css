@@ -260,6 +260,17 @@ section > article > section > ul li input[type="password"] {
   line-height: 2.5rem;
   padding-bottom: 0.5rem;
 }
+
+textarea.full {
+  height:  calc(100% - 1rem);
+  width:  calc(100% - 1rem);
+  border: none;
+  margin: 0px;
+  padding: 0.5rem;
+  resize: none;
+  font-size: 2rem;
+}
+
 .scrollable {
   overflow-x: hidden;
   overflow-y: auto;
