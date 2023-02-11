@@ -1,5 +1,5 @@
 local logger = require('jls.lang.logger')
-local runtime = require('jls.lang.runtime')
+local system = require('jls.lang.system')
 local event = require('jls.lang.event')
 local File = require('jls.io.File')
 local HTTP_CONST = require('jls.net.http.HttpMessage').CONST
@@ -191,14 +191,14 @@ local REST_ADMIN = {
       --  logger:info('Installing "%s"', installName)
       --  ZipFile.unzipTo(installFile, engine.rootDir)
       --end
-      runtime.halt(11)
+      system.halt(11)
     end, 100)
     return 'In progress'
   end,
   ['restart?method=POST'] = function(exchange)
     event:setTimeout(function()
       exchange.attributes.engine:stop()
-      runtime.gc()
+      system.gc()
       exchange.attributes.engine:start()
     end, 100)
     return 'In progress'
@@ -212,7 +212,7 @@ local REST_ADMIN = {
     return 'In progress'
   end,
   ['gc?method=POST'] = function(exchange)
-    runtime.gc()
+    system.gc()
     return 'Done'
   end,
   info = function(exchange)

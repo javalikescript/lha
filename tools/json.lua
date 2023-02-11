@@ -2,7 +2,7 @@ local File = require('jls.io.File')
 local Date = require("jls.util.Date")
 local tables = require("jls.util.tables")
 local json = require('jls.util.json')
-local runtime = require('jls.lang.runtime')
+local system = require('jls.lang.system')
 
 -- lua lha\engine\json.lua -f work\configuration\config.json -p "/things/(.*)/description/title"
 
@@ -11,7 +11,7 @@ local function usage(msg)
     print(msg)
   end
   print('try: -f filename')
-  runtime.exit(22)
+  system.exit(22)
 end
 
 local tArg = tables.createArgumentTable(arg, {keepComma = true})

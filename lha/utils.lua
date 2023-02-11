@@ -1,5 +1,5 @@
 local logger = require('jls.lang.logger')
-local runtime = require('jls.lang.runtime')
+local system = require('jls.lang.system')
 local File = require('jls.io.File')
 local json = require('jls.util.json')
 local Date = require('jls.util.Date')
@@ -12,7 +12,7 @@ function utils.createDirectoryOrExit(dir)
       logger:info('Created directory "'..dir:getPath()..'"')
     else
       logger:warn('Unable to create the directory "'..dir:getPath()..'"')
-      runtime.exit(1)
+      system.exit(1)
     end
   end
 end
@@ -20,7 +20,7 @@ end
 function utils.checkDirectoryOrExit(dir)
   if not dir:isDirectory() then
     logger:warn('The directory "'..dir:getPath()..'" does not exist')
-    runtime.exit(1)
+    system.exit(1)
   end
 end
 

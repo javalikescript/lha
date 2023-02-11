@@ -3,14 +3,14 @@ local Date = require("jls.util.Date")
 local tables = require("jls.util.tables")
 local HistoricalTable = require('lha.HistoricalTable')
 local json = require('jls.util.json')
-local runtime = require('jls.lang.runtime')
+local system = require('jls.lang.system')
 
 local function usage(msg)
   if msg then
     print(msg)
   end
   print('try: -s source_dir [-sm] [-d dest_dir] [-m mapping_file]')
-  runtime.exit(22)
+  system.exit(22)
 end
 
 local function stringify(t)
@@ -91,7 +91,7 @@ if mappingFile and mappingFile:isFile() then
           mt.adapt = fn
         else
           print('Error', err, 'while loading', rawMt.adapt)
-          runtime.exit(1)
+          system.exit(1)
         end
       end
     end
