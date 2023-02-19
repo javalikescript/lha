@@ -49,8 +49,6 @@ dist-bin: dist-bin-$(PLAT)
 	-cp -u $(LUACLIBS)/lpeg.$(SO) $(LHA_DIST)/bin/
 
 dist-any:
-	cp -ru $(LUACLIBS)/sha1/ $(LHA_DIST)/lua/
-	cp -u $(LUACLIBS)/sha1.lua $(LHA_DIST)/lua/
 	cp -u $(LUACLIBS)/XmlParser.lua $(LHA_DIST)/lua/
 	cp -ru $(LUAJLS)/jls/ $(LHA_DIST)/lua/
 	cp -ru lha/ $(LHA_DIST)/lua/
