@@ -47,16 +47,11 @@ local function createThing()
 end
 
 local FIELD_MAP = {
-  ADPS = 'alarm', -- Avertissement de Dépassement De Puissance Souscrite
-  IINST = 'current', -- Intensité Instantanée
+  IINST = 'current',
   PAPP = 'power',
   ISOUSC = 'isousc',
   HCHC = 'hchc',
   HCHP = 'hchp',
-}
-
-local VALUE_MAP = {
-  alarm = function(value) return tonumber(value) end,
 }
 
 local ticThing, serial
@@ -89,6 +84,7 @@ local function openSerial()
       return
     end
     -- if string.sub(data, 1, 1) == '\x02' then data = string.sub(data, 2) end
+    local alarm = false
     for line in string.gmatch(data, '\n([^\r]+)\r') do
       local fields = strings.split(line, fieldSeparator, true)
       local field, value, horodate, checksum
@@ -101,12 +97,16 @@ local function openSerial()
       -- Checksum = (S1 & 0x3F) + 0x20
       local name = FIELD_MAP[field]
       if name then
-        local fn = VALUE_MAP[name] or tonumber
-        local v = fn(value)
+        local v = tonumber(value)
         if v ~= nil and ticThing then
           ticThing:updatePropertyValue(name, v)
         end
+      elseif field == 'ADPS' then
+        alarm = true
       end
+    end
+    if ticThing then
+      ticThing:updatePropertyValue('alarm', alarm)
     end
   end), '\x03', true, 4096)
   serial:readStart(sh)
