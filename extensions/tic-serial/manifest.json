@@ -1,0 +1,25 @@
+{
+  "name": "TIC Serial",
+  "description": "Télé-information client",
+  "version": "1.0",
+  "script": "tic-serial.lua",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "portName": {
+        "title": "The port for communications, on Windows 'COM3'",
+        "type": "string",
+        "default": "/dev/ttyUSB0"
+      },
+      "mode": {
+        "title": "Modes de fonctionnement",
+        "type": "string",
+        "enumValues": [
+          {"const": "historique", "title": "Historique"},
+          {"const": "standard", "title": "Standard"}
+        ],
+        "default": "historique"
+      }
+    }
+  }
+}
