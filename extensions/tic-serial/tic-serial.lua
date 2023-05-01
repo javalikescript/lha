@@ -7,10 +7,11 @@ local Serial = require('jls.io.Serial')
 local strings = require('jls.util.strings')
 
 local Thing = require('lha.Thing')
+local utils = require('lha.utils')
 
 local function createThing()
   local thing = Thing:new('TIC', 'Téléinformation client', {Thing.CAPABILITIES.Alarm, Thing.CAPABILITIES.EnergyMonitor, Thing.CAPABILITIES.MultiLevelSensor})
-  thing:addPropertiesFromNames('alarm', 'current')
+  thing:addPropertiesFromNames('alarm', 'current', 'connected', 'lastupdated')
   thing:addProperty('power', {
     ['@type'] = Thing.PROPERTY_TYPES.ApparentPowerProperty,
     type = 'number',
@@ -56,11 +57,18 @@ local FIELD_MAP = {
 
 local ticThing, serial
 
+local function updateConnected(value)
+  if ticThing then
+    ticThing:updatePropertyValue('connected', value == true)
+  end
+end
+
 local function closeSerial()
   if serial then
     serial:close()
     serial = nil
   end
+  updateConnected(false)
 end
 
 local function openSerial()
@@ -73,6 +81,7 @@ local function openSerial()
     parity = 2
   })
   if not serial then
+    updateConnected(false)
     logger:warn('Unable to open TiC on serial port "%s"', configuration.portName)
     return
   end
@@ -107,9 +116,11 @@ local function openSerial()
     end
     if ticThing then
       ticThing:updatePropertyValue('alarm', alarm)
+      ticThing:updatePropertyValue('lastupdated', utils.timeToString())
     end
   end), '\x03', true, 4096)
   serial:readStart(sh)
+  updateConnected(true)
   logger:info('Reading TiC on "%s"', configuration.portName)
 end
 
