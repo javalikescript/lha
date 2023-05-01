@@ -152,7 +152,7 @@ extension:subscribeEvent('startup', function()
     logger:warn('serial extension already started')
     return
   end
-  serial = Serial.open(configuration.portName, configuration)
+  serial = Serial:open(configuration.portName, configuration)
   if not serial then
     logger:warn('Unable to open serial on "'..configuration.portName..'"')
     return
