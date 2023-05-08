@@ -2,7 +2,9 @@ local extension = ...
 
 local StringBuffer = require('jls.lang.StringBuffer') 
 local RestHttpHandler = require('jls.net.http.handler.RestHttpHandler')
+local LogHttpFilter = require('jls.net.http.filter.LogHttpFilter')
 
+local logFilter
 local contexts = {}
 
 local function cleanup(server)
@@ -10,6 +12,10 @@ local function cleanup(server)
     server:removeContext(context)
   end
   contexts = {}
+  if logFilter then
+    server:removeFilter(logFilter)
+    logFilter = nil
+  end
 end
 
 local function addContext(server, ...)
@@ -92,6 +98,10 @@ extension:subscribeEvent('startup', function()
   engine:onExtension('web-base', function(webBaseExtension)
     webBaseExtension:registerAddonExtension(extension, true)
   end)
+  if extension:getConfiguration().log then
+    logFilter = LogHttpFilter:new()
+    server:addFilter(logFilter)
+  end
 end)
 
 extension:subscribeEvent('shutdown', function()

@@ -3,5 +3,15 @@
   "description": "Expose additional web tools",
   "dependencies": ["web-base"],
   "version": "1.0",
-  "script": "web-tools.lua"
+  "script": "web-tools.lua",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "log": {
+        "title": "Enables log level filter",
+        "type": "boolean",
+        "default": false
+      }
+    }
+  }
 }
