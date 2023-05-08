@@ -86,6 +86,5 @@ extension:subscribeEvent('poll', function()
 end)
 
 extension:subscribeEvent('shutdown', function()
-  logger:info('shutdown MQTT Broker extension')
   closeServer()
 end)

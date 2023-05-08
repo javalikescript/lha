@@ -9,53 +9,28 @@ local strings = require('jls.util.strings')
 local Thing = require('lha.Thing')
 local utils = require('lha.utils')
 
-local function createThing()
-  local thing = Thing:new('TIC', 'Téléinformation client', {Thing.CAPABILITIES.Alarm, Thing.CAPABILITIES.EnergyMonitor, Thing.CAPABILITIES.MultiLevelSensor})
-  thing:addPropertiesFromNames('alarm', 'current', 'connected', 'lastupdated')
-  thing:addProperty('power', {
-    ['@type'] = Thing.PROPERTY_TYPES.ApparentPowerProperty,
-    type = 'number',
-    title = 'Apparent power',
-    description = 'The apparent power',
-    readOnly = true,
-    unit = 'voltampere'
-  })
-  thing:addProperty('isousc', {
-    ['@type'] = Thing.PROPERTY_TYPES.CurrentProperty,
-    type = 'number',
-    title = 'Intensité souscrite',
-    description = 'Intensité souscrite',
-    readOnly = true,
-    unit = 'ampere'
-  })
-  thing:addProperty('hchc', {
-    ['@type'] = Thing.PROPERTY_TYPES.LevelProperty,
-    type = 'number',
-    title = 'Index Heures Creuses',
-    description = 'Index option Heures Creuses',
-    readOnly = true,
-    unit = 'watthour'
-  })
-  thing:addProperty('hchp', {
-    ['@type'] = Thing.PROPERTY_TYPES.LevelProperty,
-    type = 'number',
-    title = 'Index Heures Pleines',
-    description = 'Index option Heures Pleines',
-    readOnly = true,
-    unit = 'watthour'
-  })
-  return thing
+local function updateThing(thing, fieldMap, field, value)
+  local name = fieldMap[field]
+  if name then
+    local n = tonumber(value)
+    if n ~= nil and thing then
+      thing:updatePropertyValue(name, n)
+    end
+    return true
+  end
+  return false
 end
 
 local FIELD_MAP = {
   IINST = 'current',
   PAPP = 'power',
+}
+local INDEX_FIELD_MAP = {
   ISOUSC = 'isousc',
   HCHC = 'hchc',
   HCHP = 'hchp',
 }
-
-local ticThing, serial
+local ticThing, ticIndexThing, serial
 
 local function updateConnected(value)
   if ticThing then
@@ -96,22 +71,20 @@ local function openSerial()
     local alarm = false
     for line in string.gmatch(data, '\n([^\r]+)\r') do
       local fields = strings.split(line, fieldSeparator, true)
-      local field, value, horodate, checksum
-      if #fields == 3 then
-        field, value, checksum = table.unpack(fields)
-      elseif #fields == 4 then
-        field, value, horodate, checksum = table.unpack(fields)
-      end
+      local field, value
       -- Le format utilisé pour les horodates est SAAMMJJhhmmss, c'est-à-dire Saison, Année, Mois, Jour, heure, minute, seconde.
       -- Checksum = (S1 & 0x3F) + 0x20
-      local name = FIELD_MAP[field]
-      if name then
-        local v = tonumber(value)
-        if v ~= nil and ticThing then
-          ticThing:updatePropertyValue(name, v)
+      if #fields == 3 or #fields == 4 then
+        field, value = table.unpack(fields)
+      end
+      if field then
+        if field == 'ADPS' then
+          alarm = true
+        else
+          if not updateThing(ticThing, FIELD_MAP, field, value) then
+            updateThing(ticIndexThing, INDEX_FIELD_MAP, field, value)
+          end
         end
-      elseif field == 'ADPS' then
-        alarm = true
       end
     end
     if ticThing then
@@ -125,7 +98,47 @@ local function openSerial()
 end
 
 extension:subscribeEvent('things', function()
-  ticThing = extension:syncDiscoveredThingByKey('tic', createThing)
+  ticThing = extension:syncDiscoveredThingByKey('tic', function()
+    local thing = Thing:new('TIC', 'Téléinformation client', {Thing.CAPABILITIES.Alarm, Thing.CAPABILITIES.EnergyMonitor})
+    thing:addPropertiesFromNames('alarm', 'current', 'connected', 'lastupdated')
+    thing:addProperty('power', {
+      ['@type'] = Thing.PROPERTY_TYPES.ApparentPowerProperty,
+      type = 'number',
+      title = 'Apparent power',
+      description = 'The apparent power',
+      readOnly = true,
+      unit = 'voltampere'
+    })
+    return thing
+  end)
+  ticIndexThing = extension:syncDiscoveredThingByKey('ticIndex', function()
+    local thing = Thing:new('TIC Indexes', 'Téléinformation client index', {Thing.CAPABILITIES.MultiLevelSensor})
+    thing:addProperty('isousc', {
+      ['@type'] = Thing.PROPERTY_TYPES.CurrentProperty,
+      type = 'number',
+      title = 'Intensité souscrite',
+      description = 'Intensité souscrite',
+      readOnly = true,
+      unit = 'ampere'
+    })
+    thing:addProperty('hchc', {
+      ['@type'] = Thing.PROPERTY_TYPES.LevelProperty,
+      type = 'number',
+      title = 'Index Heures Creuses',
+      description = 'Index option Heures Creuses',
+      readOnly = true,
+      unit = 'watthour'
+    })
+    thing:addProperty('hchp', {
+      ['@type'] = Thing.PROPERTY_TYPES.LevelProperty,
+      type = 'number',
+      title = 'Index Heures Pleines',
+      description = 'Index option Heures Pleines',
+      readOnly = true,
+      unit = 'watthour'
+    })
+    return thing
+  end)
 end)
 
 extension:subscribeEvent('startup', function()
