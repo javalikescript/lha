@@ -349,6 +349,7 @@ return class.create(function(engine)
         self:publishEvent('shutdown')
         self:loadExtensions()
         self:publishEvent('startup')
+        self:publishEvent('configuration')
         self:publishEvent('things')
       else
         for _, extension in ipairs(self.extensions) do
@@ -480,13 +481,16 @@ return class.create(function(engine)
         local thing = self.things[thingId]
         if thing then
           for name, value in pairs(values) do
-            thing:updatePropertyValue(name, value)
+            local property = thing:getProperty(name)
+            if property then
+              property:setValue(value)
+            end
           end
         end
       end
       file:delete()
     else
-      -- if the engine stopped unexpectedly then the values are not available
+      -- if the engine stopped unexpectedly then the values with no history are not available
       -- the main issue is about generic things not archived
       -- the values are not all in the historical data
       -- we could 1) regularly save the values as for the configuration
@@ -591,6 +595,7 @@ return class.create(function(engine)
     self:loadThingValues()
     self.startTime = os.time()
     self:publishEvent('startup')
+    self:publishEvent('configuration')
     self:publishEvent('extensions')
     self:publishEvent('things')
   end

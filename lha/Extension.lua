@@ -21,6 +21,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
   -- Available events are:
   --  startup: called after all the extension have been loaded
   --  shutdown: called prior to stop the engine, or when reloading an extenstion
+  --  configuration: called when the configuration changes
   --  things: called when things change, added, removed, or extension loaded
   --  extensions: called when extensions change
   --  poll: called depending on the configuration schedule, to collect things data and discover things
@@ -220,6 +221,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     self:reloadExtension()
     if self:isActive() then
       self:publishEvent('startup')
+      self:publishEvent('configuration')
       self:publishEvent('things')
     end
   end
