@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login</title>
+  <style>
+html {
+  width: 100%;
+  height: 100%;
+  font-size: 62.5%;
+}
+body {
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  display: block;
+  overflow: hidden;
+  font-family: sans-serif;
+  display: flex;
+  justify-content: space-around;
+  flex-flow: row wrap;
+  align-items: center;
+}
+form {
+  max-width: 60rem;
+  display: flex;
+  flex-flow: row wrap;
+}
+button, input {
+  width: 100%;
+  margin: 0.5rem;
+  padding: 0.2rem;
+}
+  </style>
+</head>
+<body>
+  <form action="/login" method="post">
+    <input type="text" name="name" id="name" placeholder="Your name" required>
+    <input type="password" name="password" id="password" placeholder="Your password" required>
+    <input type="submit" value="Login">
+  </form>
+</body>
+</html>

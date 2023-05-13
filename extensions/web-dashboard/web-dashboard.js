@@ -188,7 +188,7 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
     return fetch('/things/' + thingId + '/properties', {
       method: 'PUT',
       body: JSON.stringify(valueByName)
-    });
+    }).then(rejectIfNotOk);
   }
 
   var extensionId = 'web-dashboard';
@@ -281,8 +281,8 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
             }
           }, tile.thingIds);
           if (promises.length > 0) {
-            tile.value = newValue;
             return Promise.all(promises).then(function() {
+              tile.value = newValue;
               toaster.toast('Things updated');
               //app.clearCache();
             });

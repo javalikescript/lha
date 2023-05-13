@@ -20,7 +20,7 @@ registerPageVue(new Vue({
   },
   methods: {
     pollExtension: function(extension) {
-      fetch('/engine/extensions/' + extension.id + '/poll', {method: 'POST'}).then(function() {
+      fetch('/engine/extensions/' + extension.id + '/poll', {method: 'POST'}).then(assertIsOk).then(function() {
         toaster.toast('Extension polled');
       });
     },
@@ -75,7 +75,7 @@ new Vue({
         return Promise.reject();
       }
       return confirmation.ask('Disable the extension?').then(function() {
-        return fetch('/engine/extensions/' + extensionId + '/disable', {method: 'POST'}).then(function() {
+        return fetch('/engine/extensions/' + extensionId + '/disable', {method: 'POST'}).then(assertIsOk).then(function() {
           app.clearCache();
           toaster.toast('Extension disabled');
         });
@@ -85,7 +85,7 @@ new Vue({
       var extensionId = this.extensionId;
       if (extensionId) {
         confirmation.ask('Reload the extension?').then(function() {
-          fetch('/engine/extensions/' + extensionId + '/reload', {method: 'POST'}).then(function() {
+          fetch('/engine/extensions/' + extensionId + '/reload', {method: 'POST'}).then(assertIsOk).then(function() {
             toaster.toast('Extension reloaded');
           });
         });
@@ -95,7 +95,7 @@ new Vue({
       var extensionId = this.extensionId;
       if (extensionId) {
         confirmation.ask('Disable and refresh all extension things?').then(function() {
-            fetch('/engine/extensions/' + extensionId + '/refreshThingsDescription', {method: 'POST'}).then(function() {
+          return fetch('/engine/extensions/' + extensionId + '/refreshThingsDescription', {method: 'POST'}).then(assertIsOk).then(function() {
             toaster.toast('Extension things refreshed');
           });
         });
@@ -108,7 +108,7 @@ new Vue({
           body: JSON.stringify({
             value: this.extension.config
           })
-        }).then(function() {
+        }).then(assertIsOk).then(function() {
           app.clearCache();
           toaster.toast('Extension configuration saved');
         });
@@ -152,9 +152,9 @@ new Vue({
         body: JSON.stringify({
           value: this.extension.config
         })
-      }).then(function() {
+      }).then(assertIsOk).then(function() {
         return fetch('/engine/extensions/' + extensionId + '/enable', {method: 'POST'});
-      }).then(function() {
+      }).then(assertIsOk).then(function() {
         app.clearCache();
         toaster.toast('Extension added');
       });

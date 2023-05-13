@@ -141,7 +141,7 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
       confirmation.ask('Delete the script?').then(function() {
         fetch('/engine/scripts/' + scriptId + '/', {
           method: 'DELETE'
-        }).then(function() {
+        }).then(assertIsOk).then(function() {
           toaster.toast('Deleted');
         });
       });
@@ -152,7 +152,7 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
     return fetch('/engine/scripts/' + this.scriptId + '/name', {
       method: 'PUT',
       body: this.newName
-    }).then(function() {
+    }).then(assertIsOk).then(function() {
       self.name = self.newName;
       self.newName = false;
       toaster.toast('Renamed');
@@ -239,7 +239,7 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
         fetch('/engine/scriptFiles/' + self.scriptId + '/blocks.xml', {
           method: 'PUT',
           body: input.files[0]
-        }).then(function() {
+        }).then(assertIsOk).then(function() {
           toaster.toast('Blocks uploaded');
           self.refresh();
         });
@@ -271,11 +271,11 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
           fetch('/engine/scriptFiles/' + scriptId + '/blocks.xml', {
             method: 'PUT',
             body: xmlText
-          }),
+          }).then(assertIsOk),
           fetch('/engine/scriptFiles/' + scriptId + '/script.lua', {
             method: 'PUT',
             body: code
-          })
+          }).then(assertIsOk)
         ]).then(function() {
           toaster.toast('Saved');
         });
@@ -332,7 +332,7 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
         return fetch('/engine/scriptFiles/' + scriptId + '/script.lua', {
           method: 'PUT',
           body: this.text
-        }).then(function() {
+        }).then(assertIsOk).then(function() {
           toaster.toast('Saved');
         });
       },
@@ -390,7 +390,7 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
             script.hasBlocks = false;
             fetch('/engine/scriptFiles/' + script.id + '/blocks.xml', {
               method: 'DELETE'
-            }).then(function() {
+            }).then(assertIsOk).then(function() {
               toaster.toast('Transformed');
             });
           });
@@ -406,7 +406,7 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
       newScript: function () {
         fetch('/engine/scripts/', {
           method: 'PUT'
-        });
+        }).then(assertIsOk);
         this.onShow();
       }
     }

@@ -361,6 +361,20 @@ var toaster = new Vue({
   }
 });
 
+function assertIsOk(response) {
+  if (response.ok) {
+    return response;
+  }
+  var message;
+  if (response.status === 403) {
+    message = 'Sorry you are not authorized';
+  } else {
+    message = 'Failed due to ' + response.statusText;
+  }
+  toaster.toast(message);
+  return Promise.reject(message);
+}
+
 /************************************************************
  * Confirmation
  ************************************************************/
@@ -438,7 +452,7 @@ var homePage = new Vue({
   methods: {
     onShow: function() {
       var page = this;
-      fetch('/engine/admin/info', fetchInitNoCache).then(getJson).then(function(data) {
+      fetch('/engine/admin/info', fetchInitNoCache).then(assertIsOk).then(getJson).then(function(data) {
         console.log('fetch(admin/info)', data);
         var clientTime = Math.round(Date.now() / 1000);
         var serverTime = data['Server Time'];
@@ -477,7 +491,7 @@ var homePage = new Vue({
     backup: function() {
       var self = this;
       self.working = true;
-      fetch('/engine/admin/backup/create', {method: 'POST'}).then(function(response) {
+      fetch('/engine/admin/backup/create', {method: 'POST'}).then(assertIsOk).then(function(response) {
         return response.text();
       }).then(function(filename) {
         self.filename = filename;
@@ -502,13 +516,13 @@ var homePage = new Vue({
           "Content-Type": "application/octet-stream"
         },
         body: file
-      }).then(function() {
+      }).then(assertIsOk).then(function() {
         toaster.toast('Backup uploaded');
         return fetch('/engine/admin/backup/deploy', {
           method: 'POST',
           body: file.name
         });
-      }).then(function() {
+      }).then(assertIsOk).then(function() {
         toaster.toast('Backup deployed');
         window.location.reload();
       }).finally(function() {
@@ -521,14 +535,14 @@ var homePage = new Vue({
         body: JSON.stringify({
           value: this.config
         })
-      }).then(function() {
+      }).then(assertIsOk).then(function() {
         toaster.toast('Engine configuration saved');
         app.clearCache();
       });
     },
     stopServer: function() {
       confirmation.ask('Stop the server?').then(function() {
-        fetch('/engine/admin/stop', { method: 'POST'}).then(function() {
+        fetch('/engine/admin/stop', { method: 'POST'}).then(assertIsOk).then(function() {
           app.toPage('home');
           toaster.toast('Server stopped');
         });

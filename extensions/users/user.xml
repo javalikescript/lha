@@ -1,0 +1,14 @@
+<app-page id="user" title="User" hide-class="hideTop">
+  <page-article>
+    <template v-if="logged">
+      <p>Logged as {{ name }}</p>
+      <button v-on:click="logout()">Logout</button>
+    </template>
+    <template v-else>
+      <p>Login</p>
+      <input type="text" v-model="name" placeholder="Your name" required />
+      <input type="password" v-model="password" placeholder="Your password" required />
+      <button v-on:click="login()">Login</button>
+    </template>
+  </page-article>
+</app-page>

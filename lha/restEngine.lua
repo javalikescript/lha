@@ -160,13 +160,13 @@ local REST_EXTENSIONS = {
 
 local REST_ADMIN = {
   configuration = {
-    save = function(exchange)
+    ['save?method=POST'] = function(exchange)
       exchange.attributes.engine.configHistory:saveJson()
       return 'Done'
     end
   },
   data = {
-    save = function(exchange)
+    ['save?method=POST'] = function(exchange)
       exchange.attributes.engine.dataHistory:saveJson()
       return 'Done'
     end
@@ -409,6 +409,17 @@ return {
   things = REST_THINGS,
   schema = function(exchange)
     return engineSchema
+  end,
+  userName = function(exchange)
+    local session = exchange:getSession()
+    if session then
+      local user = session.attributes.user
+      if user and user.name then
+        return user.name
+      end
+    end
+    HttpExchange.notFound(exchange)
+    return false
   end,
   admin = REST_ADMIN
 }

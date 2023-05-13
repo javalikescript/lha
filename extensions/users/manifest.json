@@ -1,0 +1,42 @@
+{
+  "name": "Users Management",
+  "description": "Add users management",
+  "version": "0.1",
+  "script": "users.lua",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "users": {
+        "title": "The users",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "title": "The user name",
+              "type": "string",
+              "required": true
+            },
+            "password": {
+              "title": "The user password",
+              "type": "string",
+              "writeOnly": true,
+              "required": true
+            },
+            "permission": {
+              "title": "The user access rigths",
+              "type": "string",
+              "enumValues": [
+                {"const": "r", "title": "Can read"},
+                {"const": "rw", "title": "Can read and write"},
+                {"const": "rwc", "title": "Can r/w and configure"},
+                {"const": "rwca", "title": "Can r/w, configure and administer"}
+              ],
+              "default": "r"
+            }
+          }
+        }
+      }
+    }
+  }
+}

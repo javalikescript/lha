@@ -63,7 +63,7 @@ registerPageVue(new Vue({
     onRemoveAll: function() {
       Promise.all(this.things.map(function(thing) {
         return fetch('/engine/things/' + thing.thingId, {method: 'DELETE'});
-      })).then(function() {
+      })).then(assertIsOk).then(function() {
         toaster.toast('Things disabled');
         app.clearCache();
       });
@@ -83,7 +83,7 @@ registerPageVue(new Vue({
         body: JSON.stringify({
           value: config
         })
-      }).then(function() {
+      }).then(assertIsOk).then(function() {
         toaster.toast('Things saved');
         app.clearCache();
         self.edit = false;
@@ -117,7 +117,7 @@ new Vue({
     disableThing: function() {
       var thingId = this.thingId;
       return confirmation.ask('Disable the thing?').then(function() {
-        return fetch('/engine/things/' + thingId, {method: 'DELETE'}).then(rejectIfNotOk).then(function() {
+        return fetch('/engine/things/' + thingId, {method: 'DELETE'}).then(assertIsOk).then(function() {
           toaster.toast('Thing disabled');
           app.clearCache();
         });
@@ -159,7 +159,7 @@ new Vue({
           return fetch('/things/' + thingId + '/properties', {
             method: 'PUT',
             body: JSON.stringify(modifiedProps)
-          }).then(function() {
+          }).then(assertIsOk).then(function() {
             toaster.toast('Properties updated');
             app.clearCache();
           });
@@ -170,7 +170,7 @@ new Vue({
           return fetch('/engine/things/' + thingId, {
             method: 'POST',
             body: JSON.stringify(modifiedThing)
-          }).then(function() {
+          }).then(assertIsOk).then(function() {
             toaster.toast('Thing updated');
             app.clearCache();
           });
@@ -245,7 +245,7 @@ new Vue({
       return fetch('/engine/things/', {
         method: 'PUT',
         body: JSON.stringify(thingsToAdd)
-      }).then(function() {
+      }).then(assertIsOk).then(function() {
         toaster.toast('Things saved');
         app.clearCache();
       });
