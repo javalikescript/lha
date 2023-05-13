@@ -59,7 +59,6 @@ local RollingList = class.create(List, function(rollingList)
   end
 end)
 
-local addons = {}
 local contexts = {}
 local websockets = {}
 
@@ -67,7 +66,6 @@ local function cleanup(server)
   for _, context in ipairs(contexts) do
     server:removeContext(context)
   end
-  addons = {}
   contexts = {}
   websockets = {}
   Logger.setLogRecorder(recordLog)
@@ -125,6 +123,8 @@ local function onDataChange(value, previousValue, path)
     end
   end
 end
+
+local addons = {}
 
 function extension:registerAddon(id, addon)
   addons[id] = addon
@@ -261,7 +261,6 @@ extension:subscribeEvent('startup', function()
     HttpExchange.ok(exchange, json.stringify(l), 'application/json')
   end))
   logger:info('WebSocket available on /ws/')
-
 end)
 
 extension:subscribeEvent('shutdown', function()
