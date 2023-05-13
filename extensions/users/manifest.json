@@ -1,6 +1,6 @@
 {
   "name": "Users Management",
-  "description": "Add users management",
+  "description": "Add users management and access rights",
   "version": "0.1",
   "script": "users.lua",
   "schema": {

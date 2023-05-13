@@ -23,3 +23,5 @@ The following devices are already availables.
   * ZSE44 Temperature Humidity XS Sensor
 * LiXee
   * ZLinky TIC, Historique HP-HC
+* GCE Electronics
+  * Module USB TIC

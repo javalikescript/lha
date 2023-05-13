@@ -38,6 +38,7 @@ Setup tiles with relevant thing properties
 * Web Scripts  
 Automatically trigger thing modifications
 * Share server folders to download and upload files
+* Users Management, adds user and permissions
 * HTTPS server, provides lha on a secure server
 * Self monitoring, based on Lua and [libuv](https://github.com/luvit/luv)
 * Ping, Test the reachability of a host on the network
