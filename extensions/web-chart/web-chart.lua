@@ -69,7 +69,6 @@ local HistoricalDataHandler = class.create('jls.net.http.HttpHandler', function(
       end
     end
   end
-
 end)
 
 local context

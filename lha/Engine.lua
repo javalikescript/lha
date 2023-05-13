@@ -118,18 +118,18 @@ return class.create(function(engine)
   end
 
   function engine:startHTTPServer()
-    local httpServer = HttpServer:new()
-    httpServer:bind(self.options.address, self.options.port):next(function()
+    local server = HttpServer:new()
+    server:bind(self.options.address, self.options.port):next(function()
       logger:info('Server bound to "%s" on port %s', self.options.address, self.options.port)
     end, function(err) -- could failed if address is in use or hostname cannot be resolved
       logger:warn('Cannot bind HTTP server to "%s" on port %s due to %s', self.options.address, self.options.port, err)
       system.exit(98)
     end)
-    httpServer:createContext('/engine/(.*)', RestHttpHandler:new(restEngine, {engine = self}))
-    httpServer:createContext('/things/?(.*)', RestHttpHandler:new(restThings, {engine = self}))
-    httpServer:createContext('/engine/configuration/(.*)', TableHandler:new(self, 'configuration/', true, true))
-    httpServer:createContext('/engine/tmp/(.*)', FileHttpHandler:new(self.tmpDir, 'rw'))
-    self.server = httpServer
+    server:createContext('/engine/(.*)', RestHttpHandler:new(restEngine, {engine = self}))
+    server:createContext('/things/?(.*)', RestHttpHandler:new(restThings, {engine = self}))
+    server:createContext('/engine/configuration/(.*)', TableHandler:new(self, 'configuration/', true, true))
+    server:createContext('/engine/tmp/(.*)', FileHttpHandler:new(self.tmpDir, 'rw'))
+    self.server = server
   end
 
   function engine:getHTTPServer()
@@ -244,6 +244,7 @@ return class.create(function(engine)
   end
 
   function engine:onExtension(id, fn)
+    -- TODO replay on extension reload
     local extension = self:getExtensionById(id)
     if extension then
       fn(extension)
