@@ -32,23 +32,10 @@
         "type": "string",
         "default": "key.pem"
       },
-      "credentials": {
-        "title": "The credentials as name/password pairs for basic authentication",
-        "type": "array",
-        "items": {
-          "type": "object",
-          "properties": {
-            "name": {
-              "title": "The user name",
-              "type": "string"
-            },
-            "password": {
-              "title": "The user password",
-              "type": "string",
-              "writeOnly": true
-            }
-          }
-        }
+      "login": {
+        "title": "Restrict the access to logged users",
+        "type": "boolean",
+        "default": true
       }
     }
   }
