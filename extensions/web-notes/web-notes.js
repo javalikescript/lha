@@ -1,7 +1,7 @@
 define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTemplate, noteTemplate, drawTemplate) {
 
   function readLink(note) {
-    return fetch('/notes/' + note.name).then(rejectIfNotOk).then(function(response) {
+    return fetch('/user-notes/' + note.name).then(assertIsOk).then(function(response) {
       return response.text();
     }).then(function(content) {
       note.url = content;
@@ -17,7 +17,7 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
       onShow: function() {
         var self = this;
         self.notes = [];
-        return fetch('/notes/', {
+        return fetch('/user-notes/', {
           headers: {
             "Accept": 'application/json'
           }
@@ -66,7 +66,7 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
         this.newName = false;
         this.text = '';
         var self = this;
-        return fetch('/notes/' + this.name).then(rejectIfNotOk).then(function(response) {
+        return fetch('/user-notes/' + this.name).then(rejectIfNotOk).then(function(response) {
           return response.text();
         }).then(function(text) {
           self.text = text;
@@ -82,17 +82,17 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
         });
       },
       onDelete: function () {
-        return fetch('/notes/' + this.name, {
+        return fetch('/user-notes/' + this.name, {
           method: 'DELETE' 
-        }).then(function() {
+        }).then(assertIsOk).then(function() {
           toaster.toast('Note deleted');
         });
       },
       onSave: function () {
-        return fetch('/notes/' + this.name, {
+        return fetch('/user-notes/' + this.name, {
           method: 'PUT',
           body: this.text
-        }).then(function() {
+        }).then(assertIsOk).then(function() {
           toaster.toast('Note saved');
         });
       }
