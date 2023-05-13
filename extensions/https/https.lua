@@ -1,6 +1,5 @@
 local extension = ...
 
-local class = require('jls.lang.class')
 local logger = require('jls.lang.logger')
 local HttpServer = require('jls.net.http.HttpServer')
 local HttpExchange = require('jls.net.http.HttpExchange')
