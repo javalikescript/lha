@@ -2,15 +2,13 @@ local extension = ...
 
 local logger = require('jls.lang.logger')
 local HttpServer = require('jls.net.http.HttpServer')
-local HttpExchange = require('jls.net.http.HttpExchange')
-local HttpFilter = require('jls.net.http.HttpFilter')
 local Date = require('jls.util.Date')
 local secure = require('jls.net.secure')
+
 local utils = require('lha.utils')
 
 local function writeCertificateAndPrivateKey(certFile, pkeyFile, commonName)
   local cacert, pkey = secure.createCertificate({
-    --duration = (3600 * 24 * (365 + 31)),
     commonName = commonName
   })
   local cacertPem  = cacert:export('pem')
@@ -47,7 +45,7 @@ extension:subscribeEvent('startup', function()
   local pkeyFile = utils.getAbsoluteFile(configuration.key, engine:getWorkDirectory())
   if not certFile:exists() or not pkeyFile:exists() then
     writeCertificateAndPrivateKey(certFile, pkeyFile, configuration.commonName)
-    logger:info('Generate certificate %s and associated private key %s', certFile:getPath(), pkeyFile:getPath())
+    logger:info('Generated certificate %s and associated private key %s', certFile:getPath(), pkeyFile:getPath())
   else
     -- check and log certificate expiration
     local cert = readCertificate(certFile)
@@ -70,14 +68,8 @@ extension:subscribeEvent('startup', function()
     logger:warn('Cannot bind HTTP secure server to "%s" on port %s due to %s', configuration.address, configuration.port, err)
   end)
   if configuration.login then
-    local location = '/login.html'
-    httpSecureServer:addFilter(HttpFilter.byPath(HttpFilter:new(function(_, exchange)
-      local session = exchange:getSession()
-      if session and not session.attributes.user then
-        HttpExchange.redirect(exchange, location)
-        return false
-      end
-    end)):excludePath(location, '/login'))
+    local redirect = extension:require('users.login-redirect', true)
+    httpSecureServer:addFilter(redirect)
   end
   -- share contexts
   httpSecureServer:setParentContextHolder(httpServer)

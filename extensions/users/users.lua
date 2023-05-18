@@ -20,34 +20,8 @@ local User = class.create(function(user)
 end)
 
 local sessionFilter = HttpFilter.session()
-local filter = HttpFilter.byPath(HttpFilter.multiple(sessionFilter, HttpFilter:new(function(_, exchange)
-  local request = exchange:getRequest()
-  local method = request:getMethod()
-  if method == 'GET' or method == 'HEAD' then
-    return
-  end
-  local path = request:getTargetPath()
-  local session = exchange:getSession()
-  local permission = 'r'
-  if session.attributes.user then
-    permission = session.attributes.user.permission
-  end
-  if string.match(path, '^/things') then
-    if permission > 'r' then
-      return
-    end
-  elseif string.match(path, '^/engine/admin/') then
-    if permission > 'rwc' then
-      return
-    end
-  elseif permission > 'rw' or path == '/login' or path == '/logout' or string.match(path, '^/user') then
-    return
-  end
-  HttpExchange.forbidden(exchange)
-  return false
-end))):exclude('^/static')
 
-local contexts, base64, md, userMap
+local contexts, filter, base64, md, userMap
 
 local function cleanup(server)
   if contexts then
@@ -56,7 +30,10 @@ local function cleanup(server)
     end
   end
   contexts = {}
-  server:removeFilter(filter)
+  if filter then
+    server:removeFilter(filter)
+    filter = nil
+  end
   userMap = {}
   base64 = Codec.getInstance('base64')
   md = MessageDigest.getInstance('SHA-1')
@@ -114,6 +91,38 @@ extension:subscribeEvent('startup', function()
       HttpExchange.badRequest(exchange)
     end
   end)
+  local userFilter = HttpFilter:new(function(_, exchange)
+    local request = exchange:getRequest()
+    local method = request:getMethod()
+    if method == 'GET' or method == 'HEAD' then
+      return
+    end
+    local path = request:getTargetPath()
+    local session = exchange:getSession()
+    local permission = configuration.defaultPermission or ''
+    if session.attributes.user then
+      permission = session.attributes.user.permission
+    end
+    if string.match(path, '^/things') then
+      if permission > 'r' then
+        return
+      end
+    elseif string.match(path, '^/engine/admin/') then
+      if permission > 'rwc' then
+        return
+      end
+    elseif permission > 'rw' or path == '/login' or path == '/logout' or string.match(path, '^/user') then
+      return
+    end
+    HttpExchange.forbidden(exchange)
+    return false
+  end)
+  local filters = HttpFilter.multiple(sessionFilter, userFilter)
+  if configuration.login then
+    local redirect = extension:require('users.login-redirect', true)
+    filters:addFilter(redirect)
+  end
+  filter = HttpFilter.byPath(filters):exclude('^/static')
   server:addFilter(filter)
   engine:onExtension('web-base', function(webBaseExtension)
     webBaseExtension:registerAddonExtension(extension, 'user.js')

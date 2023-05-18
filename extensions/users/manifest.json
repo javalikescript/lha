@@ -36,6 +36,23 @@
             }
           }
         }
+      },
+      "defaultPermission": {
+        "title": "No user access rigths",
+        "type": "string",
+        "enumValues": [
+          {"const": "-", "title": "No access"},
+          {"const": "r", "title": "Can read"},
+          {"const": "rw", "title": "Can read and write"},
+          {"const": "rwc", "title": "Can r/w and configure"},
+          {"const": "rwca", "title": "Can r/w, configure and administer"}
+        ],
+        "default": "rw"
+      },
+      "login": {
+        "title": "Restrict the access to logged users",
+        "type": "boolean",
+        "default": true
       }
     }
   }
