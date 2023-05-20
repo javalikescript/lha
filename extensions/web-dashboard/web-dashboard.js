@@ -119,7 +119,7 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
   }
 
   function forEachPropertyType(things, type, fn, thingIds) {
-    if (isEmpty(thingIds)) {
+    if (!isArrayWithItems(thingIds)) {
       thingIds = Object.keys(things);
     }
     for (var i = 0; i < thingIds.length; i++) {

@@ -12,6 +12,12 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
   function enumToOptions(e) {
     return [e.title, e.const];
   }
+  function buildOptions(l) {
+    if (isArrayWithItems(l)) {
+      return l.map(enumToOptions);
+    }
+    return [['(no things)', '-empty-']];
+  }
   function exportToLua(workspace) {
     //Blockly.Lua.INFINITE_LOOP_TRAP = 'if(--window.LoopTrap == 0) throw "Infinite loop.";\n';
     var lines = [
@@ -108,7 +114,10 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
       { const: "shutdown", title: "shutdown" },
       { const: "heartbeat", title: "heartbeat" },
       { const: "test", title: "testing" }
-    ].map(enumToOptions)
+    ].map(enumToOptions),
+    getThingPathOptions: [],
+    setThingPathOptions: [],
+    eventThingPathOptions: []
   };
   // Register custom blocks
   for (var name in blocks) {
@@ -220,10 +229,11 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
         app.getEnumsById().then(function(enumsById) {
           // Prepare data fields
           assignMap(blockEnv, {
-            getThingPathOptions: enumsById.readablePropertyPaths.map(enumToOptions),
-            setThingPathOptions: enumsById.writablePropertyPaths.map(enumToOptions),
-            eventThingPathOptions: enumsById.allPropertyPaths.map(enumToOptions)
+            getThingPathOptions: buildOptions(enumsById.readablePropertyPaths),
+            setThingPathOptions: buildOptions(enumsById.writablePropertyPaths),
+            eventThingPathOptions: buildOptions(enumsById.allPropertyPaths)
           });
+        }).finally(function() {
           if (scriptId) {
             self.scriptId = scriptId;
             self.refresh();

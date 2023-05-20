@@ -163,8 +163,9 @@ var app = new Vue({
       return this.fetchWithCache('/engine/things', function(things) {
         if (Array.isArray(things)) {
           things.sort(compareByTitle);
+          return things;
         }
-        return things;
+        return [];
       });
     },
     getThingsById: function() {
@@ -179,8 +180,9 @@ var app = new Vue({
       return this.fetchWithCache('/engine/extensions', function(extensions) {
         if (Array.isArray(extensions)) {
           extensions.sort(compareByName);
+          return extensions;
         }
-        return extensions;
+        return [];
       });
     },
     getExtensionsById: function() {

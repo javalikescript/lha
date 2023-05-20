@@ -40,7 +40,11 @@ function call(to, fn) {
 }
 
 function isEmpty(obj) {
-  return (obj === null) || (obj === undefined) || (typeof obj !== 'object') || (Array.isArray(obj) && (obj.length === 0)) || (Object.keys(obj).length === 0);
+  return (obj === null) || (obj === undefined) || (Array.isArray(obj) && (obj.length === 0)) || ((typeof obj === 'object') && (Object.keys(obj).length === 0));
+}
+
+function isArrayWithItems(obj) {
+  return Array.isArray(obj) && (obj.length > 0);
 }
 
 function isObject(obj) {

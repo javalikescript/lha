@@ -24,7 +24,7 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
         }).then(rejectIfNotOk).then(function(response) {
           return response.json();
         }).then(function(response) {
-          if (!isEmpty(response)) {
+          if (isArrayWithItems(response)) {
             self.notes = response.filter(function(note) {
               return !note.isDir;
             }).map(function(note) {
