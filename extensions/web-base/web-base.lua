@@ -172,7 +172,7 @@ extension:subscribeEvent('startup', function()
   local bufferMessages
   Logger.setLogRecorder(function(lgr, time, level, message)
     recordLog(lgr, time, level, message)
-    if level >= maxWebSocketLevel then
+    if level <= maxWebSocketLevel then
       -- the websocket stack will emit logs
       return
     end
