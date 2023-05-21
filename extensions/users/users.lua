@@ -53,17 +53,21 @@ local function encrypt(value)
   return '\t'..base64:encode(md:digest())
 end
 
+local function refreshUsers(users)
+  if users then
+    for _, user in ipairs(users) do
+      user.password = encrypt(user.password)
+      userMap[user.name] = User:new(user)
+    end
+  end
+end
+
 extension:subscribeEvent('startup', function()
   local configuration = extension:getConfiguration()
   local engine = extension:getEngine()
   local server = engine:getHTTPServer()
   cleanup(server)
-  if configuration.users then
-    for _, user in ipairs(configuration.users) do
-      user.password = encrypt(user.password)
-      userMap[user.name] = User:new(user)
-    end
-  end
+  refreshUsers(configuration.users)
   addContext(server, '/logout', function(exchange)
     if HttpExchange.methodAllowed(exchange, 'POST') then
       local session = exchange:getSession()
@@ -131,6 +135,11 @@ end)
 
 extension:subscribeEvent('poll', function()
   sessionFilter:cleanup()
+end)
+
+extension:subscribeEvent('refresh', function()
+  local configuration = extension:getConfiguration()
+  refreshUsers(configuration.users)
 end)
 
 extension:subscribeEvent('shutdown', function()

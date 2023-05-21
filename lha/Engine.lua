@@ -103,15 +103,15 @@ return class.create(function(engine)
     -- configuration schedule
     scheduler:schedule(schedules.configuration, function()
       logger:info('Archiving configuration')
+      self:publishEvent('refresh')
       self.dataHistory:save(true)
       self.configHistory:save(false)
-      self:publishEvent('refresh')
     end)
     -- clean schedule
     scheduler:schedule(schedules.clean, function()
       logger:info('Cleaning')
-      self.configHistory:save(true)
       self:publishEvent('clean')
+      self.configHistory:save(true)
     end)
     -- We could expose default scheduler based events such as hourly, daily
     self.scheduler = scheduler
