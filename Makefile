@@ -84,4 +84,9 @@ dist-archive: dist dist$(ZIP)
 
 dist-full-archive release: dist-full dist$(ZIP)
 
+sync:
+	git fetch
+	git rebase
+	$(MAKE) release
+
 .PHONY: dist
