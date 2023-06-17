@@ -15,7 +15,9 @@ define(['./web-tools.xml'], function(toolsTemplate) {
     data: {
       logLevel: '',
       lua: '',
-      out: ''
+      luaOut: '',
+      cmd: '',
+      cmdOut: ''
     },
     mounted: function() {
       this.$refs.lua.addEventListener('keydown', insertTab);
@@ -39,11 +41,20 @@ define(['./web-tools.xml'], function(toolsTemplate) {
       },
       execute: function() {
         var page = this;
-        page.out = '';
-        fetch('/engine/tools/execute', {method: 'POST', body: this.lua}).then(assertIsOk).then(function(response) {
+        page.cmdOut = '';
+        fetch('/engine/tools/execute', {method: 'POST', body: this.cmd}).then(assertIsOk).then(function(response) {
           return response.text();
         }).then(function(out) {
-          page.out = out;
+          page.cmdOut = out;
+        });
+      },
+      run: function() {
+        var page = this;
+        page.luaOut = '';
+        fetch('/engine/tools/run', {method: 'POST', body: this.lua}).then(assertIsOk).then(function(response) {
+          return response.text();
+        }).then(function(out) {
+          page.luaOut = out;
         });
       },
       clearCache: function() {
@@ -112,6 +123,8 @@ define(['./web-tools.xml'], function(toolsTemplate) {
     }
   });
   
-  addPageComponent(toolsVue, 'fa-tools');
+  if (app.canAdminister) {
+    addPageComponent(toolsVue, 'fa-tools');
+  }
 
 });

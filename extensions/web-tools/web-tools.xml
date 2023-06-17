@@ -14,8 +14,6 @@
       <option value="fine">Fine</option>
       <option value="finer">Finer</option>
       <option value="finest">Finest</option>
-      <option value="debug">Debug</option>
-      <option value="all">All</option>
     </select>
     <p>Engine</p>
     <button v-on:click="stopServer" title="Stop the engine"><i class="fas fa-power-off"></i>&nbsp;Stop the Engine</button>
@@ -28,7 +26,11 @@
     <button v-on:click="saveData"><i class="far fa-save"></i>&nbsp;Save Data</button>
     <p>Lua</p>
     <textarea ref="lua" v-model="lua" spellcheck="false" rows="12" wrap="off" style="width: 100%; resize: none;" placeholder="Enter your Lua code here"></textarea>
+    <button v-on:click="run"><i class="fas fa-redo"></i>&nbsp;Run</button>
+    <textarea v-model="luaOut" spellcheck="false" rows="12" wrap="off" style="width: 100%; resize: none;" placeholder="Output" readonly></textarea>
+    <p>System</p>
+    <textarea ref="cmd" v-model="cmd" spellcheck="false" rows="12" wrap="off" style="width: 100%; resize: none;" placeholder="Enter your command here"></textarea>
     <button v-on:click="execute"><i class="fas fa-redo"></i>&nbsp;Execute</button>
-    <textarea v-model="out" spellcheck="false" rows="12" wrap="off" style="width: 100%; resize: none;" placeholder="Output" readonly></textarea>
+    <textarea v-model="cmdOut" spellcheck="false" rows="12" wrap="off" style="width: 100%; resize: none;" placeholder="Output" readonly></textarea>
   </page-article>
 </app-page>

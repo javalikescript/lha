@@ -1,8 +1,13 @@
 local extension = ...
 
+local Pipe = require('jls.io.Pipe')
+local StreamHandler = require('jls.io.StreamHandler')
 local StringBuffer = require('jls.lang.StringBuffer') 
+local ProcessBuilder = require('jls.lang.ProcessBuilder')
 local RestHttpHandler = require('jls.net.http.handler.RestHttpHandler')
 local LogHttpFilter = require('jls.net.http.filter.LogHttpFilter')
+
+local hasPermission = extension:require('users.hasPermission', true)
 
 local logFilter
 local contexts = {}
@@ -72,7 +77,10 @@ extension:subscribeEvent('startup', function()
   local server = engine:getHTTPServer()
   cleanup(server)
   addContext(server, '/engine/tools/(.*)', RestHttpHandler:new({
-    ['execute?method=POST'] = function(exchange)
+    ['run?method=POST'] = function(exchange)
+      if not hasPermission(exchange, 'rwca') then
+        return false
+      end
       local script = exchange:getRequest():getBody()
       local fn, err = load(table.concat({
         'local b, engine = ...',
@@ -86,13 +94,30 @@ extension:subscribeEvent('startup', function()
           'b:append("\\n")',
         'end',
         script
-      }, '\n'), 'tools/execute', 't')
+      }, '\n'), 'tools/run', 't')
       local b = StringBuffer:new()
       if fn then
         fn(b, engine)
         return b:toString()
       end
       return err or 'Error'
+    end,
+    ['execute?method=POST'] = function(exchange)
+      if not hasPermission(exchange, 'rwca') then
+        return false
+      end
+      local command = exchange:getRequest():getBody()
+      local args = {'/bin/sh', '-c', command}
+      local pb = ProcessBuilder:new(args)
+      local sb = StreamHandler.buffer()
+      local p = Pipe:new()
+      pb:setRedirectOutput(p)
+      local ph = assert(pb:start())
+      p:readStart(sb)
+      return ph:ended():next(function(exitCode)
+        p:close()
+        return sb:getBuffer()
+      end)
     end
   }))
   engine:onExtension('web-base', function(webBaseExtension)
