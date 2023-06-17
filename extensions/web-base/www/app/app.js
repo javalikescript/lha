@@ -27,7 +27,8 @@ var app = new Vue({
     path: '',
     pages: {},
     pageHistory: [],
-    cache: {}
+    cache: {},
+    user: {}
   },
   methods: {
     toPage: function(id, path) {
@@ -254,6 +255,14 @@ var app = new Vue({
           };
         });
       });
+    }
+  },
+  computed: {
+    canAdminister: function() {
+      return this.user && this.user.permission >= 'rwca';
+    },
+    canConfigure: function() {
+      return this.user && this.user.permission >= 'rwc';
     }
   }
 });

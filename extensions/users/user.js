@@ -9,15 +9,9 @@ define(['./user.xml'], function(loginTemplate) {
     },
     methods: {
       onShow: function() {
-        var page = this;
-        fetch('/engine/userName').then(rejectIfNotOk).then(function(response) {
-          return response.text();
-        }).then(function(name) {
-          page.logged = true;
-          page.name = name;
-        }, function() {
-          page.logged = false;
-        });
+        this.logged = app.user.logged === true;
+        this.name = app.user.name || '';
+        this.password = '';
       },
       login: function() {
         var body = new URLSearchParams({

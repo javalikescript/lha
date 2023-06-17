@@ -68,10 +68,13 @@ extension:subscribeEvent('startup', function()
   local server = engine:getHTTPServer()
   cleanup(server)
   refreshUsers(configuration.users)
+  function sessionFilter:onCreated(session)
+    session.attributes.user = nil
+    session.attributes.permission = configuration.defaultPermission or ''
+  end
   addContext(server, '/logout', function(exchange)
     if HttpExchange.methodAllowed(exchange, 'POST') then
-      local session = exchange:getSession()
-      session.attributes.user = nil
+      sessionFilter:onCreated(exchange:getSession())
       HttpExchange.redirect(exchange, '/')
     end
   end)
@@ -85,6 +88,9 @@ extension:subscribeEvent('startup', function()
       if user and user:checkPassword(encrypt(info.password)) then
         local session = exchange:getSession()
         session.attributes.user = user
+        if user.permission then
+          session.attributes.permission = user.permission
+        end
         HttpExchange.redirect(exchange, '/')
         return
       else
@@ -103,10 +109,7 @@ extension:subscribeEvent('startup', function()
     end
     local path = request:getTargetPath()
     local session = exchange:getSession()
-    local permission = configuration.defaultPermission or ''
-    if session.attributes.user then
-      permission = session.attributes.user.permission
-    end
+    local permission = session.attributes.permission
     if string.match(path, '^/things') then
       if permission > 'r' then
         return

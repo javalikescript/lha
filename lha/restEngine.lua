@@ -410,13 +410,15 @@ return {
   schema = function(exchange)
     return engineSchema
   end,
-  userName = function(exchange)
+  user = function(exchange)
     local session = exchange:getSession()
     if session then
       local user = session.attributes.user
-      if user and user.name then
-        return user.name
-      end
+      return {
+        name = user and user.name,
+        logged = user ~= nil,
+        permission = session.attributes.permission
+      }
     end
     HttpExchange.notFound(exchange)
     return false

@@ -61,8 +61,9 @@ window.addEventListener('hashchange', function() {
  * Load web base configuration and addons
  ************************************************************/
  Promise.all([
-  fetch('/engine/configuration/extensions/web-base').then(getJson),
-  fetch('addon/').then(getJson)
+  fetch('/engine/configuration/extensions/web-base').then(rejectIfNotOk).then(getJson),
+  fetch('addon/').then(rejectIfNotOk).then(getJson),
+  fetch('/engine/user').then(rejectIfNotOk).then(getJson),
 ]).then(function(results) {
   var webBaseConfig = results[0].value || {};
   if (webBaseConfig.title) {
@@ -73,6 +74,7 @@ window.addEventListener('hashchange', function() {
     var body = document.getElementsByTagName('body')[0];
     body.setAttribute('class', 'theme_' + webBaseConfig.theme);
   }
+  app.user = results[2];
   var addons = results[1];
   if (Array.isArray(addons)) {
     return Promise.all(addons.map(function(addon) {
