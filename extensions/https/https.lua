@@ -60,7 +60,8 @@ extension:subscribeEvent('startup', function()
 
   httpSecureServer = HttpServer.createSecure({
     certificate = certFile:getPath(),
-    key = pkeyFile:getPath()
+    key = pkeyFile:getPath(),
+    alpnSelectProtos = configuration.h2 and {'h2', 'http/1.1'} or nil,
   })
   httpSecureServer:bind(configuration.address, configuration.port):next(function()
     logger:info('Server secure bound to "%s" on port %s', configuration.address, configuration.port)

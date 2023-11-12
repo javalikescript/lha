@@ -36,6 +36,11 @@
         "title": "Restrict the access to logged users",
         "type": "boolean",
         "default": true
+      },
+      "h2": {
+        "title": "Enable HTTP/2",
+        "type": "boolean",
+        "default": false
       }
     }
   }
