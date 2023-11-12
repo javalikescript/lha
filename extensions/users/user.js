@@ -1,5 +1,13 @@
 define(['./user.xml'], function(loginTemplate) {
 
+  function urlEncodeForm(keyValues) {
+    var tuples = [];
+    for (var key in keyValues) {
+      tuples.push(encodeURIComponent(key) + '=' + encodeURIComponent(keyValues[key]));
+    }
+    return tuples.join('&');
+  }
+
   var userVue = new Vue({
     template: loginTemplate,
     data: {
@@ -14,7 +22,7 @@ define(['./user.xml'], function(loginTemplate) {
         this.password = '';
       },
       login: function() {
-        var body = new URLSearchParams({
+        var body = urlEncodeForm({
           name: this.name,
           password: this.password
         });
