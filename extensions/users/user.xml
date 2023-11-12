@@ -6,8 +6,8 @@
     </template>
     <template v-else>
       <p>Login</p>
-      <input type="text" v-model="name" placeholder="Your name" required />
-      <input type="password" v-model="password" placeholder="Your password" required />
+      <input v-on:keyup.enter="login()" type="text" v-model="name" placeholder="Your name" required />
+      <input v-on:keyup.enter="login()" type="password" v-model="password" placeholder="Your password" required />
       <button v-on:click="login()">Login</button>
     </template>
   </page-article>
