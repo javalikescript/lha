@@ -7,6 +7,8 @@ local ThingProperty = require('lha.ThingProperty')
 
 -- Standard properties, see https://webthings.io/schemas/
 
+-- See also https://www.w3.org/TR/2020/REC-wot-thing-description-20200409/
+
 local CAPABILITIES = {
   Alarm = 'Alarm',
   AirQualitySensor = 'AirQualitySensor',
@@ -42,6 +44,7 @@ local PROPERTY_TYPES = {
   DateTimeProperty = 'DateTimeProperty',
   BrightnessProperty = 'BrightnessProperty',
   ColorProperty = 'ColorProperty',
+  ColorModeProperty = 'ColorModeProperty',
   ColorTemperatureProperty = 'ColorTemperatureProperty',
   HumidityProperty = 'HumidityProperty',
   IlluminanceProperty = 'LevelProperty',
@@ -106,6 +109,13 @@ local PROPERTY_METADATA_BY_NAME = {
     type = 'string',
     title = 'Color',
     description = 'The color as hexadecimal RGB color code'
+  },
+  colorMode = {
+    [AT_TYPE] = PROPERTY_TYPES.ColorModeProperty,
+    type = 'string',
+    title = 'Color Mode',
+    description = 'The color mode',
+    enum = {'color', 'temperature'}
   },
   temperature = {
     [AT_TYPE] = PROPERTY_TYPES.TemperatureProperty,
@@ -260,6 +270,7 @@ return require('jls.lang.class').create(function(thing)
     self.type = tType or {}
     self.context = context or 'https://iot.mozilla.org/schemas'
     self.properties = {}
+    self.links = {}
   end
 
   --- Returns the id of this thing.
@@ -319,7 +330,7 @@ return require('jls.lang.class').create(function(thing)
   end
 
   function thing:hasType(sType)
-    return List.indexOf(self.type, sType) ~= nil
+    return List.indexOf(self.type, sType) ~= 0
   end
 
   --- Adds a property to this thing.
@@ -410,6 +421,38 @@ return require('jls.lang.class').create(function(thing)
     return names
   end
 
+  function thing:getLinks()
+    return self.links
+  end
+
+  --- Adds a link.
+  -- @tparam table link The link as a table
+  -- @tparam string link.href a string representation of a URL
+  -- @tparam string link.rel a string describing a relationship
+  -- @tparam string link.mediaType a string identifying a media type
+  function thing:addLink(link, rel, mediaType)
+    local href
+    if type(link) == 'table' then
+      href = link.href
+      rel = link.rel
+      mediaType = link.mediaType
+    elseif type(link) == 'string' then
+      href = link
+    end
+    table.insert(self.links, {
+      href = href,
+      rel = rel,
+      mediaType = mediaType
+    })
+  end
+
+  function thing:getLinkDescriptions()
+    if #self.links > 0 then
+      return List.map(self.links, tables.shallowCopy)
+    end
+    return nil
+  end
+
   --- Returns a description of this thing.
   -- @return this thing as a description.
   function thing:asThingDescription()
@@ -422,7 +465,7 @@ return require('jls.lang.class').create(function(thing)
       properties = self:getPropertyDescriptions(),
       --events = {},
       --actions = {},
-      links = {},
+      links = self:getLinkDescriptions(),
       href = self.href
     }
   end
