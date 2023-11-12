@@ -67,9 +67,9 @@ define(function() {
     "lha_timer": function(block) {
       var name = block.getFieldValue('NAME');
       var value = block.getFieldValue('VALUE');
-      var millis = parseInt(block.getFieldValue('SECONDS'), 10);
+      var factor = parseInt(block.getFieldValue('SECONDS'), 10) * 1000;
       var code = Blockly.Lua.statementToCode(block, 'DO');
-      return "script:setTimer(function()\n" + code + "end, " + (value * millis) + ", " + textToLua(name) + ")\n";
+      return "script:setTimer(function()\n" + code + "end, " + (value * factor) + ", " + textToLua(name) + ")\n";
     },
     "lha_clear_timer": function(block) {
       var name = block.getFieldValue('NAME');
