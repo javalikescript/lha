@@ -420,8 +420,9 @@ return {
         permission = session.attributes.permission
       }
     end
-    HttpExchange.notFound(exchange)
-    return false
+    return {
+      permission = 'rwca'
+    }
   end,
   admin = REST_ADMIN
 }
