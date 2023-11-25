@@ -9,21 +9,7 @@
   <link rel="stylesheet" href="static/fa/css/all.min.css">
   <script src="static/promise.min.js" type="text/javascript" charset="utf-8"></script>
   <script src="static/fetch.umd.js" type="text/javascript" charset="utf-8"></script>
-  <script type="text/javascript">//<![CDATA[
-    if (navigator.userAgent.indexOf('Edge') >= 0) {
-      console.log('Edge detected');
-      var rawFetch = fetch;
-      fetch = function(input, init) {
-        var initCred = {credentials: 'same-origin'};
-        if (init === undefined) {
-          init = initCred;
-        } else if (typeof init === 'object') {
-          init = Object.assign(initCred, init);
-        }
-        return rawFetch(input, init);
-      };
-    }
-  //]]></script>
+  <script src="static/fetch-compat.js" type="text/javascript" charset="utf-8"></script>
   <script src="static/v/vue.min.js" type="text/javascript" charset="utf-8"></script>
 </head>
 <body class="theme_boot">
