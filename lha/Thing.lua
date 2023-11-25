@@ -1,6 +1,5 @@
 local tables = require('jls.util.tables')
 local List = require('jls.util.List')
-local color = require('jls.util.color')
 local hex = require('jls.util.hex')
 
 local ThingProperty = require('lha.ThingProperty')
@@ -519,16 +518,6 @@ end, function(Thing)
     local rgb = hex.decode(rgbHex)
     local r, g, b = string.byte(rgb, 1, 3)
     return r / 255, g / 255, b / 255
-  end
-
-  function Thing.hsvToRgbHex(h, s, v)
-    local r, g, b = color.hsvToRgb(h, s, v)
-    return Thing.formatRgbHex(r, g, b)
-  end
-
-  function Thing.rgbHexToHsv(rgbHex)
-    local r, g, b = Thing.parseRgbHex(rgbHex)
-    return color.rgbToHsv(r, g, b)
   end
 
   function Thing.getDefaultValueForType(valueType, value)

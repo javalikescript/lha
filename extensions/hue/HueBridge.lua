@@ -7,6 +7,7 @@ local WebSocket = require('jls.net.http.ws').WebSocket
 local json = require('jls.util.json')
 local Date = require('jls.util.Date')
 local Map = require('jls.util.Map')
+local color = require('jls.util.color')
 
 local Thing = require('lha.Thing')
 local utils = require('lha.utils')
@@ -225,16 +226,26 @@ local function toPostColorTemperature(value)
   return {ct = math.floor(1000000 / value)}
 end
 
+local function hsvToRgbHex(h, s, v)
+  local r, g, b = color.hsvToRgb(h, s, v)
+  return Thing.formatRgbHex(r, g, b)
+end
+
+local function rgbHexToHsv(rgbHex)
+  local r, g, b = Thing.parseRgbHex(rgbHex)
+  return color.rgbToHsv(r, g, b)
+end
+
 local function computeColor(info)
   local state = info.state
   if state and isValue(state.hue) and isValue(state.sat) and isValue(state.bri) then
     -- Hue has hue and sat properties
-    return Thing.hsvToRgbHex(state.hue / 65535, state.sat / 254, state.bri / 254)
+    return hsvToRgbHex(state.hue / 65535, state.sat / 254, state.bri / 254)
   end
 end
 
 local function toPostColor(value)
-  local h, s, v = Thing.rgbHexToHsv(value)
+  local h, s, v = rgbHexToHsv(value)
   return {
     hue = math.floor(h * 65535),
     sat = math.floor(s * 254),
