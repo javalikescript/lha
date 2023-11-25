@@ -1,0 +1,22 @@
+{
+  "name": "Philips Hue V2",
+  "description": "Philips Hue Bridge REST API V2",
+  "version": "0.1",
+  "script": "hue-v2.lua",
+  "dependencies": ["web-base"],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "url": {
+        "title": "Bridge API V2 URL",
+        "pattern": "^https?://.+/$",
+        "type": "string"
+      },
+      "user": {
+        "title": "Bridge API application key",
+        "type": "string",
+        "writeOnly": true
+      }
+    }
+  }
+}

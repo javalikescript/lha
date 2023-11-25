@@ -1,0 +1,6 @@
+<app-page id="hue-v2" title="Hue">
+  <page-article>
+    <p>Hue Bridge</p>
+    <button v-on:click="touchlink()"><i class="fa fa-fingerprint"></i>&nbsp;Perform touchlink</button>
+  </page-article>
+</app-page>
