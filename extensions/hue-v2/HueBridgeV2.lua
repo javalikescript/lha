@@ -14,6 +14,8 @@ local strings = require('jls.util.strings')
 local Thing = require('lha.Thing')
 local utils = require('lha.utils')
 
+-- begin color --------
+
 local color = {}
 
 function color.mirekToColorTemperature(value)
@@ -87,18 +89,51 @@ function color.xyBriToRgb(x, y, Y)
   return r, g, b
 end
 
-local function parseAdapters(rawAdapters, env)
-  local adapters = {}
-  if rawAdapters then
-    for name, rawMap in pairs(rawAdapters) do
-      local map = {}
-      for key, rawFn in pairs(rawMap) do
-        map[key] = load('local value = ...; '..rawFn, 'adapters/'..name..'/'..key, 't', env)
+-- end color --------
+
+
+local function expand(v, m)
+  return utils.expand(v, function(p)
+    local w = tables.getPath(m, p)
+    local t = type(w)
+    if t == 'string' or t == 'number' or t == 'boolean' then
+      return w
+    end
+    return ''
+  end)
+end
+
+local function deepExpand(t, m)
+  return tables.deepMap(t, function(v)
+    if type(v) == 'string' then
+      return expand(v, m)
+    end
+    return v
+  end)
+end
+
+local function replaceMap(t, fn)
+  for k, v in pairs(t) do
+    if type(v) == 'table' then
+      replaceMap(v, fn)
+    else
+      local s, w = fn(v, k)
+      if s then
+        t[k] = w
       end
-      adapters[name] = map
     end
   end
-  return adapters
+end
+
+local function replaceRef(t, fn)
+  return replaceMap(t, function(v)
+    if type(v) == 'string' then
+      local l, w = string.match(v, '^%$(%w+):(.+)$')
+      if l then
+        return fn(l, w)
+      end
+    end
+  end)
 end
 
 return require('jls.lang.class').create(function(hueBridge)
@@ -115,10 +150,20 @@ return require('jls.lang.class').create(function(hueBridge)
       ['hue-application-key'] = self.key
     }
     self.mapping = mapping or {}
-    self.mapping.adapters = parseAdapters(self.mapping.adapters, {
+    local env = {
       Thing = Thing,
       color = color
-    })
+    }
+    replaceRef(self.mapping, function(kind, value)
+      if kind == 'lua' then
+        return true, load('local value = ...; '..value, 'mapping', 't', env)
+      end
+    end)
+    replaceRef(self.mapping, function(kind, value)
+      if kind == 'ref' then
+        return true, tables.getPath(self.mapping, value)
+      end
+    end)
   end
 
   function hueBridge:close()
@@ -240,17 +285,19 @@ return require('jls.lang.class').create(function(hueBridge)
   end
 
   local function buildName(info, resource)
-    if type(info) == 'string' then
-      return info
-    elseif type(info) == 'table' then
-      if info.name then
-        return info.name
+    if info.name then
+      local name = expand(info.name, resource)
+      if info.mapping then
+        local mn = info.mapping[name]
+        if mn then
+          return mn
+        end
       end
-      if info.nameKey and info.nameValues then
-        local key = tables.getPath(resource, info.nameKey)
-        return key and info.nameValues[tostring(key)]
-      end
+      return name
+    elseif info.path then
+      return info.path
     end
+    return 'name'
   end
 
   function hueBridge:createThingFromDeviceId(resourceMap, id)
@@ -258,19 +305,19 @@ return require('jls.lang.class').create(function(hueBridge)
     if not device then
       return nil
     end
-    local title = tables.getPath(device, self.mapping.title)
-    local description = tables.getPath(device, self.mapping.description)
+    local title = expand(self.mapping.title, device)
+    local description = expand(self.mapping.description, device)
     local thing = Thing:new(title, description)
     for _, service in ipairs(device.services) do
       local resource = resourceMap[service.rid]
       local properties = self.mapping.types[service.rtype]
       if resource and properties then
-        for path, info in pairs(properties) do
-          local value = tables.getPath(resource, path)
+        for _, info in pairs(properties) do
+          local value = tables.getPath(resource, info.path)
           if value ~= nil then
             local name = buildName(info, resource)
             if info.metadata then
-              thing:addPropertyFrom(name, info.metadata)
+              thing:addPropertyFrom(name, deepExpand(info.metadata, resource))
             else
               thing:addPropertyFromName(name)
             end
@@ -278,16 +325,8 @@ return require('jls.lang.class').create(function(hueBridge)
         end
       end
     end
+    -- TODO compute types
     return thing
-  end
-
-  function hueBridge:getAdapter(info, kind)
-    if info.adapter then
-      local adapter = self.mapping.adapters[info.adapter]
-      if adapter then
-        return adapter[kind]
-      end
-    end
   end
 
   function hueBridge:updateThing(thing, resourceMap, id)
@@ -297,13 +336,12 @@ return require('jls.lang.class').create(function(hueBridge)
         local resource = resourceMap[service.rid]
         local properties = self.mapping.types[service.rtype]
         if resource and properties then
-          for path, info in pairs(properties) do
-            local value = tables.getPath(resource, path)
+          for _, info in pairs(properties) do
+            local value = tables.getPath(resource, info.path)
             if value ~= nil then
               local name = buildName(info, resource)
-              local adapt = self:getAdapter(info, 'get')
-              if adapt then
-                value = adapt(value)
+              if info.adapter then
+                value = info.adapter(value)
               end
               thing:updatePropertyValue(name, value)
             end
@@ -320,15 +358,14 @@ return require('jls.lang.class').create(function(hueBridge)
         local resource = resourceMap[service.rid]
         local properties = self.mapping.types[service.rtype]
         if resource and properties then
-          for path, info in pairs(properties) do
+          for _, info in pairs(properties) do
             local n = buildName(info, resource)
             if n == name then
-              local adapt = self:getAdapter(info, 'set')
-              if adapt then
-                value = adapt(value)
+              if info.setAdapter then
+                value = info.setAdapter(value)
               end
               local body = {}
-              tables.setPath(body, path, value)
+              tables.setPath(body, info.path, value)
               return self:httpRequest('PUT', '/clip/v2/resource/'..service.rtype..'/'..service.rid, body)
             end
           end

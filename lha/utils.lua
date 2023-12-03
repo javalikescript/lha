@@ -89,4 +89,11 @@ function utils.timeToHms(value)
   return utils.parseHms(os.date('%H:%M:%S', value))
 end
 
+function utils.expand(value, fn)
+  if value == nil then
+    return nil
+  end
+  return (string.gsub(value, '%${([^{}]+)}', fn))
+end
+
 return utils

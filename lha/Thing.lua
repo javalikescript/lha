@@ -131,6 +131,13 @@ local PROPERTY_METADATA_BY_NAME = {
     description = 'Whether a presence is detected',
     readOnly = true
   },
+  motion = {
+    [AT_TYPE] = PROPERTY_TYPES.MotionProperty,
+    type = 'boolean',
+    title = 'Motion',
+    description = 'Whether a presence is detected',
+    readOnly = true
+  },
   humidity = {
     [AT_TYPE] = PROPERTY_TYPES.HumidityProperty,
     type = 'number',

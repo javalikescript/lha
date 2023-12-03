@@ -1,64 +1,104 @@
 {
-  "title": "metadata/name",
-  "description": "product_data/product_name",
+  "title": "${metadata/name}",
+  "description": "${product_data/product_name} (${product_data/model_id})",
   "types": {
-    "light": {
-      "on/on": "on",
-      "color/xy": {
-        "name": "color",
-        "adapter": "xy"
+    "light": [
+      {
+        "path": "on/on",
+        "name": "on"
       },
-      "dimming/brightness": "brightness",
-      "color_temperature/mirek": {
+      {
+        "path": "color/xy",
+        "name": "color",
+        "adapter": "$lua:return Thing.formatRgbHex(color.xyBriToRgb(value.x, value.y, 1.0))",
+        "setAdapter": "$lua:local x, y = color.rgbToXy(Thing.parseRgbHex(value)); return {x = x, y = y}"
+      },
+      {
+        "path": "dimming/brightness",
+        "name": "brightness"
+      },
+      {
+        "path": "color_temperature/mirek",
         "name": "colorTemperature",
-        "adapter": "mirek"
+        "adapter": "$ref:/adapters/mirek",
+        "setAdapter": "$ref:/adapters/mirek"
       }
-    },
-    "button": {
-      "button/button_report/event": {
-        "nameKey": "metadata/control_id",
-        "nameValues": {
-          "1": "buttonOn",
-          "2": "buttonDimUp",
-          "3": "buttonDimDown",
-          "4": "buttonOff"
+    ],
+    "button": [
+      {
+        "path": "button/button_report/event",
+        "name": "button${metadata/control_id}",
+        "mapping": {
+          "button1": "buttonOn",
+          "button2": "buttonDimUp",
+          "button3": "buttonDimDown",
+          "button4": "buttonOff"
         },
-        "adapter": "button",
-        "metadata": {
-          "@type": "HueButtonEvent",
-          "type": "string",
-          "title": "Button",
-          "description": "The button is pressed or released",
-          "enum": ["pressed", "hold", "released", "long-released"],
-          "readOnly": true,
-          "writeOnly": true
-        }
+        "adapter": "$lua:if value == 'initial_press' then return 'pressed' elseif value == 'long_press' or value == 'repeat' then return 'hold' elseif value == 'short_release' or value == 'short_release' then return 'released' elseif value == 'long_release' then return 'long-released' end",
+        "metadata": "$ref:/metadata/button"
       }
-    },
-    "zigbee_connectivity": {
-      "status": {
+    ],
+    "motion": [
+      {
+        "path": "motion/motion_report/motion",
+        "//name": "presence",
+        "name": "motion"
+      },
+      {
+        "path": "sensitivity/sensitivity",
+        "name": "sensitivity",
+        "metadata": "$ref:/metadata/sensitivity"
+      },
+      {
+        "path": "enabled",
+        "name": "enabled"
+      }
+    ],
+    "temperature": [
+      {
+        "path": "temperature/temperature_report/temperature",
+        "name": "temperature"
+      }
+    ],
+    "light_level": [
+      {
+        "path": "light/light_level_report/light_level",
+        "name": "lightlevel"
+      }
+    ],
+    "zigbee_connectivity": [
+      {
+        "path": "status",
         "name": "connected",
-        "adapter": "connected"
+        "adapter": "$lua:return value == 'connected'"
       }
-    },
-    "device_power": {
-      "power_state/battery_level": "battery"
-    }
+    ],
+    "device_power": [
+      {
+        "path": "power_state/battery_level",
+        "name": "battery"
+      }
+    ]
   },
   "adapters": {
-    "xy": {
-      "get": "return Thing.formatRgbHex(color.xyBriToRgb(value.x, value.y, 1.0))",
-      "set": "local x, y = color.rgbToXy(Thing.parseRgbHex(value)); return {x = x, y = y}"
-    },
-    "mirek": {
-      "get": "return color.mirekToColorTemperature(value)",
-      "set": "return color.mirekToColorTemperature(value)"
-    },
+    "mirek": "$lua:return color.mirekToColorTemperature(value)"
+  },
+  "metadata": {
     "button": {
-      "get": "if value == 'initial_press' then return 'pressed' elseif value == 'long_press' or value == 'repeat' then return 'hold' elseif value == 'short_release' or value == 'short_release' then return 'released' elseif value == 'long_release' then return 'long-released' end"
+      "@type": "HueButtonEvent",
+      "type": "string",
+      "title": "Button ${metadata/control_id}",
+      "description": "The button is pressed or released",
+      "enum": ["pressed", "hold", "released", "long-released"],
+      "readOnly": true,
+      "writeOnly": true
     },
-    "connected": {
-      "get": "return value == 'connected'"
+    "sensitivity": {
+      "@type": "LevelProperty",
+      "type": "integer",
+      "title": "Sensitivity Level",
+      "description": "The sensor sensitivity",
+      "configuration": true
     }
   }
 }
