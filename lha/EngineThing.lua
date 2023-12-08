@@ -79,7 +79,7 @@ return class.create(Thing, function(engineThing, super)
           self.engine:publishRootChange('data/'..path, value, prev)
         end
       else
-        logger:warn('Invalid value on update property "%s" for thing "%s"', name, self:getTitle())
+        logger:warn('Invalid value "%s" on update property "%s" for thing "%s"', value, name, self:getTitle())
       end
     else
       logger:warn('Cannot update unknown property "%s" for thing "%s"', name, self:getTitle())

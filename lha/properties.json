@@ -1,0 +1,178 @@
+{
+  "alarm": {
+    "@type": "AlarmProperty",
+    "description": "Whether the alarm is active",
+    "readOnly": true,
+    "title": "Alarm",
+    "type": "boolean"
+  },
+  "battery": {
+    "@type": "LevelProperty",
+    "configuration": true,
+    "description": "The battery level in percent",
+    "readOnly": true,
+    "title": "Battery Level",
+    "type": "number",
+    "unit": "percent"
+  },
+  "brightness": {
+    "@type": "BrightnessProperty",
+    "description": "The level of light from 0-100",
+    "maximum": 100,
+    "minimum": 0,
+    "title": "Brightness",
+    "type": "number",
+    "unit": "percent"
+  },
+  "color": {
+    "@type": "ColorProperty",
+    "description": "The color as hexadecimal RGB color code",
+    "title": "Color",
+    "type": "string"
+  },
+  "colorMode": {
+    "@type": "ColorModeProperty",
+    "description": "The color mode",
+    "enum": [
+      "color",
+      "temperature"
+    ],
+    "title": "Color Mode",
+    "type": "string"
+  },
+  "colorTemperature": {
+    "@type": "ColorTemperatureProperty",
+    "description": "The color temperature in Kelvin",
+    "maximum": 6600,
+    "minimum": 2000,
+    "title": "Color temperature",
+    "type": "integer",
+    "unit": "kelvin"
+  },
+  "connected": {
+    "@type": "BooleanProperty",
+    "configuration": true,
+    "description": "Whether the thing is connected",
+    "readOnly": true,
+    "title": "Connected",
+    "type": "boolean"
+  },
+  "current": {
+    "@type": "CurrentProperty",
+    "description": "The current",
+    "readOnly": true,
+    "title": "Current",
+    "type": "number",
+    "unit": "ampere"
+  },
+  "enabled": {
+    "@type": "OnOffProperty",
+    "configuration": true,
+    "description": "Whether the thing is enabled",
+    "title": "Enabled",
+    "type": "boolean"
+  },
+  "humidity": {
+    "@type": "HumidityProperty",
+    "description": "The relative humidity in percent",
+    "readOnly": true,
+    "title": "Relative Humidity",
+    "type": "number",
+    "unit": "percent"
+  },
+  "illuminance": {
+    "@type": "LevelProperty",
+    "description": "The illuminance in lux",
+    "minimum": 0,
+    "readOnly": true,
+    "title": "Illuminance",
+    "type": "integer",
+    "unit": "lux"
+  },
+  "lastseen": {
+    "@type": "DateTimeProperty",
+    "configuration": true,
+    "description": "The date where the thing was last seen",
+    "readOnly": true,
+    "title": "Last Seen",
+    "type": "string",
+    "unit": "date time"
+  },
+  "lastupdated": {
+    "@type": "DateTimeProperty",
+    "configuration": true,
+    "description": "The date where the thing was last updated",
+    "readOnly": true,
+    "title": "Last Updated",
+    "type": "string",
+    "unit": "date time"
+  },
+  "lightlevel": {
+    "@type": "LevelProperty",
+    "description": "The light level in 10000 x log10(Illuminance)",
+    "minimum": 0,
+    "readOnly": true,
+    "title": "Light Level",
+    "type": "integer"
+  },
+  "motion": {
+    "@type": "MotionProperty",
+    "description": "Whether a presence is detected",
+    "readOnly": true,
+    "title": "Motion",
+    "type": "boolean"
+  },
+  "on": {
+    "@type": "OnOffProperty",
+    "description": "Whether the thing is turned on",
+    "title": "On/Off",
+    "type": "boolean"
+  },
+  "presence": {
+    "@type": "MotionProperty",
+    "description": "Whether a presence is detected",
+    "readOnly": true,
+    "title": "Motion",
+    "type": "boolean"
+  },
+  "pressure": {
+    "@type": "BarometricPressureProperty",
+    "description": "The atmospheric pressure in hectopascal",
+    "maximum": 1100,
+    "minimum": 800,
+    "readOnly": true,
+    "title": "Atmospheric Pressure",
+    "type": "number",
+    "unit": "hectopascal"
+  },
+  "pushed": {
+    "@type": "PushedProperty",
+    "description": "Whether the button is pushed",
+    "readOnly": true,
+    "title": "Push Button",
+    "type": "boolean"
+  },
+  "reachable": {
+    "@type": "BooleanProperty",
+    "configuration": true,
+    "description": "Whether the thing is reachable",
+    "readOnly": true,
+    "title": "Reachable",
+    "type": "boolean"
+  },
+  "smoke": {
+    "@type": "SmokeProperty",
+    "description": "Whether smoke is detected",
+    "readOnly": true,
+    "title": "Smoke",
+    "type": "boolean"
+  },
+  "temperature": {
+    "@type": "TemperatureProperty",
+    "description": "The temperature",
+    "readOnly": true,
+    "title": "Temperature",
+    "type": "number",
+    "unit": "degree celsius"
+  }
+}
