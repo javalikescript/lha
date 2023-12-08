@@ -16,6 +16,11 @@
         "title": "Bridge API application key",
         "type": "string",
         "writeOnly": true
+      },
+      "streamEnabled": {
+        "title": "Enable event stream",
+        "type": "boolean",
+        "default": true
       }
     }
   }

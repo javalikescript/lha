@@ -82,6 +82,25 @@ local function processRessources(resources)
   end
 end
 
+local function processEvents(events)
+  for _, event in ipairs(events) do
+    if event and event.type == 'update' and event.data then
+      for _, data in ipairs(event.data) do
+        local owner = data.owner
+        if owner and owner.rtype == 'device' then
+          local thing = thingsMap[owner.rid]
+          if thing then
+            local resource = lastResourceMap and lastResourceMap[data.id] or data
+            hueBridge:updateThingResource(thing, resource, data)
+          else
+            logger:info('Hue event received on unmapped thing %s', owner.rid)
+          end
+        end
+      end
+    end
+  end
+end
+
 extension:subscribeEvent('poll', function()
   if not hueBridge then
     return
@@ -104,6 +123,11 @@ extension:subscribeEvent('startup', function()
   local mappingFile = File:new(extension.dir, 'mapping.json')
   local mapping = json.decode(mappingFile:readAll())
   hueBridge = HueBridge:new(configuration.url, configuration.user, mapping)
+
+  if configuration.streamEnabled then
+    logger:info('start event stream')
+    hueBridge:startEventStream(processEvents)
+  end
 
   extension:getEngine():onExtension('web-base', function(webBaseExtension)
     --webBaseExtension:registerAddonExtension(extension, true)

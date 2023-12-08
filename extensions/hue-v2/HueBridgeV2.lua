@@ -3,6 +3,8 @@ local Promise = require('jls.lang.Promise')
 local Exception = require('jls.lang.Exception')
 local HttpClient = require('jls.net.http.HttpClient')
 local HttpMessage = require('jls.net.http.HttpMessage')
+local StreamHandler = require('jls.io.StreamHandler')
+local ChunkedStreamHandler = require('jls.io.streams.ChunkedStreamHandler')
 local Url = require('jls.net.Url')
 local json = require('jls.util.json')
 local tables = require('jls.util.tables')
@@ -172,6 +174,7 @@ return require('jls.lang.class').create(function(hueBridge)
 
   function hueBridge:closeHttpClient()
     if self.client then
+      self:stopEventStream()
       self.client:close()
     end
     self.client = nil
@@ -284,6 +287,67 @@ return require('jls.lang.class').create(function(hueBridge)
     end)
   end
 
+  function hueBridge:startEventStream(onEvent)
+    self.onEvent = onEvent
+    self:fetchEventStream()
+  end
+
+  function hueBridge:fetchEventStream()
+    local client = self:getHttpClient()
+    client:fetch('/eventstream/clip/v2', {
+      method = 'GET',
+      headers = Map.assign({Accept = 'text/event-stream'}, self.headers)
+    }):next(function(response)
+      logger:info('Hue V2 event stream response status: %d', response:getStatusCode())
+      if response:getStatusCode() ~= 200 then
+        self:stopEventStream()
+        return
+      end
+      self.responseStream = response
+      local sh = StreamHandler:new(function(err, rawEvent)
+        logger:finer('event: "%s", "%s"', err, rawEvent)
+        if err then
+          self:stopEventStream()
+        elseif rawEvent then
+          if rawEvent == 'hi' then
+            logger:info('Hue V2 event stream connected')
+          end
+          local index = string.find(rawEvent, 'data: ', 1, true)
+          if index and self.onEvent then
+            local event = json.parse(string.sub(rawEvent, index + 6))
+            if type(event) == 'table' then
+              self.onEvent(event)
+            end
+          end
+        else
+          self:stopEventStream()
+        end
+      end)
+      local csh = ChunkedStreamHandler:new(sh, '\n\n', true)
+      if logger:isLoggable(logger.FINEST) then
+        csh = StreamHandler.tee(csh, StreamHandler:new(function(err, data)
+          logger:finest('event: %s, %s', err, (string.gsub(data, '%c', function(c)
+            return string.format('%%%02X', string.byte(c))
+          end)))
+        end))
+      end
+      response:setBodyStreamHandler(csh)
+      return response:consume()
+    end):next(function()
+        logger:info('event stream ended')
+      end, function(reason)
+        logger:info('event stream error: %s', reason)
+      end)
+  end
+
+  function hueBridge:stopEventStream()
+    self.onEvent = nil
+    if self.responseStream then
+      self.responseStream:close()
+      self.responseStream = nil
+    end
+  end
+
   local function buildName(info, resource)
     if info.name then
       local name = expand(info.name, resource)
@@ -329,23 +393,29 @@ return require('jls.lang.class').create(function(hueBridge)
     return thing
   end
 
+  function hueBridge:updateThingResource(thing, resource, data)
+    local properties = self.mapping.types[resource.type]
+    if properties then
+      for _, info in pairs(properties) do
+        local value = tables.getPath(data, info.path)
+        if value ~= nil then
+          local name = buildName(info, resource)
+          if info.adapter then
+            value = info.adapter(value)
+          end
+          thing:updatePropertyValue(name, value)
+        end
+      end
+    end
+  end
+
   function hueBridge:updateThing(thing, resourceMap, id)
     local device = resourceMap[id]
     if device then
       for _, service in ipairs(device.services) do
         local resource = resourceMap[service.rid]
-        local properties = self.mapping.types[service.rtype]
-        if resource and properties then
-          for _, info in pairs(properties) do
-            local value = tables.getPath(resource, info.path)
-            if value ~= nil then
-              local name = buildName(info, resource)
-              if info.adapter then
-                value = info.adapter(value)
-              end
-              thing:updatePropertyValue(name, value)
-            end
-          end
+        if resource and resource.type == service.rtype then
+          self:updateThingResource(thing, resource, resource)
         end
       end
     end
