@@ -19,8 +19,6 @@ local User = class.create(function(user)
   end
 end)
 
-local sessionFilter = HttpFilter.session()
-
 local contexts, filter, base64, md, userMap
 
 local function cleanup(server)
@@ -62,10 +60,16 @@ local function refreshUsers(users)
   end
 end
 
+local sessionFilter
+
 extension:subscribeEvent('startup', function()
   local configuration = extension:getConfiguration()
   local engine = extension:getEngine()
   local server = engine:getHTTPServer()
+  if sessionFilter then
+    sessionFilter:close()
+  end
+  sessionFilter = HttpFilter.session(configuration.maxAge, configuration.idleTimeout)
   cleanup(server)
   refreshUsers(configuration.users)
   function sessionFilter:onCreated(session)
@@ -137,7 +141,9 @@ extension:subscribeEvent('startup', function()
 end)
 
 extension:subscribeEvent('poll', function()
-  sessionFilter:cleanup()
+  if sessionFilter then
+    sessionFilter:cleanup()
+  end
 end)
 
 extension:subscribeEvent('refresh', function()

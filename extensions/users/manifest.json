@@ -6,6 +6,20 @@
   "schema": {
     "type": "object",
     "properties": {
+      "idleTimeout": {
+        "title": "Session idle timeout in seconds, 0 to disable",
+        "type": "integer",
+        "default": 3600,
+        "minimum": 0,
+        "maximum": 31536000
+      },
+      "maxAge": {
+        "title": "Session total timeout in seconds, 0 to disable",
+        "type": "integer",
+        "default": 43200,
+        "minimum": 0,
+        "maximum": 315360000
+      },
       "users": {
         "title": "The users",
         "type": "array",
