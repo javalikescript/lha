@@ -90,8 +90,7 @@
       "title": "Button ${metadata/control_id}",
       "description": "The button is pressed or released",
       "enum": ["pressed", "hold", "released", "long-released"],
-      "readOnly": true,
-      "writeOnly": true
+      "readOnly": true
     },
     "sensitivity": {
       "@type": "LevelProperty",

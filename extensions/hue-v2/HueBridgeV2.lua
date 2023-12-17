@@ -105,8 +105,20 @@ local function expand(v, m)
   end)
 end
 
+local function deepMap(t, fn)
+  local c = {}
+  for k, v in pairs(t) do
+    if type(v) == 'table' then
+      c[k] = deepMap(v, fn)
+    else
+      c[k] = fn(v, t, k)
+    end
+  end
+  return c
+end
+
 local function deepExpand(t, m)
-  return tables.deepMap(t, function(v)
+  return deepMap(t, function(v)
     if type(v) == 'string' then
       return expand(v, m)
     end
