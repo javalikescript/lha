@@ -574,6 +574,10 @@ return require('jls.lang.class').create(function(hueBridge)
       ---@diagnostic disable-next-line: redundant-parameter
       local value = computeFn(info, name, self)
       if isValue(value) then
+        if isEvent and value == 'released' then
+          -- simulate a pressed event
+          thing:updatePropertyValue(name, 'pressed')
+        end
         thing:updatePropertyValue(name, value)
       end
     end
@@ -608,8 +612,7 @@ end, function(HueBridge)
       title = title,
       description = 'The button is pressed or released',
       enum = {'pressed', 'hold', 'released', 'long-released'},
-      readOnly = true,
-      writeOnly = true,
+      readOnly = true
     }
   end
 
