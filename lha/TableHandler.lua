@@ -31,13 +31,10 @@ return require('jls.lang.class').create('jls.net.http.HttpHandler', function(tab
     elseif not self.editable then
       HttpExchange.methodNotAllowed(exchange)
     elseif method == HTTP_CONST.METHOD_PUT or method == HTTP_CONST.METHOD_POST then
-      return exchange:onRequestBody(true):next(function()
-        if logger:isLoggable(logger.FINEST) then
-          logger:finest('tableHandler(), request body: "%s"', request:getBody())
-        end
-        local rt = json.decode(request:getBody())
-        if type(rt) == 'table' and rt.value then
-          self.engine:setRootValues(tp, rt.value, self.publish, method == HTTP_CONST.METHOD_PUT)
+      request:bufferBody()
+      return request:json():next(function(data)
+        if type(data) == 'table' and data.value then
+          self.engine:setRootValues(tp, data.value, self.publish, method == HTTP_CONST.METHOD_PUT)
         end
         HttpExchange.ok(exchange)
       end)
