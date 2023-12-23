@@ -370,9 +370,9 @@ local toPostFnByName = {
 
 return require('jls.lang.class').create(function(hueBridge)
 
-  function hueBridge:initialize(url, user, onWebSocket)
+  function hueBridge:initialize(apiUrl, user, onWebSocket)
+    self.url = Url:new(apiUrl)
     self.user = user or ''
-    self.url = url or ''
     self.delta = 0
     self:setOnWebSocket(onWebSocket)
   end
@@ -392,7 +392,7 @@ return require('jls.lang.class').create(function(hueBridge)
       --local time = Date.UTC()
       local time = Date.now()
       self.delta = time - bridgeTime
-      logger:info('Bridge time '..config.UTC..' '..Date:new(bridgeTime):toISOString()..' time: '..Date:new(time):toISOString())
+      logger:info('Bridge time (%s) %s time: %s', config.UTC, Date:new(bridgeTime):toISOString(), Date:new(time):toISOString())
     else
       self.delta = 0
     end
@@ -402,8 +402,7 @@ return require('jls.lang.class').create(function(hueBridge)
     end
     if config.websocketport then
       -- config.websocketnotifyall
-      local tUrl = Url.parse(self.url)
-      self.wsUrl = Url:new('ws', tUrl.host, config.websocketport):toString()
+      self.wsUrl = Url:new('ws', self.url:getHost(), config.websocketport):toString()
       self:checkWebSocket()
     end
   end
@@ -432,9 +431,7 @@ return require('jls.lang.class').create(function(hueBridge)
         self.ws = nil
       end,
       onTextMessage = function(webSocket, payload)
-        if logger:isLoggable(logger.FINER) then
-          logger:finer('Hue WebSocket received '..tostring(payload))
-        end
+        logger:finer('Hue WebSocket received %s', payload)
         local status, info = Exception.pcall(json.decode, payload)
         if status then
           if type(info) == 'table' and info.t == 'event' then
@@ -453,11 +450,11 @@ return require('jls.lang.class').create(function(hueBridge)
     self:closeWebSocket()
     webSocket:open():next(function()
       webSocket:readStart()
-      logger:info('Hue WebSocket connect on '..tostring(self.wsUrl))
+      logger:info('Hue WebSocket connect on %s', self.wsUrl)
       self:updateConnectedState(true)
       self.ws = webSocket
     end, function(reason)
-      logger:warn('Cannot open Hue WebSocket on '..tostring(self.wsUrl)..' due to '..tostring(reason))
+      logger:warn('Cannot open Hue WebSocket on %s due to %s', self.wsUrl, reason)
       self:updateConnectedState(false)
     end)
   end
@@ -487,50 +484,17 @@ return require('jls.lang.class').create(function(hueBridge)
     end
   end
 
-  function hueBridge:getUrl(path)
-    if path then
-      return self.url..self.user..'/'..path
+  function hueBridge:httpJson(method, path, body)
+    local client = HttpClient:new(self.url)
+    local resource = self.url:getFile()..path
+    if body then
+      body = json.encode(body)
     end
-    return self.url..self.user..'/'
-  end
-
-  function hueBridge:httpRequest(method, path, body)
-    local client = HttpClient:new({
+    return client:fetch(resource, {
       method = method,
-      url = self.url..path,
       body = body
-    })
-    return client:connect():next(function()
-      logger:debug('client connected')
-      return client:sendReceive()
-    end):next(function(response)
+    }):next(utils.rejectIfNotOk):next(utils.getJson):finally(function()
       client:close()
-      local status, reason = response:getStatusCode()
-      if status ~= 200 then
-        return Promise.reject(tostring(status)..': '..tostring(reason))
-      end
-      return response:getBody()
-    end)
-    --return http.request(self.url..self.user..'/'..path)
-  end
-
-  function hueBridge:httpJson(method, path, value)
-    local b
-    if value then
-      b = json.encode(value)
-    end
-    return self:httpRequest(method, path, b):next(function(body)
-      local t = nil
-      if body and #body > 0 then
-        if logger:isLoggable(logger.DEBUG) then
-          logger:debug('hueBridge:httpJson('..method..') => #'..tostring(#body))
-        end
-        t = json.decode(body)
-        if logger:isLoggable(logger.FINE) then
-          logger:dump(t, 'hueBridge:httpJson('..method..')')
-        end
-      end
-      return t
     end)
   end
 
@@ -557,7 +521,7 @@ return require('jls.lang.class').create(function(hueBridge)
         self:configure(config)
       end
     end):catch(function(err)
-      logger:warn('fail to get bridge configuration, due to "'..tostring(err)..'"')
+      logger:warn('fail to get bridge configuration, due to "%s"', err)
     end)
   end
 
@@ -649,17 +613,17 @@ end, function(HueBridge)
   function HueBridge.createThingForType(info)
     local alias = deviceByType[info.type]
     if not alias then
-      logger:warn('Unknown type "'..tostring(info.type)..'"')
+      logger:warn('Unknown type "%s"', info.type)
       return
     end
     local capabilities = capabilitiesByDevice[alias]
     if not capabilities then
-      logger:warn('Missing capabilities for "'..tostring(info.type)..'" ('..tostring(alias)..')')
+      logger:warn('Missing capabilities for "%s" (%s)', info.type, alias)
       return
     end
     local names = namesByDevice[alias]
     if not capabilities then
-      logger:warn('Missing names for "'..tostring(info.type)..'" ('..tostring(alias)..')')
+      logger:warn('Missing names for "%s" (%s)', info.type, alias)
       return
     end
     local title = titleByDevice[alias] or info.type

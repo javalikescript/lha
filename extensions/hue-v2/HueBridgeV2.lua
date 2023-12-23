@@ -1,14 +1,11 @@
 local logger = require('jls.lang.logger')
 local Promise = require('jls.lang.Promise')
-local Exception = require('jls.lang.Exception')
 local HttpClient = require('jls.net.http.HttpClient')
-local HttpMessage = require('jls.net.http.HttpMessage')
 local StreamHandler = require('jls.io.StreamHandler')
 local ChunkedStreamHandler = require('jls.io.streams.ChunkedStreamHandler')
 local Url = require('jls.net.Url')
 local json = require('jls.util.json')
 local tables = require('jls.util.tables')
-local Date = require('jls.util.Date')
 local Map = require('jls.util.Map')
 local List = require('jls.util.List')
 local strings = require('jls.util.strings')
@@ -310,8 +307,8 @@ return require('jls.lang.class').create(function(hueBridge)
       method = 'GET',
       headers = Map.assign({Accept = 'text/event-stream'}, self.headers)
     }):next(function(response)
-      logger:info('Hue V2 event stream response status: %d', response:getStatusCode())
       if response:getStatusCode() ~= 200 then
+        logger:warn('Hue V2 event stream response status: %d', response:getStatusCode())
         self:stopEventStream()
         return
       end
