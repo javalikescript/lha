@@ -5,6 +5,7 @@ local logger = require('jls.lang.logger')
 local form = require('jls.net.http.form')
 local HttpExchange = require('jls.net.http.HttpExchange')
 local HttpFilter = require('jls.net.http.HttpFilter')
+local Url = require('jls.net.Url')
 local MessageDigest = require('jls.util.MessageDigest')
 local Codec = require('jls.util.Codec')
 
@@ -86,7 +87,7 @@ extension:subscribeEvent('startup', function()
     if not HttpExchange.methodAllowed(exchange, 'POST') then
       return
     end
-    local info = form.parseFormUrlEncoded(exchange:getRequest())
+    local info = Url.queryToMap(exchange:getRequest():getBody())
     if info and info.name and info.password then
       local user = userMap[info.name]
       if user and user:checkPassword(encrypt(info.password)) then
