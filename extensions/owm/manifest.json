@@ -9,18 +9,31 @@
       "apiUrl": {
         "title": "API URL",
         "type": "string",
+        "pattern": "^https?://.+/$",
         "default": "http://api.openweathermap.org/data/2.5/"
       },
       "apiKey": {
         "title": "API key",
         "type": "string",
-        "writeOnly": true
+        "writeOnly": true,
+        "required": true
       },
       "cityId": {
         "title": "City ID",
+        "type": "string",
+        "required": true
+      },
+      "units": {
+        "default": "metric",
+        "enum": [
+          "standard",
+          "metric",
+          "imperial"
+        ],
+        "title": "Units of measurement",
         "type": "string"
       },
-      "maxPollingDelay": {
+        "maxPollingDelay": {
         "title": "Minimum Call Interval in seconds",
         "type": "integer",
         "default": 600,

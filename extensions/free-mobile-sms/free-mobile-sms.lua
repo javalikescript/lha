@@ -5,29 +5,22 @@ local class = require('jls.lang.class')
 local Promise = require('jls.lang.Promise')
 local HttpClient = require('jls.net.http.HttpClient')
 local Url = require('jls.net.Url')
+
 local Thing = require('lha.Thing')
+local utils = require('lha.utils')
 
 -- Helper classes and functions
 
 local FreeMobileSms = class.create(function(freeMobileSms)
 
   function freeMobileSms:initialize(apiUrl, user, pass)
-    apiUrl = apiUrl or 'https://smsapi.free-mobile.fr/sendmsg'
-    self.user = user or ''
-    self.url = apiUrl..'?user='..Url.encodeURIComponent(self.user)..'&pass='..Url.encodeURIComponent(pass)
-    self.usePost = false
+    self.apiUrl = apiUrl
+    self.user = user
+    self.pass = pass
   end
 
   function freeMobileSms:getUser()
     return self.user
-  end
-
-  function freeMobileSms:getUrl()
-    return self.url
-  end
-
-  function freeMobileSms:getMessageUrl(msg)
-    return self:getUrl()..'&msg='..Url.encodeURIComponent(msg)
   end
 
   --[[
@@ -39,15 +32,12 @@ local FreeMobileSms = class.create(function(freeMobileSms)
   ]]
 
   function freeMobileSms:sendMessage(msg)
-    local client = HttpClient:new({
-      method = self.usePost and 'POST' or 'GET',
-      url = self:getMessageUrl(msg)
-    })
-    return client:connect():next(function()
-      logger:info('Sending message: "'..tostring(msg)..'"')
-      return client:sendReceive()
-    end):next(function(response)
-      client:close()
+    logger:info('Sending message: "%s"', msg)
+    local url = Url:new(self.apiUrl or 'https://smsapi.free-mobile.fr/sendmsg')
+    local resource = url:getFile()..'?'..Url.mapToQuery({user = self.user, pass = self.pass, msg = msg})
+    local client = HttpClient:new(url)
+    return client:fetch(resource):next(function(response)
+      response:consume()
       local statusCode, reason = response:getStatusCode()
       if statusCode == 200 then
         logger:fine('SMS sent')
@@ -56,6 +46,8 @@ local FreeMobileSms = class.create(function(freeMobileSms)
       else
         return Promise.reject('Error '..tostring(statusCode)..' sending SMS, '..tostring(reason))
       end
+    end):finally(function()
+      client:close()
     end)
   end
 
@@ -65,10 +57,13 @@ end)
 local configuration = extension:getConfiguration()
 
 local fms
-if configuration.apiUrl and configuration.user and configuration.pass then
-  fms = FreeMobileSms:new(configuration.apiUrl, configuration.user, configuration.pass)
-  logger:info('FreeMobileSms user is "'..fms:getUser()..'"')
-end
+
+extension:subscribeEvent('startup', function()
+  if configuration.apiUrl and configuration.user and configuration.pass then
+    fms = FreeMobileSms:new(configuration.apiUrl, configuration.user, configuration.pass)
+    logger:info('FreeMobileSms user is "%s"', fms:getUser())
+  end
+end)
 
 function extension:sendSMS(msg)
   if fms then
@@ -81,7 +76,7 @@ local function onMessage(property, value)
   value = type(value) == 'string' and string.match(value, '^%s*(.-)%s*$') or ''
   if fms and value ~= '' then
     fms:sendMessage(value):catch(function(reason)
-      logger:warn('Unable to send SMS, due to '..tostring(reason))
+      logger:warn('Unable to send SMS, due to %s', reason)
     end)
   end
 end

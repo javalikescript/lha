@@ -1,67 +1,13 @@
 local extension = ...
 
 local logger = require('jls.lang.logger')
-local class = require('jls.lang.class')
-local Promise = require('jls.lang.Promise')
 local HttpClient = require('jls.net.http.HttpClient')
-local json = require('jls.util.json')
+local Url = require('jls.net.Url')
+
 local Thing = require('lha.Thing')
+local utils = require('lha.utils')
 
 -- Helper classes and functions
-
-local OpenWeatherMap = class.create(function(openWeatherMap)
-
-  function openWeatherMap:initialize(apiUrl, apiKey, cityId, units)
-    self.apiKey = apiKey or ''
-    self.cityId = cityId or ''
-    self.apiUrl = apiUrl or 'http://api.openweathermap.org/data/2.5/'
-    self.units = units or 'metric'
-  end
-
-  function openWeatherMap:getCityId()
-    return self.cityId
-  end
-
-  function openWeatherMap:getUrl(path)
-    return self.apiUrl..path..'?id='..self.cityId..'&units='..self.units..'&APPID='..self.apiKey
-  end
-
-  function openWeatherMap:httpRequest(path, method, body)
-    local client = HttpClient:new({
-      method = method or 'GET',
-      url = self:getUrl(path),
-      body = body
-    })
-    return client:connect():next(function()
-      logger:debug('client connected')
-      return client:sendReceive()
-    end):next(function(response)
-      client:close()
-      local status, reason = response:getStatusCode()
-      if status ~= 200 then
-        return Promise.reject(tostring(status)..': '..tostring(reason))
-      end
-      return response:getBody()
-    end)
-    --return http.request(self.url..self.user..'/'..path)
-  end
-
-  function openWeatherMap:get(path)
-    return self:httpRequest(path):next(function(body)
-      if logger:isLoggable(logger.FINER) then
-        if logger:isLoggable(logger.FINEST) then
-          logger:finest('openWeatherMap:get() => '..tostring(body))
-        else
-          logger:finer('openWeatherMap:get() => #'..tostring(#body))
-        end
-      end
-      return json.decode(body)
-    end)
-  end
-
-end)
-
-
 
 local function createWeatherThing(title)
   local thing = Thing:new(title or 'Weather', 'Weather Data', {
@@ -148,11 +94,10 @@ local THINGS_BY_KEY = {
 }
 local thingByKey = {}
 local configuration = extension:getConfiguration()
-local owm = OpenWeatherMap:new(configuration.apiUrl, configuration.apiKey, configuration.cityId)
 
 extension:subscribeEvent('startup', function()
   logger:info('startup OpenWeatherMap extension')
-  logger:info('OpenWeatherMap city id is "'..owm:getCityId()..'"')
+  logger:info('OpenWeatherMap city id is "%s"', configuration.cityId)
 end)
 
 extension:subscribeEvent('things', function()
@@ -174,20 +119,26 @@ end)
 -- Do not send OWM requests more than 1 time per 10 minutes from one device/one API key
 extension:subscribePollEvent(function()
   logger:info('poll OpenWeatherMap extension')
-  owm:get('weather'):next(function(data)
+  local url = Url:new(configuration.apiUrl or 'http://api.openweathermap.org/data/2.5/')
+  local path = url:getFile()
+  local query = '?'..Url.mapToQuery({
+    id = configuration.cityId or '',
+    units = configuration.units or 'metric',
+    APPID = configuration.apiKey or ''
+  })
+  local client = HttpClient:new(url)
+  return client:fetch(path..'weather'..query):next(utils.rejectIfNotOk):next(utils.getJson):next(function(data)
     updateWeatherThing(thingByKey.current, data)
-  end):catch(function(err)
-    logger:warn('fail to get OWM weather, due to "'..tostring(err)..'"')
-    -- cleaning data in case of polling failure
-  end)
-  owm:get('forecast'):next(function(data)
+    return client:fetch(path..'forecast'..query)
+  end):next(utils.rejectIfNotOk):next(utils.getJson):next(function(data)
     if data and data.list and data.cnt and data.cnt > 7 then
       updateWeatherThing(thingByKey.nextHours, data.list[1])
       updateWeatherThing(thingByKey.tomorrow, data.list[7])
       updateWeatherThing(thingByKey.nextDays, data.list[data.cnt - 1])
     end
-  end):catch(function(err)
-    logger:warn('fail to get OWM forecast, due to "'..tostring(err)..'"')
-    -- cleaning data in case of polling failure
+  end):catch(function(reason)
+    logger:warn('fail to get OWM, due to "%s"', reason)
+  end):finally(function()
+    client:close()
   end)
 end, configuration.maxPollingDelay)

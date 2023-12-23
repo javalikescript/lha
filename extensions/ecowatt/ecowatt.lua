@@ -1,39 +1,18 @@
 local extension = ...
 
 local logger = require('jls.lang.logger')
-local Exception = require('jls.lang.Exception')
-local Promise = require('jls.lang.Promise')
 local HttpClient = require('jls.net.http.HttpClient')
-local json = require('jls.util.json')
 local Date = require('jls.util.Date')
 local base64 = require('jls.util.base64')
 
 local Thing = require('lha.Thing')
+local utils = require('lha.utils')
 
-local function fetch(options)
-  local client = HttpClient:new(options)
-  return client:connect():next(function()
-    logger:debug('client connected')
-    return client:sendReceive()
-  end):next(function(response)
+local function fetchJson(url, options)
+  local client = HttpClient:new(url)
+  return client:fetch(nil, options):next(utils.rejectIfNotOk):next(utils.getJson):finally(function()
     client:close()
-    return response
   end)
-end
-
-local function getJson(response)
-  local status, reason = response:getStatusCode()
-  if status == 200 then
-    local body = response:getBody()
-    local result
-    status, result = Exception.pcall(json.decode, body)
-    if status then
-      return result
-    end
-    logger:warn('Invalid JSON: "%s", with payload: "%s"', result, body)
-    return Promise.reject('Invalid JSON')
-  end
-  return Promise.reject(string.format('%s: %s', status, reason))
 end
 
 local function updateHourValue(thing, name, values, hour)
@@ -98,30 +77,28 @@ extension:subscribePollEvent(function()
   local oauth = extension:getConfiguration().oauth
   local basicRaw = string.format('%s:%s', oauth.clientId, oauth.clientSecret)
   logger:info('Get OAuth token from "%s"', oauth.url)
-  fetch({
+  fetchJson(oauth.url, {
     method = 'POST',
-    url = oauth.url,
     headers = {
       ['Authorization'] = 'Basic '..base64.encode(basicRaw),
       ['Content-Type'] = 'application/x-www-form-urlencoded'
     }
-  }):next(getJson):next(function(token)
+  }):next(function(token)
     logger:info('Get signals from "%s"', configuration.url)
     -- {"access_token":"...", "token_type":"Bearer", "expires_in":7200}
-    return fetch({
+    return fetchJson(configuration.url, {
       method = 'GET',
-      url = configuration.url,
       headers = {
         ['Authorization'] = string.format('%s %s', token.token_type, token.access_token)
       }
     })
-  end):next(getJson):next(function(response)
-    local signal = response.signals[1]
+  end):next(function(data)
+    local signal = data.signals[1]
     logger:info('Ecowatt message: %s', signal.message)
     ecowattThing:updatePropertyValue('dayValue', signal.dvalue)
     local hour = Date:new():getHours()
     updateHourValue(ecowattThing, 'hourValue', signal.values, hour)
-    local nextSignal = response.signals[2]
+    local nextSignal = data.signals[2]
     logger:info('Ecowatt next message: %s', nextSignal.message)
     ecowattThing:updatePropertyValue('nextDayValue', nextSignal.dvalue)
     if hour < 23 then

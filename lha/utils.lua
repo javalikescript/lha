@@ -1,5 +1,6 @@
 local logger = require('jls.lang.logger')
 local system = require('jls.lang.system')
+local Promise = require('jls.lang.Promise')
 local File = require('jls.io.File')
 local json = require('jls.util.json')
 local Date = require('jls.util.Date')
@@ -54,6 +55,20 @@ function utils.removeEmptyPaths(t)
     end
   end
   return c
+end
+
+function utils.getJson(response)
+  return response:json()
+end
+
+function utils.rejectIfNotOk(response)
+  local status, reason = response:getStatusCode()
+  if status == 200 then
+    return response
+  end
+  return response:consume():next(function()
+    return Promise.reject(string.format('HTTP status not ok, %s: "%s"', status, reason))
+  end)
 end
 
 utils.time = os.time
