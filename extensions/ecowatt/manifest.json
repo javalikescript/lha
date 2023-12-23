@@ -32,7 +32,7 @@
         "title": "Ecowatt API URL",
         "pattern": "^https?://.+$",
         "type": "string",
-        "default": " https://digital.iservices.rte-france.com/open_api/ecowatt/v4/signals"
+        "default": "https://digital.iservices.rte-france.com/open_api/ecowatt/v4/signals"
       },
       "minIntervalMin": {
         "title": "Minimum Call Interval in minutes",
