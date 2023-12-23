@@ -42,7 +42,7 @@ return class.create(function(engine)
     local configurationDir = File:new(workDir, 'configuration')
     logger:fine('configurationDir is %s', configurationDir:getPath())
     utils.createDirectoryOrExit(configurationDir)
-    self.configHistory = HistoricalTable:new(configurationDir, 'config')
+    self.configHistory = HistoricalTable:new(configurationDir, 'config', {fileMin = 43200})
 
     local dataDir = File:new(workDir, 'data')
     logger:fine('dataDir is %s', dataDir:getPath())

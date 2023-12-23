@@ -638,7 +638,8 @@ return class.create(function(historicalTable)
     else
       kind = 0
       size = 0
-      local dt = tables.compare(previousTable, currentTable)
+      -- compare could lead to sparse array specialy for configuration
+      local dt = tables.compare(previousTable, currentTable, true)
       if dt then
         data = json.encode(dt)
         size = #data
