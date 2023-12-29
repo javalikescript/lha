@@ -296,6 +296,19 @@ return require('jls.lang.class').create(function(hueBridge)
     end)
   end
 
+  function hueBridge:ping()
+    if self.client and not self.client:isClosed() then
+      if self.client.http2 then
+        logger:finer('pinging...')
+        self.client.http2:sendPing():next(function()
+          logger:fine('ping success')
+        end, function(reason)
+          logger:fine('ping failure "%s"', reason)
+        end)
+      end
+    end
+  end
+
   function hueBridge:startEventStream(onEvent)
     self.onEvent = onEvent
     self:fetchEventStream()

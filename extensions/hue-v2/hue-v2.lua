@@ -115,6 +115,10 @@ extension:subscribeEvent('refresh', function()
   logger:info('Refresh %s extension', extension:getPrettyName())
 end)
 
+extension:subscribeEvent('heartbeat', function()
+  hueBridge:ping()
+end)
+
 extension:subscribeEvent('startup', function()
   logger:info('startup %s extension', extension:getPrettyName())
   if hueBridge then
