@@ -1,6 +1,7 @@
 local extension = ...
 
 local logger = require('jls.lang.logger')
+local event = require('jls.lang.event')
 local Promise = require('jls.lang.Promise')
 local Exception = require('jls.lang.Exception')
 local mqtt = require('jls.net.mqtt')
@@ -141,9 +142,11 @@ local function updateThingFromNode(thing, node)
 end
 
 
+local controllerThing
 local thingsMap = {}
 local thingsByNodeId = {}
-local controllerThing
+local lastNodesTime = utils.time()
+local refreshNodesPeriod = 0 -- 86400
 
 local function setupControllerThing()
   controllerThing = extension:syncDiscoveredThingByKey('controller', function()
@@ -181,6 +184,7 @@ local function onZWaveNodes(nodes)
   for _, node in ipairs(nodes) do
     onZWaveNode(node)
   end
+  lastNodesTime = utils.time()
 end
 
 local function onZWaveEvent(event)
@@ -307,14 +311,14 @@ local function sendWebSocket(webSocket, message, options)
   logger:finer('message: %s', textMsg)
   return webSocket:sendTextMessage(textMsg):next(function()
     local promise, cb = Promise.createWithCallback()
-    webSocket.zwMsgCb[messageId] = cb
+    webSocket.zwMsgMap[messageId] = {cb = cb, time = utils.time()}
     return promise
   end)
 end
 
 local function startListeningWebSocket(webSocket)
-  sendWebSocket(webSocket, 'start_listening'):next(function(result)
-    logger:info('Z-Wave start_listening %d nodes', #result.state.nodes)
+  return sendWebSocket(webSocket, 'start_listening'):next(function(result)
+    logger:info('Z-Wave start_listening found %d nodes', #result.state.nodes)
     --logger:info('Z-Wave start_listening result: '..json.stringify(result, 2))
     if extension:getConfiguration().dumpNodes then
       logger:info('Z-Wave dumping nodes')
@@ -328,7 +332,12 @@ end
 local function startWebSocket(config)
   local webSocket = WebSocket:new(config.webSocketUrl)
   webSocket.zwMsgId = 0
-  webSocket.zwMsgCb = {}
+  webSocket.zwMsgMap = {}
+  local timer = event:setTimeout(function()
+    logger:warn('Z-Wave JS WebSocket start timeout')
+    webSocket:close(false)
+    webSocket = nil
+  end, 3000)
   webSocket:open():next(function()
     webSocket:readStart()
     logger:info('Z-Wave JS WebSocket connected on %s', config.webSocketUrl)
@@ -338,6 +347,9 @@ local function startWebSocket(config)
     controllerThing:updatePropertyValue('connected', false)
     logger:warn('Cannot open Z-Wave JS WebSocket on %s due to %s', config.webSocketUrl, reason)
   end)
+  webSocket.onError = function(reason)
+    logger:warn('Z-Wave JS WebSocket error "%s"', reason)
+  end
   webSocket.onClose = function()
     controllerThing:updatePropertyValue('connected', false)
     logger:warn('Z-Wave JS WebSocket closed')
@@ -352,23 +364,28 @@ local function startWebSocket(config)
         end
         onZWaveEvent(message.event)
       elseif message.type == 'result' then
-        local cb = webSocket.zwMsgCb[message.messageId]
-        if cb then
+        local zwMsg = webSocket.zwMsgMap[message.messageId]
+        if zwMsg then
           logger:finer('Z-Wave JS WebSocket result %s', message.messageId)
-          webSocket.zwMsgCb[message.messageId] = nil
+          webSocket.zwMsgMap[message.messageId] = nil
           if message.success and message.result then
-            cb(nil, message.result)
+            zwMsg.cb(nil, message.result)
           else
             local reason = tostring(message.errorCode)
             if message.errorCode == 'zwave_error' then
               reason = tostring(message.zwaveErrorCode)..': '..tostring(message.zwaveErrorMessage)
             end
-            cb(reason)
+            zwMsg.cb(reason)
           end
         end
       elseif message.type == 'version' then
         -- command = 'driver.set_preferred_scale', scales = {temperature = 'Celsius'}
-        startListeningWebSocket(webSocket)
+        event:clearTimeout(timer)
+        startListeningWebSocket(webSocket):catch(function(reason)
+          logger:warn('Z-Wave JS WebSocket start_listening failed "%s"', reason)
+          webSocket:close(false)
+          webSocket = nil
+        end)
       else
         logger:warn('Z-Wave JS WebSocket unsupported message type %s', message.type)
       end
@@ -430,7 +447,7 @@ local function setThingPropertyValue(thing, name, value)
         return
       end
     else
-      logger:warn('Z-Wave unable to set value "%s", nodeId not found for thing id %s "%s"', name, thing:getId(), thing:getTitle())
+      logger:warn('Z-Wave unable to set value "%s", nodeId not found for thing id %s "%s", %d node ids', name, thing:getId(), thing:getTitle(), Map.size(thingsByNodeId))
       if logger:isLoggable(logger.INFO) then
         for id, th in pairs(thingsByNodeId) do
           logger:info('node id "%s" mapped to thing id %s "%s"', id, th:getId(), th:getTitle())
@@ -448,12 +465,17 @@ extension:subscribeEvent('things', function()
     thing.setPropertyValue = setThingPropertyValue
   end
 end)
-
 extension:subscribeEvent('poll', function()
-  logger:info('Polling %s extension, %d node ids', extension:getPrettyName(), Map.size(thingsByNodeId))
+  if logger:isLoggable(logger.INFO) then
+    logger:info('Polling %s extension, %d node ids', extension:getPrettyName(), Map.size(thingsByNodeId))
+  end
   local pollTime = utils.time()
   local minPingTime = pollTime - 6 * 3600
   if webSocket and not webSocket:isClosed() then
+    if refreshNodesPeriod > 0 and pollTime - lastNodesTime > refreshNodesPeriod then
+      startListeningWebSocket(webSocket)
+      return
+    end
     for nodeId, thing in pairs(thingsByNodeId) do
       logger:fine('Z-Wave polling nodeId %s', nodeId)
       -- get state will dump node, getValue for each getDefinedValueIDs
@@ -476,9 +498,9 @@ extension:subscribeEvent('poll', function()
           return sendWebSocket(webSocket, {
             command = 'node.ping',
             nodeId = nodeId
-          }):next(function(result)
+          }):next(function(pingResult)
             --logger:info('Z-Wave nodeId %s ping: %s', nodeId, json.stringify(result))
-            if result.responded then
+            if pingResult.responded then
               thing:updatePropertyValue('lastseen', utils.timeToString(pollTime))
             else
               logger:fine('Z-Wave nodeId %s did not respond to ping', nodeId)
@@ -496,8 +518,19 @@ end)
 
 local function checkWebSocket()
   local config = extension:getConfiguration()
-  if config.connection and config.connection.webSocketUrl and (not webSocket or webSocket:isClosed()) then
-    webSocket = startWebSocket(config.connection)
+  if config.connection and config.connection.webSocketUrl then
+    if webSocket and not webSocket:isClosed() then
+      local checkTime = utils.time()
+      local minMsgTime = checkTime - 30
+      for id, zwMsg in pairs(webSocket.zwMsgMap) do
+        if zwMsg.time < minMsgTime then
+          webSocket.zwMsgMap[id] = nil
+          zwMsg.cb('timeout')
+        end
+      end
+    else
+      webSocket = startWebSocket(config.connection)
+    end
   end
 end
 
