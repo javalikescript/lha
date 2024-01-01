@@ -62,7 +62,7 @@ return class.create(Thing, function(engineThing, super)
     end
   end
 
-  function engineThing:updatePropertyValue(name, value)
+  function engineThing:updatePropertyValue(name, value, publish)
     local property = self:getProperty(name)
     if property then
       if isValidValue(value) and property:isValidValue(value) then
@@ -75,7 +75,7 @@ return class.create(Thing, function(engineThing, super)
           prev = property:getValue()
         end
         property:setValue(value)
-        if prev ~= value then
+        if publish or prev ~= value then
           self.engine:publishRootChange('data/'..path, value, prev)
         end
       else

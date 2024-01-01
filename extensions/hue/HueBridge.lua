@@ -370,11 +370,10 @@ local toPostFnByName = {
 
 return require('jls.lang.class').create(function(hueBridge)
 
-  function hueBridge:initialize(apiUrl, user, onWebSocket)
+  function hueBridge:initialize(apiUrl, user)
     self.url = Url:new(apiUrl)
     self.user = user or ''
     self.delta = 0
-    self:setOnWebSocket(onWebSocket)
   end
 
   function hueBridge:setOnWebSocket(onWebSocket)
@@ -538,19 +537,19 @@ return require('jls.lang.class').create(function(hueBridge)
       ---@diagnostic disable-next-line: redundant-parameter
       local value = computeFn(info, name, self)
       if isValue(value) then
+        local publish = false
         if isEvent then
-          if value == 'released' then
-            -- simulate a pressed event
-            thing:updatePropertyValue(name, 'pressed')
-          else
-            local property = thing:getProperty(name)
-            if property:getValue() == value then
-              -- ensure previous value differs
-              property:setValue(nil)
+          local property = thing:getProperty(name)
+          if property:getType() == 'HueButtonEvent' then
+            if value == 'released' then
+              -- simulate a pressed event
+              thing:updatePropertyValue(name, 'pressed')
+            elseif value == 'hold' then
+              publish = true
             end
           end
         end
-        thing:updatePropertyValue(name, value)
+        thing:updatePropertyValue(name, value, publish)
       end
     end
   end
