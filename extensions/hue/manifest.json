@@ -9,12 +9,14 @@
       "url": {
         "title": "Bridge API URL",
         "pattern": "^https?://.+/api$",
-        "type": "string"
+        "type": "string",
+        "required": true
       },
       "user": {
         "title": "Bridge API username",
         "type": "string",
-        "writeOnly": true
+        "writeOnly": true,
+        "required": true
       }
     }
   }

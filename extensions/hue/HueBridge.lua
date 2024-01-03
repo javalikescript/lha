@@ -540,7 +540,7 @@ return require('jls.lang.class').create(function(hueBridge)
         local publish = false
         if isEvent then
           local property = thing:getProperty(name)
-          if property:getType() == 'HueButtonEvent' then
+          if property:getMetadata('@type') == 'HueButtonEvent' then
             if value == 'released' then
               -- simulate a pressed event
               thing:updatePropertyValue(name, 'pressed')
