@@ -13,140 +13,6 @@ local strings = require('jls.util.strings')
 local Thing = require('lha.Thing')
 local utils = require('lha.utils')
 
--- begin color --------
-
-local color = {}
-
-function color.mirekToColorTemperature(value)
-  return math.floor(1000000 / value)
-end
-
--- see https://github.com/Shnoo/js-CIE-1931-rgb-color-converter/blob/master/ColorConverter.js
-
-local function getGammaCorrectedValue(value)
-  if value > 0.04045 then
-    return ((value + 0.055) / (1.0 + 0.055)) ^ 2.4
-  end
-  return value / 12.92
-end
-
-function color.rgbToXy(red, green, blue)
-  red = getGammaCorrectedValue(red)
-  green = getGammaCorrectedValue(green)
-  blue = getGammaCorrectedValue(blue)
-
-  local X = red * 0.649926 + green * 0.103455 + blue * 0.197109
-  local Y = red * 0.234327 + green * 0.743075 + blue * 0.022598
-  local Z = red * 0.0000000 + green * 0.053077 + blue * 1.035763
-
-  local S = X + Y + Z
-  if S == 0 then
-    return 0, 0
-  end
-
-  local x, y = X / S, Y / S
-  -- TODO check value is in gamut range, depending on the model, or find closest value
-  return x, y
-end
-
-local function getReversedGammaCorrectedValue(value)
-  if value <= 0.0031308 then
-    return 12.92 * value
-  end
-  return (1.0 + 0.055) * (value ^ (1.0 / 2.4)) - 0.055
-end
-
-function color.xyBriToRgb(x, y, Y)
-  if y == 0 then
-    return 0, 0, 0
-  end
-  Y = Y or 1.0
-  local z = 1.0 - x - y
-  local X = (Y / y) * x
-  local Z = (Y / y) * z
-  local r = X * 1.656492 - Y * 0.354851 - Z * 0.255038
-  local g = -X * 0.707196 + Y * 1.655397 + Z * 0.036152
-  local b =  X * 0.051713 - Y * 0.121364 + Z * 1.011530
-
-  r = getReversedGammaCorrectedValue(r)
-  g = getReversedGammaCorrectedValue(g)
-  b = getReversedGammaCorrectedValue(b)
-
-  -- Bring all negative components to zero
-  r = math.max(r, 0)
-  g = math.max(g, 0)
-  b = math.max(b, 0)
-
-  -- If one component is greater than 1, weight components by that value
-  local max = math.max(r, g, b)
-  if (max > 1) then
-      r = r / max
-      g = g / max
-      b = b / max
-  end
-
-  return r, g, b
-end
-
--- end color --------
-
-
-local function expand(v, m)
-  return utils.expand(v, function(p)
-    local w = tables.getPath(m, p)
-    local t = type(w)
-    if t == 'string' or t == 'number' or t == 'boolean' then
-      return w
-    end
-    return ''
-  end)
-end
-
-local function deepMap(t, fn)
-  local c = {}
-  for k, v in pairs(t) do
-    if type(v) == 'table' then
-      c[k] = deepMap(v, fn)
-    else
-      c[k] = fn(v, t, k)
-    end
-  end
-  return c
-end
-
-local function deepExpand(t, m)
-  return deepMap(t, function(v)
-    if type(v) == 'string' then
-      return expand(v, m)
-    end
-    return v
-  end)
-end
-
-local function replaceMap(t, fn)
-  for k, v in pairs(t) do
-    if type(v) == 'table' then
-      replaceMap(v, fn)
-    else
-      local s, w = fn(v, k)
-      if s then
-        t[k] = w
-      end
-    end
-  end
-end
-
-local function replaceRef(t, fn)
-  return replaceMap(t, function(v)
-    if type(v) == 'string' then
-      local l, w = string.match(v, '^%$(%w+):(.+)$')
-      if l then
-        return fn(l, w)
-      end
-    end
-  end)
-end
-
 return require('jls.lang.class').create(function(hueBridge)
 
   function hueBridge:initialize(url, key, mapping)
@@ -160,21 +26,20 @@ return require('jls.lang.class').create(function(hueBridge)
     self.headers = {
       ['hue-application-key'] = self.key
     }
-    self.mapping = mapping or {}
-    local env = {
+    self.mapping = utils.replaceRefs(mapping or {}, {
       Thing = Thing,
-      color = color
-    }
-    replaceRef(self.mapping, function(kind, value)
-      if kind == 'lua' then
-        return true, load('local value = ...; '..value, 'mapping', 't', env)
-      end
-    end)
-    replaceRef(self.mapping, function(kind, value)
-      if kind == 'ref' then
-        return true, tables.getPath(self.mapping, value)
-      end
-    end)
+      color = utils,
+      math = math,
+      -- one of initial_press, repeat, short_release, long_release, double_short_release, long_press
+      BUTTON_EVENT = {
+        ['initial_press'] = 'pressed',
+        ['repeat'] = 'hold',
+        ['short_release'] = 'released',
+        ['long_release'] = 'long-released',
+        ['double_short_release'] = 'long-released',
+        ['long_press'] = 'pressed',
+      }
+    })
   end
 
   function hueBridge:close()
@@ -372,7 +237,7 @@ return require('jls.lang.class').create(function(hueBridge)
 
   local function buildName(info, resource)
     if info.name then
-      local name = expand(info.name, resource)
+      local name = utils.expand(info.name, resource)
       if info.mapping then
         local mn = info.mapping[name]
         if mn then
@@ -388,34 +253,35 @@ return require('jls.lang.class').create(function(hueBridge)
 
   function hueBridge:createThingFromDeviceId(resourceMap, id)
     local device = resourceMap[id]
-    if not device then
-      return nil
-    end
-    local title = expand(self.mapping.title, device)
-    local description = expand(self.mapping.description, device)
-    local thing = Thing:new(title, description)
-    for _, service in ipairs(device.services) do
-      local resource = resourceMap[service.rid]
-      local properties = self.mapping.types[service.rtype]
-      if resource and properties then
-        for _, info in pairs(properties) do
-          local value = tables.getPath(resource, info.path)
-          if value ~= nil then
-            local name = buildName(info, resource)
-            if info.metadata then
-              thing:addPropertyFrom(name, deepExpand(info.metadata, resource))
-            else
-              thing:addPropertyFromName(name)
+    if device and device.type == 'device' then
+      local title = utils.expand(self.mapping.title, device)
+      local description = utils.expand(self.mapping.description, device)
+      local thing = Thing:new(title, description)
+      for _, service in ipairs(device.services) do
+        local resource = resourceMap[service.rid]
+        local properties = self.mapping.types[service.rtype]
+        if resource and properties then
+          for _, info in ipairs(properties) do
+            local value = tables.getPath(resource, info.path)
+            if value ~= nil then
+              local name = buildName(info, resource)
+              if info.metadata then
+                thing:addPropertyFrom(name, utils.deepExpand(info.metadata, resource))
+              else
+                thing:addPropertyFromName(name)
+              end
             end
           end
         end
       end
+      -- TODO compute types
+      if next(thing:getProperties()) then
+        return thing
+      end
     end
-    -- TODO compute types
-    return thing
   end
 
-  function hueBridge:updateThingResource(thing, resource, data)
+  function hueBridge:updateThingResource(thing, resource, data, isEvent)
     local properties = self.mapping.types[resource.type]
     if properties then
       for _, info in pairs(properties) do
@@ -425,7 +291,13 @@ return require('jls.lang.class').create(function(hueBridge)
           if info.adapter then
             value = info.adapter(value)
           end
-          thing:updatePropertyValue(name, value)
+          if value ~= nil then
+            local publish = false
+            if isEvent and value == 'hold' and info.path == 'button/button_report/event' then
+              publish = true
+            end
+            thing:updatePropertyValue(name, value, publish)
+          end
         end
       end
     end
@@ -443,7 +315,7 @@ return require('jls.lang.class').create(function(hueBridge)
     end
   end
 
-  function hueBridge:setThingPropertyValue(resourceMap, id, name, value)
+  function hueBridge:setResourceValue(resourceMap, id, name, value)
     local device = resourceMap[id]
     if device then
       for _, service in ipairs(device.services) do
@@ -466,9 +338,5 @@ return require('jls.lang.class').create(function(hueBridge)
     end
     return Promise.reject()
   end
-
-end, function(HueBridge)
-
-  HueBridge.color = color
 
 end)

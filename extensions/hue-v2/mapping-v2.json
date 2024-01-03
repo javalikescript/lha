@@ -34,7 +34,7 @@
           "button3": "buttonDimDown",
           "button4": "buttonOff"
         },
-        "adapter": "$lua:if value == 'initial_press' then return 'pressed' elseif value == 'long_press' or value == 'repeat' then return 'hold' elseif value == 'short_release' or value == 'short_release' then return 'released' elseif value == 'long_release' then return 'long-released' end",
+        "adapter": "$lua:return BUTTON_EVENT[value] or ''",
         "metadata": "$ref:/metadata/button"
       }
     ],
