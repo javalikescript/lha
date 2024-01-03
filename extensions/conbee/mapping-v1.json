@@ -1,0 +1,164 @@
+{
+  "title": "${name}",
+  "description": "${type} (${modelid})",
+  "types": {
+    "Color temperature light": ["OnOffLight", "DimmableLight", "ColorTemperatureLight"],
+    "Extended color light": ["OnOffLight", "DimmableLight", "ColorTemperatureLight", "ColorLight"],
+    "Dimmable light": ["OnOffLight", "DimmableLight"],
+    "Dimmable plug-in unit": ["OnOffLight", "DimmableLight"],
+    "On/Off light": ["OnOffLight"],
+    "On/Off plug-in unit": ["OnOffLight"],
+    "ZLLLightLevel": ["LightLevelSensor", "BatteryConfig"],
+    "ZHALightLevel": ["LightLevelSensor", "BatteryConfig"],
+    "ZLLTemperature": ["TemperatureSensor", "BatteryConfig"],
+    "ZHATemperature": ["TemperatureSensor", "BatteryConfig"],
+    "ZLLPresence": ["MotionSensor", "OnConfig", "BatteryConfig"],
+    "ZHAPresence": ["MotionSensor", "OnConfig", "BatteryConfig"],
+    "ZLLSwitch": ["DimmerSwitch", "BatteryConfig"],
+    "ZHASwitch": ["DimmerSwitch", "BatteryConfig"],
+    "ZHAHumidity": ["HumiditySensor", "BatteryConfig"],
+    "ZHAPressure": ["BarometricPressureSensor", "BatteryConfig"]
+  },
+  "type": {
+    "OnOffLight": [
+      {
+        "path": "state/on",
+        "name": "on"
+      }
+    ],
+    "DimmableLight": [
+      {
+        "path": "state/bri",
+        "name": "brightness",
+        "adapter": "$lua:return value * 100 // 255",
+        "setAdapter": "$lua:return value * 255 // 100"
+      }
+    ],
+    "ColorTemperatureLight": [
+      {
+        "path": "state/ct",
+        "name": "colorTemperature",
+        "adapter": "$ref:/adapters/mirek",
+        "setAdapter": "$ref:/adapters/mirek"
+      }
+    ],
+    "ColorLight": [
+      {
+        "path": "state/xy",
+        "name": "color",
+        "adapter": "$lua:return Thing.formatRgbHex(color.xyBriToRgb(value[1], value[2], 1.0))",
+        "setAdapter": "$lua:return {color.rgbToXy(Thing.parseRgbHex(value))}"
+      }
+    ],
+    "TemperatureSensor": [
+      {
+        "path": "state/temperature",
+        "name": "temperature",
+        "adapter": "$lua:return value / 100"
+      }
+    ],
+    "LightLevelSensor": [
+      {
+        "path": "state/lightlevel",
+        "name": "lightlevel"
+      }
+    ],
+    "MotionSensor": [
+      {
+        "path": "state/presence",
+        "//name": "presence",
+        "name": "motion"
+      },
+      {
+        "path": "config/sensitivity",
+        "name": "sensitivity",
+        "metadata": "$ref:/metadata/sensitivity"
+      }
+    ],
+    "BarometricPressureSensor": [
+      {
+        "path": "state/pressure",
+        "name": "pressure"
+      }
+    ],
+    "HumiditySensor": [
+      {
+        "path": "state/humidity",
+        "name": "humidity",
+        "adapter": "$lua:return value / 100"
+      }
+    ],
+    "DimmerSwitch": [
+      {
+        "path": "state/buttonevent",
+        "name": "buttonOn",
+        "metadata": "$merge:/metadata/button:/constant/title/${name}",
+        "adapter": "$lua:if value // 1000 == 1 then return BUTTON_EVENT[value % 1000 + 1] end"
+      },
+      {
+        "path": "state/buttonevent",
+        "name": "buttonDimUp",
+        "metadata": "$merge:/metadata/button:/constant/title/${name}",
+        "adapter": "$lua:if value // 1000 == 2 then return BUTTON_EVENT[value % 1000 + 1] end"
+      },
+      {
+        "path": "state/buttonevent",
+        "name": "buttonDimDown",
+        "metadata": "$merge:/metadata/button:/constant/title/${name}",
+        "adapter": "$lua:if value // 1000 == 3 then return BUTTON_EVENT[value % 1000 + 1] end"
+      },
+      {
+        "path": "state/buttonevent",
+        "name": "buttonOff",
+        "metadata": "$merge:/metadata/button:/constant/title/${name}",
+        "adapter": "$lua:if value // 1000 == 4 then return BUTTON_EVENT[value % 1000 + 1] end"
+      }
+    ],
+    "OnConfig": [
+      {
+        "path": "config/on",
+        "name": "enabled"
+      }
+    ],
+    "ReachableConfig": [
+      {
+        "path": "config/reachable",
+        "name": "connected"
+      }
+    ],
+    "BatteryConfig": [
+      {
+        "path": "config/battery",
+        "name": "battery"
+      }
+    ]
+  },
+  "adapters": {
+    "mirek": "$lua:return color.mirekToColorTemperature(value)"
+  },
+  "metadata": {
+    "button": {
+      "@type": "HueButtonEvent",
+      "type": "string",
+      "title": "Button",
+      "description": "The button is pressed or released",
+      "enum": ["pressed", "hold", "released", "long-released"],
+      "readOnly": true
+    },
+    "sensitivity": {
+      "@type": "LevelProperty",
+      "type": "integer",
+      "title": "Sensitivity Level",
+      "description": "The sensor sensitivity",
+      "configuration": true
+    }
+  },
+  "constant": {
+    "title": {
+      "buttonOn": {"title": "Button 1 (on)"},
+      "buttonDimUp": {"title": "Button 2 (dim up)"},
+      "buttonDimDown": {"title": "Button 3 (dim down)"},
+      "buttonOff": {"title": "Button 4 (off)"}
+    }
+  }
+}
