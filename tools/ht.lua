@@ -1,17 +1,13 @@
-local File = require('jls.io.File')
-local Date = require("jls.util.Date")
-local tables = require("jls.util.tables")
-local HistoricalTable = require('lha.HistoricalTable')
-local json = require('jls.util.json')
 local system = require('jls.lang.system')
+local logger = require('jls.lang.logger')
+local File = require('jls.io.File')
+local Date = require('jls.util.Date')
+local Map = require('jls.util.Map')
+local List = require('jls.util.List')
+local tables = require('jls.util.tables')
+local json = require('jls.util.json')
 
-local function usage(msg)
-  if msg then
-    print(msg)
-  end
-  print('try: -s source_dir [-sm] [-d dest_dir] [-m mapping_file]')
-  system.exit(22)
-end
+local HistoricalTable = require('lha.HistoricalTable')
 
 local function stringify(t)
   return json.stringify(t, 2)
@@ -20,55 +16,164 @@ end
 local HOUR_SEC = 3600
 local DAY_SEC = 24 * HOUR_SEC
 local WEEK_SEC = 7 * DAY_SEC
+
+local options = tables.createArgumentTable(arg, {
+  aliases = {
+    h = 'help',
+    a = 'action',
+    s = 'source',
+    t = 'target',
+    m = 'mapping',
+    pp = 'path.pattern',
+    ppe = 'path.patternExclude',
+    sa = 'show.tables',
+    sm = 'show.mapping',
+    st = 'show.times',
+    sl = 'show.last',
+    ll = 'log-level',
+  },
+  helpPath = 'help',
+  schema = {
+    title = 'Historical Table Utility',
+    type = 'object',
+    additionalProperties = false,
+    properties = {
+      help = {
+        title = 'Show the help',
+        type = 'boolean',
+        default = false
+      },
+      action = {
+        title = 'The action',
+        type = 'string',
+        default = 'none',
+        enum = {'files'}
+      },
+      source = {
+        title = 'The table source directory',
+        type = 'string',
+        default = 'work'
+      },
+      target = {
+        title = 'The table target directory',
+        type = 'string'
+      },
+      mapping = {
+        title = 'The table mapping file',
+        type = 'string',
+        default = 'mapping.json'
+      },
+      name = {
+        title = 'The table name',
+        type = 'string',
+        default = 'data'
+      },
+      from = {
+        title = 'Seconds from time',
+        type = 'integer',
+        default = DAY_SEC * 2
+      },
+      to = {
+        title = 'Seconds to time',
+        type = 'integer',
+        default = HOUR_SEC * 2
+      },
+      all = {
+        title = 'All time',
+        type = 'boolean',
+        default = false
+      },
+      path = {
+        type = 'object',
+        additionalProperties = false,
+        properties = {
+          pattern = {
+            title = 'The path pattern',
+            type = 'string'
+          },
+          patternExclude = {
+            title = 'The path pattern',
+            type = 'string'
+          },
+        }
+      },
+      show = {
+        type = 'object',
+        additionalProperties = false,
+        properties = {
+          times = {
+            title = 'Show times',
+            type = 'boolean',
+            default = false
+          },
+          tables = {
+            title = 'Show tables',
+            type = 'boolean',
+            default = false
+          },
+          mapping = {
+            title = 'Show mapping',
+            type = 'boolean',
+            default = false
+          },
+          last = {
+            title = 'Show last table',
+            type = 'boolean',
+            default = false
+          },
+        }
+      },
+      ['log-level'] = {
+        title = 'The log level',
+        type = 'string',
+        default = 'warn',
+        enum = {'error', 'warn', 'info', 'config', 'fine', 'finer', 'finest', 'debug', 'all'}
+      },
+    }
+  }
+})
+
+logger:setLevel(options['log-level'])
+
+local sourceDir = options.source and File:new(options.source)
+local destDir = options.target and File:new(options.target)
+local mappingFile = options.mapping and File:new(options.mapping)
+local pathPattern = options.path.pattern
+local pathPatternExclude = options.path.patternExclude
+local showTimes = options.show.times
+local showTables = options.show.tables
+local showMapping = options.show.mapping
+
+-- 10080 -- one week -- 43200 -- 4 weeks
+local fileMin = HistoricalTable.DEFAULT_FILE_MINUTES
 local time = Date.now()
 
-local tArg = tables.createArgumentTable(arg, {keepComma = true})
---print(json.stringify(tArg, 2))
-
-if tables.getArgument(tArg, '-h') or tables.getArgument(tArg, '--help') then
-  usage()
-end
-local sourceDirname = tables.getArgument(tArg, '-s')
-local pathPattern = tables.getArgument(tArg, '-pp')
-local pathPatternExclude = tables.getArgument(tArg, '-ppe')
-local destDirname = tables.getArgument(tArg, '-d')
-local mappingFilename = tables.getArgument(tArg, '-m')
-local htName = tables.getArgument(tArg, '-n', 'data')
-local destName = tables.getArgument(tArg, '-dn', htName)
-local fromSeconds = tonumber(tables.getArgument(tArg, '-fs', DAY_SEC * 2))
-local toSeconds = tonumber(tables.getArgument(tArg, '-ts', HOUR_SEC * 2))
-local all = tables.getArgument(tArg, '-fs') == nil
-local fileMin = tonumber(tables.getArgument(tArg, '-fm', HistoricalTable.DEFAULT_FILE_MINUTES))
-local periodSeconds = tonumber(tables.getArgument(tArg, '-ps', 60 * 10))
-local showTables = tables.getArgument(tArg, '-st')
-local showMapping = tables.getArgument(tArg, '-sm')
-local showTimes = tables.getArgument(tArg, '-t')
-
-local sourceDir = sourceDirname and File:new(sourceDirname)
-local destDir = destDirname and File:new(destDirname)
-local mappingFile = mappingFilename and File:new(mappingFilename)
-
-if not (sourceDir and sourceDir:isDirectory()) then
-  usage('Please specify a source directory')
+if not sourceDir:isDirectory() then
+  print('Please specify a valid source directory')
+  system.exit(22)
 end
 
-local period = periodSeconds * 1000
-local toTime = time + toSeconds * 1000
-local fromTime = toTime - toSeconds * 1000
+local toTime = time + options.to * 1000
+local fromTime = toTime - options.from * 1000
 
-if all then
+if options.all then
   toTime = time + WEEK_SEC * 1000
   fromTime = 0
 end
 
 print('from '..Date:new(fromTime):toISOString()..' to '..Date:new(toTime):toISOString())
-print('fileMin:', fileMin, 'periodSeconds:', periodSeconds)
+print('fileMin:', fileMin)
 
-local htSource = HistoricalTable:new(sourceDir, htName, {fileMin = fileMin})
+local htSource = HistoricalTable:new(sourceDir, options.name, {fileMin = fileMin})
 
 local htDest
-if destDir and destDir:isDirectory() then
-  htDest = HistoricalTable:new(destDir, destName, {fileMin = fileMin})
+if destDir then
+  if destDir:isDirectory() then
+    htDest = HistoricalTable:new(destDir, options.name, {fileMin = fileMin})
+  else
+    print('Please specify a valid target directory')
+    system.exit(22)
+  end
 end
 
 local mapping
@@ -100,25 +205,26 @@ if mappingFile and mappingFile:isFile() then
   print('mapping', stringify(rawMap))
 end
 
---[[
-print('files:')
-htSource:forEachFile(fromTime, toTime, function(file)
-  print(file:getPath())
-  htSource:forEachTableInFile(file, fromTime, toTime, function(t, tTime)
-    local date = Date:new(tTime)
-    print(date:toISOString(), t)
-    if htDest then
-      htDest:setLiveTable(t)
-      --htDest:save(isFull, nil, time)
-    end
+if options.action == 'files' then
+  print('files:')
+  htSource:forEachFile(fromTime, toTime, function(file)
+    print(file:getPath())
+    htSource:forEachTableInFile(file, fromTime, toTime, function(t, tTime)
+      local date = Date:new(tTime)
+      print(date:toISOString(), t)
+      if false and htDest then
+        htDest:setLiveTable(t)
+        --htDest:save(isFull, nil, time)
+      end
+    end)
   end)
-end)
-]]
+  system.exit(0)
+end
 
 local lastTable
 local values = {}
 
-print('processing tables')
+print('processing tables...')
 htSource:forEachTable(fromTime, toTime, function(t, tTime, isFull)
   local date = Date:new(tTime)
   local keys = tables.keys(t)
@@ -154,7 +260,7 @@ htSource:forEachTable(fromTime, toTime, function(t, tTime, isFull)
   lastTable = dt
 end)
 
-if lastTable and not showTables then
+if lastTable and options.show.last then
   print('last table:')
   print(stringify(lastTable))
 end
