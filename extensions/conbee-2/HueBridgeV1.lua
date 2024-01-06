@@ -231,10 +231,10 @@ return require('jls.lang.class').create(function(hueBridge)
   end
 
   function hueBridge:forEachProperty(resource, data, fn)
-    local types = self.mapping.types[resource.type]
-    if types then
-      for _, type in ipairs(types) do
-        local properties = self.mapping.type[type]
+    local typed = self.mapping.types[resource.type]
+    if typed then
+      for _, group in ipairs(typed.groups) do
+        local properties = self.mapping.group[group]
         if properties then
           for _, info in ipairs(properties) do
             local value = tables.getPath(data, info.path)
@@ -243,15 +243,21 @@ return require('jls.lang.class').create(function(hueBridge)
             end
           end
         else
-          logger:warn('Hue mapping type not found for "%s"', type)
+          logger:warn('Hue mapping properties not found for group "%s"', type)
         end
       end
     else
-      logger:warn('Hue mapping types not found for "%s"', resource.type)
+      logger:warn('Hue mapping types not found for type "%s"', resource.type)
     end
   end
 
   function hueBridge:addThingProperties(thing, resource)
+    local typed = self.mapping.types[resource.type]
+    if typed and typed.capabilities then
+      for _, capability in ipairs(typed.capabilities) do
+        thing:addType(capability)
+      end
+    end
     self:forEachProperty(resource, resource, function(info, name)
       if not thing:hasProperty(name) then
         if info.metadata then
@@ -279,7 +285,6 @@ return require('jls.lang.class').create(function(hueBridge)
           end
         end
       end
-      -- TODO compute types
       if next(thing:getProperties()) then
         return thing
       end

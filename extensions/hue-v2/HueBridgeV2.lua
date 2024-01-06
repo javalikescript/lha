@@ -259,9 +259,14 @@ return require('jls.lang.class').create(function(hueBridge)
       local thing = Thing:new(title, description)
       for _, service in ipairs(device.services) do
         local resource = resourceMap[service.rid]
-        local properties = self.mapping.types[service.rtype]
-        if resource and properties then
-          for _, info in ipairs(properties) do
+        local type = self.mapping.types[service.rtype]
+        if resource and type then
+          if type.capabilities then
+            for _, capability in ipairs(type.capabilities) do
+              thing:addType(capability)
+            end
+          end
+          for _, info in ipairs(type.properties) do
             local value = tables.getPath(resource, info.path)
             if value ~= nil then
               local name = buildName(info, resource)
@@ -274,7 +279,6 @@ return require('jls.lang.class').create(function(hueBridge)
           end
         end
       end
-      -- TODO compute types
       if next(thing:getProperties()) then
         return thing
       end
@@ -282,9 +286,9 @@ return require('jls.lang.class').create(function(hueBridge)
   end
 
   function hueBridge:updateThingResource(thing, resource, data, isEvent)
-    local properties = self.mapping.types[resource.type]
-    if properties then
-      for _, info in pairs(properties) do
+    local type = self.mapping.types[resource.type]
+    if type then
+      for _, info in pairs(type.properties) do
         local value = tables.getPath(data, info.path)
         if value ~= nil then
           local name = buildName(info, resource)
@@ -320,9 +324,9 @@ return require('jls.lang.class').create(function(hueBridge)
     if device then
       for _, service in ipairs(device.services) do
         local resource = resourceMap[service.rid]
-        local properties = self.mapping.types[service.rtype]
-        if resource and properties then
-          for _, info in pairs(properties) do
+        local type = self.mapping.types[service.rtype]
+        if resource and type then
+          for _, info in pairs(type.properties) do
             local n = buildName(info, resource)
             if n == name then
               if info.setAdapter then

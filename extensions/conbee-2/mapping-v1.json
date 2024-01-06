@@ -2,24 +2,66 @@
   "title": "${name}",
   "description": "${type} (${modelid})",
   "types": {
-    "Color temperature light": ["OnOffLight", "DimmableLight", "ColorTemperatureLight"],
-    "Extended color light": ["OnOffLight", "DimmableLight", "ColorTemperatureLight", "ColorLight"],
-    "Dimmable light": ["OnOffLight", "DimmableLight"],
-    "Dimmable plug-in unit": ["OnOffLight", "DimmableLight"],
-    "On/Off light": ["OnOffLight"],
-    "On/Off plug-in unit": ["OnOffLight"],
-    "ZLLLightLevel": ["LightLevelSensor", "BatteryConfig"],
-    "ZHALightLevel": ["LightLevelSensor", "BatteryConfig"],
-    "ZLLTemperature": ["TemperatureSensor", "BatteryConfig"],
-    "ZHATemperature": ["TemperatureSensor", "BatteryConfig"],
-    "ZLLPresence": ["MotionSensor", "OnConfig", "BatteryConfig"],
-    "ZHAPresence": ["MotionSensor", "OnConfig", "BatteryConfig"],
-    "ZLLSwitch": ["DimmerSwitch", "BatteryConfig"],
-    "ZHASwitch": ["DimmerSwitch", "BatteryConfig"],
-    "ZHAHumidity": ["HumiditySensor", "BatteryConfig"],
-    "ZHAPressure": ["BarometricPressureSensor", "BatteryConfig"]
+    "Color temperature light": "$ref:/typeRefs/ColorTemperatureLight",
+    "Extended color light": "$ref:/typeRefs/ColorLight",
+    "Dimmable light": "$ref:/typeRefs/DimmableLight",
+    "Dimmable plug-in unit": "$ref:/typeRefs/DimmableLight",
+    "On/Off light": "$ref:/typeRefs/OnOffLight",
+    "On/Off plug-in unit": "$ref:/typeRefs/OnOffLight",
+    "ZLLLightLevel": "$ref:/typeRefs/LightLevel",
+    "ZHALightLevel": "$ref:/typeRefs/LightLevel",
+    "ZLLTemperature": "$ref:/typeRefs/Temperature",
+    "ZHATemperature": "$ref:/typeRefs/Temperature",
+    "ZLLPresence": "$ref:/typeRefs/Presence",
+    "ZHAPresence": "$ref:/typeRefs/Presence",
+    "ZLLSwitch": "$ref:/typeRefs/Switch",
+    "ZHASwitch": "$ref:/typeRefs/Switch",
+    "ZHAHumidity": "$ref:/typeRefs/Humidity",
+    "ZHAPressure": "$ref:/typeRefs/Pressure"
   },
-  "type": {
+  "typeRefs": {
+    "LightLevel": {
+      "capabilities": ["LightLevelSensor"],
+      "groups": ["LightLevelSensor", "BatteryConfig"]
+    },
+    "Temperature": {
+      "capabilities": ["TemperatureSensor"],
+      "groups": ["TemperatureSensor", "BatteryConfig"]
+    },
+    "Presence": {
+      "capabilities": ["MotionSensor"],
+      "groups": ["MotionSensor", "OnConfig", "BatteryConfig"]
+    },
+    "Switch": {
+      "capabilities": ["HuePushButton"],
+      "groups": ["DimmerSwitch", "BatteryConfig"]
+    },
+    "Humidity": {
+      "capabilities": ["HumiditySensor"],
+      "groups": ["HumiditySensor", "BatteryConfig"]
+    },
+    "Pressure": {
+      "capabilities": ["BarometricPressureSensor"],
+      "groups": ["BarometricPressureSensor", "BatteryConfig"]
+    },
+    "OnOffLight": {
+      "capabilities": ["Light"],
+      "groups": ["OnOffLight"]
+    },
+    "DimmableLight": {
+      "capabilities": ["Light"],
+      "groups": ["OnOffLight", "DimmableLight"]
+    },
+    "ColorTemperatureLight": {
+      "capabilities": ["Light"],
+      "groups": ["OnOffLight", "DimmableLight", "ColorTemperatureLight"]
+    },
+    "ColorLight": {
+      "capabilities": ["Light"],
+      "groups": ["OnOffLight", "DimmableLight", "ColorTemperatureLight", "ColorLight"]
+    }
+  },
+  "group": {
     "OnOffLight": [
       {
         "path": "state/on",
@@ -60,7 +102,8 @@
     "LightLevelSensor": [
       {
         "path": "state/lightlevel",
-        "name": "lightlevel"
+        "name": "lightlevel",
+        "metadata": "$ref:/metadata/lightlevel"
       }
     ],
     "MotionSensor": [
@@ -145,6 +188,14 @@
       "enum": ["pressed", "hold", "released", "long-released"],
       "readOnly": true
     },
+    "lightlevel": {
+      "@type": "LevelProperty",
+      "description": "The light level in 10000 x log10(Illuminance)",
+      "minimum": 0,
+      "readOnly": true,
+      "title": "Light Level",
+      "type": "integer"
+    },  
     "sensitivity": {
       "@type": "LevelProperty",
       "type": "integer",

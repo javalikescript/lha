@@ -2,83 +2,103 @@
   "title": "${metadata/name}",
   "description": "${product_data/product_name} (${product_data/model_id})",
   "types": {
-    "light": [
-      {
-        "path": "on/on",
-        "name": "on"
-      },
-      {
-        "path": "color/xy",
-        "name": "color",
-        "adapter": "$lua:return Thing.formatRgbHex(color.xyBriToRgb(value.x, value.y, 1.0))",
-        "setAdapter": "$lua:local x, y = color.rgbToXy(Thing.parseRgbHex(value)); return {x = x, y = y}"
-      },
-      {
-        "path": "dimming/brightness",
-        "name": "brightness"
-      },
-      {
-        "path": "color_temperature/mirek",
-        "name": "colorTemperature",
-        "adapter": "$ref:/adapters/mirek",
-        "setAdapter": "$ref:/adapters/mirek"
-      }
-    ],
-    "button": [
-      {
-        "path": "button/button_report/event",
-        "name": "button${metadata/control_id}",
-        "mapping": {
-          "button1": "buttonOn",
-          "button2": "buttonDimUp",
-          "button3": "buttonDimDown",
-          "button4": "buttonOff"
+    "light": {
+      "capabilities": ["Light"],
+      "properties": [
+        {
+          "path": "on/on",
+          "name": "on"
         },
-        "adapter": "$lua:return BUTTON_EVENT[value] or ''",
-        "metadata": "$ref:/metadata/button"
-      }
-    ],
-    "motion": [
-      {
-        "path": "motion/motion_report/motion",
-        "//name": "presence",
-        "name": "motion"
-      },
-      {
-        "path": "sensitivity/sensitivity",
-        "name": "sensitivity",
-        "metadata": "$ref:/metadata/sensitivity"
-      },
-      {
-        "path": "enabled",
-        "name": "enabled"
-      }
-    ],
-    "temperature": [
-      {
-        "path": "temperature/temperature_report/temperature",
-        "name": "temperature"
-      }
-    ],
-    "light_level": [
-      {
-        "path": "light/light_level_report/light_level",
-        "name": "lightlevel"
-      }
-    ],
-    "zigbee_connectivity": [
-      {
-        "path": "status",
-        "name": "connected",
-        "adapter": "$lua:return value == 'connected'"
-      }
-    ],
-    "device_power": [
-      {
-        "path": "power_state/battery_level",
-        "name": "battery"
-      }
-    ]
+        {
+          "path": "color/xy",
+          "name": "color",
+          "adapter": "$lua:return Thing.formatRgbHex(color.xyBriToRgb(value.x, value.y, 1.0))",
+          "setAdapter": "$lua:local x, y = color.rgbToXy(Thing.parseRgbHex(value)); return {x = x, y = y}"
+        },
+        {
+          "path": "dimming/brightness",
+          "name": "brightness"
+        },
+        {
+          "path": "color_temperature/mirek",
+          "name": "colorTemperature",
+          "adapter": "$ref:/adapters/mirek",
+          "setAdapter": "$ref:/adapters/mirek"
+        }
+      ]
+    },
+    "button": {
+      "capabilities": ["HuePushButton"],
+      "properties": [
+        {
+          "path": "button/button_report/event",
+          "name": "button${metadata/control_id}",
+          "mapping": {
+            "button1": "buttonOn",
+            "button2": "buttonDimUp",
+            "button3": "buttonDimDown",
+            "button4": "buttonOff"
+          },
+          "adapter": "$lua:return BUTTON_EVENT[value] or ''",
+          "metadata": "$ref:/metadata/button"
+        }
+      ]
+    },
+    "motion": {
+      "capabilities": ["MotionSensor"],
+      "properties": [
+        {
+          "path": "motion/motion_report/motion",
+          "//name": "presence",
+          "name": "motion"
+        },
+        {
+          "path": "sensitivity/sensitivity",
+          "name": "sensitivity",
+          "metadata": "$ref:/metadata/sensitivity"
+        },
+        {
+          "path": "enabled",
+          "name": "enabled"
+        }
+      ]
+    },
+    "temperature": {
+      "capabilities": ["TemperatureSensor"],
+      "properties": [
+        {
+          "path": "temperature/temperature_report/temperature",
+          "name": "temperature"
+        }
+      ]
+    },
+    "light_level": {
+      "capabilities": ["LightLevelSensor"],
+      "properties": [
+        {
+          "path": "light/light_level_report/light_level",
+          "name": "lightlevel",
+          "metadata": "$ref:/metadata/lightlevel"
+        }
+      ]
+    },
+    "zigbee_connectivity": {
+      "properties": [
+        {
+          "path": "status",
+          "name": "connected",
+          "adapter": "$lua:return value == 'connected'"
+        }
+      ]
+    },
+    "device_power": {
+      "properties": [
+        {
+          "path": "power_state/battery_level",
+          "name": "battery"
+        }
+      ]
+    }
   },
   "adapters": {
     "mirek": "$lua:return color.mirekToColorTemperature(value)"
@@ -89,8 +109,21 @@
       "type": "string",
       "title": "Button ${metadata/control_id}",
       "description": "The button is pressed or released",
-      "enum": ["pressed", "hold", "released", "long-released"],
+      "enum": [
+        "pressed",
+        "hold",
+        "released",
+        "long-released"
+      ],
       "readOnly": true
+    },
+    "lightlevel": {
+      "@type": "LevelProperty",
+      "description": "The light level in 10000 x log10(Illuminance)",
+      "minimum": 0,
+      "readOnly": true,
+      "title": "Light Level",
+      "type": "integer"
     },
     "sensitivity": {
       "@type": "LevelProperty",
