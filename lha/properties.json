@@ -107,14 +107,6 @@
     "type": "string",
     "unit": "date time"
   },
-  "lightlevel": {
-    "@type": "LevelProperty",
-    "description": "The light level in 10000 x log10(Illuminance)",
-    "minimum": 0,
-    "readOnly": true,
-    "title": "Light Level",
-    "type": "integer"
-  },
   "motion": {
     "@type": "MotionProperty",
     "description": "Whether a presence is detected",
@@ -172,6 +164,13 @@
     "description": "The temperature",
     "readOnly": true,
     "title": "Temperature",
+    "type": "number",
+    "unit": "degree celsius"
+  },
+  "targetTemperature": {
+    "@type": "TargetTemperatureProperty",
+    "description": "The target temperature",
+    "title": "Target Temperature",
     "type": "number",
     "unit": "degree celsius"
   }

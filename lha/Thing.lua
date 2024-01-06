@@ -9,7 +9,7 @@ local PROPERTY_METADATA_BY_NAME = utils.requireJson('lha.properties')
 
 -- Standard properties, see https://webthings.io/schemas/
 
--- See also https://www.w3.org/TR/2020/REC-wot-thing-description-20200409/
+-- See also https://www.w3.org/TR/wot-thing-description/
 
 local CAPABILITIES = {
   Alarm = 'Alarm',
@@ -46,17 +46,23 @@ local PROPERTY_TYPES = {
   DateTimeProperty = 'DateTimeProperty',
   BrightnessProperty = 'BrightnessProperty',
   ColorProperty = 'ColorProperty',
+  --ConcentrationProperty = 'ConcentrationProperty',
   ColorModeProperty = 'ColorModeProperty',
   ColorTemperatureProperty = 'ColorTemperatureProperty',
+  --DensityProperty = 'DensityProperty',
   HumidityProperty = 'HumidityProperty',
   IlluminanceProperty = 'LevelProperty',
+  --LeakProperty = 'LeakProperty',
   LevelProperty = 'LevelProperty',
   LightLevelProperty = 'LevelProperty',
+  --LockedProperty = 'LockedProperty',
   MotionProperty = 'MotionProperty',
   OnOffProperty = 'OnOffProperty',
+  --OpenProperty = 'OpenProperty',
   PushedProperty = 'PushedProperty',
   SmokeProperty = 'SmokeProperty',
   TemperatureProperty = 'TemperatureProperty',
+  TargetTemperatureProperty = 'TargetTemperatureProperty',
   ApparentPowerProperty = 'ApparentPowerProperty',
   --InstantaneousPowerProperty = 'InstantaneousPowerProperty',
   --VoltageProperty = 'VoltageProperty',
@@ -64,20 +70,6 @@ local PROPERTY_TYPES = {
   --FrequencyProperty	 = 'FrequencyProperty',
 }
 
-local UNIT_BY_PROPERTY_TYPE = {
-  BarometricPressureProperty = 'hectopascal',
-  DateTimeProperty = 'date time', -- string ISO 8601
-  BrightnessProperty = 'percent',
-  ColorTemperatureProperty = 'kelvin',
-  HumidityProperty = 'percent',
-  IlluminanceProperty = 'lux',
-  TemperatureProperty = 'degree celsius',
-  ApparentPowerProperty = 'voltampere',
-  --InstantaneousPowerProperty = 'watt',
-  --VoltageProperty = 'volt',
-  CurrentProperty = 'ampere',
-  --FrequencyProperty = 'hertz',
-}
 
 --- The Thing class represents a device.
 -- See https://webthings.io/api/ https://webthings.io/schemas/
@@ -366,7 +358,5 @@ end, function(Thing)
 
   Thing.CAPABILITIES = CAPABILITIES
   Thing.PROPERTY_TYPES = PROPERTY_TYPES
-  Thing.PROPERTY_METADATA_BY_NAME = PROPERTY_METADATA_BY_NAME
-  Thing.UNIT_BY_PROPERTY_TYPE = UNIT_BY_PROPERTY_TYPE
 
 end)
