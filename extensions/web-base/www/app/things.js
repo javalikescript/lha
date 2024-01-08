@@ -207,6 +207,7 @@ new Vue({
 new Vue({
   el: '#addThings',
   data: {
+    extensionsById: {},
     things: []
   },
   methods: {
@@ -223,6 +224,9 @@ new Vue({
           self.things.push(thing);
         }
         //console.log('things', self.things);
+        return app.getExtensionsById();
+      }).then(function(extensionsById) {
+        self.extensionsById = extensionsById;
       });
     },
     onAddAll: function() {
