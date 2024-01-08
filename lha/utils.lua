@@ -195,6 +195,20 @@ function utils.replaceRefs(t, env)
   return t
 end
 
+function utils.addThingPropertyFromInfo(thing, name, info, t)
+  if thing:hasProperty(name) then
+    logger:warn('The thing "%s" already has the property "%s"', thing:getTitle(), name)
+  else
+    local title = expand(info.title, t)
+    local description = expand(info.description, t)
+    if info.metadata then
+      thing:addPropertyFrom(name, utils.deepExpand(info.metadata, t), title, description, info.initialValue)
+    else
+      thing:addPropertyFromName(name, title, description, info.initialValue)
+    end
+  end
+end
+
 
 function utils.mirekToColorTemperature(value)
   return math.floor(1000000 / value)

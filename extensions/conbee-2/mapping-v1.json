@@ -135,25 +135,29 @@
       {
         "path": "state/buttonevent",
         "name": "buttonOn",
-        "metadata": "$merge:/metadata/button:/constant/title/${name}",
+        "title": "Button 1 (on)",
+        "metadata": "$ref:/metadata/button",
         "adapter": "$lua:if value // 1000 == 1 then return BUTTON_EVENT[value % 1000 + 1] end"
       },
       {
         "path": "state/buttonevent",
         "name": "buttonDimUp",
-        "metadata": "$merge:/metadata/button:/constant/title/${name}",
+        "title": "Button 2 (dim up)",
+        "metadata": "$ref:/metadata/button",
         "adapter": "$lua:if value // 1000 == 2 then return BUTTON_EVENT[value % 1000 + 1] end"
       },
       {
         "path": "state/buttonevent",
         "name": "buttonDimDown",
-        "metadata": "$merge:/metadata/button:/constant/title/${name}",
+        "title": "Button 3 (dim down)",
+        "metadata": "$ref:/metadata/button",
         "adapter": "$lua:if value // 1000 == 3 then return BUTTON_EVENT[value % 1000 + 1] end"
       },
       {
         "path": "state/buttonevent",
         "name": "buttonOff",
-        "metadata": "$merge:/metadata/button:/constant/title/${name}",
+        "metadata": "$ref:/metadata/button",
+        "title": "Button 4 (off)",
         "adapter": "$lua:if value // 1000 == 4 then return BUTTON_EVENT[value % 1000 + 1] end"
       }
     ],
@@ -166,7 +170,7 @@
     "ReachableConfig": [
       {
         "path": "config/reachable",
-        "name": "connected"
+        "name": "reachable"
       }
     ],
     "BatteryConfig": [
@@ -202,14 +206,6 @@
       "title": "Sensitivity Level",
       "description": "The sensor sensitivity",
       "configuration": true
-    }
-  },
-  "constant": {
-    "title": {
-      "buttonOn": {"title": "Button 1 (on)"},
-      "buttonDimUp": {"title": "Button 2 (dim up)"},
-      "buttonDimDown": {"title": "Button 3 (dim down)"},
-      "buttonOff": {"title": "Button 4 (off)"}
     }
   }
 }

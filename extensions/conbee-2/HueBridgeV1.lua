@@ -56,7 +56,7 @@ return require('jls.lang.class').create(function(hueBridge)
   end
 
   function hueBridge:updateConnectedState(value)
-    self:publishEvent('websocket', {connected = value == true})
+    self:publishEvent('websocket', {connected = value})
   end
 
   function hueBridge:startWebSocket()
@@ -230,6 +230,10 @@ return require('jls.lang.class').create(function(hueBridge)
     end)
   end
 
+  local function isValue(value)
+    return value ~= nil and value ~= json.null
+  end
+
   function hueBridge:forEachProperty(resource, data, fn)
     local typed = self.mapping.types[resource.type]
     if typed then
@@ -238,7 +242,7 @@ return require('jls.lang.class').create(function(hueBridge)
         if properties then
           for _, info in ipairs(properties) do
             local value = tables.getPath(data, info.path)
-            if value ~= nil then
+            if isValue(value) then
               fn(info, info.name, value)
             end
           end
@@ -259,13 +263,7 @@ return require('jls.lang.class').create(function(hueBridge)
       end
     end
     self:forEachProperty(resource, resource, function(info, name)
-      if not thing:hasProperty(name) then
-        if info.metadata then
-          thing:addPropertyFrom(name, utils.deepExpand(info.metadata, resource))
-        else
-          thing:addPropertyFromName(name)
-        end
-      end
+      utils.addThingPropertyFromInfo(thing, name, info, resource)
     end)
   end
 
@@ -296,7 +294,7 @@ return require('jls.lang.class').create(function(hueBridge)
       if info.adapter then
         value = info.adapter(value)
       end
-      if value ~= nil then
+      if isValue(value) then
         local publish = false
         if isEvent and info.path == 'state/buttonevent' then
           if value == 'released' then

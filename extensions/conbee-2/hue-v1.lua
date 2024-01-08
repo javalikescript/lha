@@ -1,16 +1,18 @@
 local extension = ...
 
 local logger = require('jls.lang.logger')
+local Promise = require('jls.lang.Promise')
 local File = require('jls.io.File')
 local json = require('jls.util.json')
 
+local Thing = require('lha.Thing')
 local utils = require('lha.utils')
 
 local HueBridgeV1 = extension:require('HueBridgeV1')
 
 local configuration = extension:getConfiguration()
 
-local hueBridge
+local hueBridge, bridgeThing
 local thingsMap = {}
 local lastResourceMap = {}
 
@@ -32,8 +34,17 @@ local function setThingPropertyValue(thing, name, value)
   end
 end
 
+local function updateReachability(value)
+  if bridgeThing then
+    bridgeThing:updatePropertyValue('reachable', value)
+  end
+end
+
 extension:subscribeEvent('things', function()
   logger:info('Looking for %s things', extension:getPrettyName())
+  bridgeThing = extension:syncDiscoveredThingByKey('bridge', function()
+    return Thing:new('Bridge', 'The Hue bridge', {'MultiLevelSensor'}):addPropertiesFromNames('connected', 'reachable')
+  end, bridgeThing)
   thingsMap = extension:getThingsByDiscoveryKey()
   for _, thing in pairs(thingsMap) do
     thing.setPropertyValue = setThingPropertyValue
@@ -71,14 +82,18 @@ end
 
 local function onHueEvent(info)
   -- see https://dresden-elektronik.github.io/deconz-rest-doc/endpoints/websocket/
-  if info.state and info.e == 'changed' and (info.r == 'sensors' or info.r == 'lights') then
-    local thing = thingsMap[info.uniqueid]
-    local resource = lastResourceMap[info.uniqueid]
-    if thing and resource then
-      if logger:isLoggable(logger.FINE) then
-        logger:fine('Hue event received on "%s" %s', thing and thing:getTitle(), json.stringify(info))
+  if info.state and info.e == 'changed' then
+    if info.r == 'sensors' or info.r == 'lights' then
+      local thing = thingsMap[info.uniqueid]
+      local resource = lastResourceMap[info.uniqueid]
+      if thing and resource then
+        if logger:isLoggable(logger.FINE) then
+          logger:fine('Hue event received on "%s" %s', thing and thing:getTitle(), json.stringify(info))
+        end
+        hueBridge:updateThingResource(thing, resource, info, true)
       end
-      hueBridge:updateThingResource(thing, resource, info, true)
+    elseif info.r == 'websocket' and bridgeThing then
+      bridgeThing:updatePropertyValue('connected', info.state.connected == true)
     end
   end
 end
@@ -86,7 +101,13 @@ end
 extension:subscribeEvent('poll', function()
   logger:info('Polling %s extension', extension:getPrettyName())
   if hueBridge then
-    hueBridge:getResourceMapById():next(processRessources):catch(function(reason)
+    hueBridge:getResourceMapById():next(function(resources)
+      updateReachability(true)
+      processRessources(resources)
+    end, function(reason)
+      updateReachability(false)
+      return Promise.reject(reason)
+    end):catch(function(reason)
       logger:warn('Polling %s extension error: %s', extension:getPrettyName(), reason)
     end)
   end
