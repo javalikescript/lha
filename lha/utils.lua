@@ -113,18 +113,24 @@ function utils.findKey(map, value)
   end
 end
 
-local function expand(value, m)
+local function expand(value, m, ...)
   if value == nil then
     return value
-  end
-  return (string.gsub(value, '%${([^{}]+)}', function(p)
-    local w = tables.getPath(m, p)
-    local t = type(w)
-    if t == 'string' or t == 'number' or t == 'boolean' then
-      return w
+  elseif type(value) == 'string' then
+    return (string.gsub(value, '%${([^{}]+)}', function(p)
+      local w = tables.getPath(m, p)
+      if w == nil then
+        return ''
+      end
+      return tostring(w)
+    end))
+  elseif type(value) == 'function' then
+    local e = value(m, ...)
+    if type(e) == 'string' then
+      return e
     end
-    return ''
-  end))
+  end
+  return ''
 end
 utils.expand = expand
 
@@ -152,7 +158,7 @@ local function replaceRef(t, fn, r)
     elseif tv == 'string' then
       local l, w = string.match(v, '^%$(%w+):(.+)$')
       if l then
-        local s, x = fn(l, w, t)
+        local s, x = fn(l, w, t, k)
         if s then
           t[k] = x
           if r and type(x) == 'table' then
@@ -166,19 +172,19 @@ end
 utils.replaceRef = replaceRef
 
 function utils.replaceRefs(t, env)
-  utils.replaceRef(t, function(kind, value, tt)
+  replaceRef(t, function(kind, value, tt, k)
     if kind == 'lua' then
-      return true, load('local value = ...; '..expand(value, tt), 'mapping', 't', env)
+      return true, load('local value, v2 = ...; '..expand(value, tt), 'mapping', 't', env)
     end
   end)
-  utils.replaceRef(t, function(kind, value, tt)
+  replaceRef(t, function(kind, value, tt)
     if kind == 'ref' then
       local v = tables.getPath(t, expand(value, tt))
       -- tables.deepCopy(v)
       return true, v
     end
   end)
-  utils.replaceRef(t, function(kind, value, tt)
+  replaceRef(t, function(kind, value, tt)
     if kind == 'merge' then
       local pa, pb = string.match(expand(value, tt), '^([^:]+):(.+)$')
       if pa then

@@ -32,13 +32,8 @@
       "properties": [
         {
           "path": "button/button_report/event",
-          "name": "button${metadata/control_id}",
-          "mapping": {
-            "button1": "buttonOn",
-            "button2": "buttonDimUp",
-            "button3": "buttonDimDown",
-            "button4": "buttonOff"
-          },
+          "name": "$lua:return 'button'..(BUTTON_NAME[value.metadata.control_id] or '')",
+          "title": "$lua:local name = BUTTON_NAME[value.metadata.control_id]; if name then return 'Button '..name end return 'Button'",
           "adapter": "$lua:return BUTTON_EVENT[value] or ''",
           "metadata": "$ref:/metadata/button"
         }
@@ -87,7 +82,22 @@
         {
           "path": "status",
           "name": "connected",
+          "description": "one of connected, disconnected, connectivity_issue, unidirectional_incoming",
           "adapter": "$lua:return value == 'connected'"
+        }
+      ]
+    },
+    "lha_connectivity": {
+      "properties": [
+        {
+          "path": "status",
+          "description": "The date where the thing was last seen",
+          "name": "lastseen"
+        },
+        {
+          "path": "status",
+          "description": "The date where the thing was last updated",
+          "name": "lastupdated"
         }
       ]
     },
@@ -96,6 +106,21 @@
         {
           "path": "power_state/battery_level",
           "name": "battery"
+        }
+      ]
+    },
+    "bridge": {
+      "properties": [
+        {
+          "mandatory": true,
+          "description": "Whether the bridge stream is available, can trigger event",
+          "name": "stream",
+          "metadata": "$ref:/metadata/stream"
+        },
+        {
+          "mandatory": true,
+          "description": "Whether the bridge is reachable, can be polled",
+          "name": "reachable"
         }
       ]
     }
@@ -107,7 +132,7 @@
     "button": {
       "@type": "HueButtonEvent",
       "type": "string",
-      "title": "Button ${metadata/control_id}",
+      "title": "Button",
       "description": "The button is pressed or released",
       "enum": [
         "pressed",
@@ -116,6 +141,14 @@
         "long-released"
       ],
       "readOnly": true
+    },
+    "stream": {
+      "@type": "BooleanProperty",
+      "configuration": true,
+      "description": "Whether the Hue event stream is available",
+      "readOnly": true,
+      "title": "Stream availability",
+      "type": "boolean"
     },
     "lightlevel": {
       "@type": "LevelProperty",

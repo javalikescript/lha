@@ -1,6 +1,7 @@
 local extension = ...
 
 local logger = require('jls.lang.logger')
+local Promise = require('jls.lang.Promise')
 local File = require('jls.io.File')
 local json = require('jls.util.json')
 
@@ -8,26 +9,27 @@ local HueBridgeV2 = extension:require('HueBridgeV2')
 
 local configuration = extension:getConfiguration()
 
-local hueBridge
+local hueBridge, bridgeId
 local thingsMap = {}
 local lastResourceMap = {}
 
-local function findKey(map, value)
-  for k, v in pairs(map) do
-    if v == value then
-      return k
+local function getThingId(thing)
+  for id, t in pairs(thingsMap) do
+    if t == thing then
+      local resource = lastResourceMap[id]
+      if resource and resource.type == 'device' then
+        return id
+      end
     end
   end
 end
 
 local function setThingPropertyValue(thing, name, value)
-  if hueBridge then
-    local id = findKey(thingsMap, thing)
-    if id and lastResourceMap then
-      hueBridge:setResourceValue(lastResourceMap, id, name, value):next(function()
-        thing:updatePropertyValue(name, value)
-      end)
-    end
+  local id = getThingId(thing)
+  if hueBridge and id then
+    hueBridge:setResourceValue(lastResourceMap, id, name, value):next(function()
+      thing:updatePropertyValue(name, value)
+    end)
   else
     thing:updatePropertyValue(name, value)
   end
@@ -61,6 +63,23 @@ local function processRessources(resources)
       end
     end
   end
+  if not bridgeId then
+    for _, device in pairs(resources) do
+      if device.type == 'bridge' then
+        bridgeId = device.owner.rid
+        break
+      end
+    end
+  end
+end
+
+local function updateReachability(value)
+  if bridgeId then
+    local thing = thingsMap[bridgeId]
+    if thing then
+      thing:updatePropertyValue('reachable', value)
+    end
+  end
 end
 
 local function processEvents(events)
@@ -71,7 +90,7 @@ local function processEvents(events)
         if owner and owner.rtype == 'device' then
           local thing = thingsMap[owner.rid]
           if thing then
-            local resource = lastResourceMap and lastResourceMap[data.id] or data
+            local resource = lastResourceMap[data.id] or data
             hueBridge:updateThingResource(thing, resource, data, true)
           else
             logger:info('Hue event received on unmapped thing %s', owner.rid)
@@ -87,7 +106,13 @@ extension:subscribeEvent('poll', function()
     return
   end
   logger:info('Polling %s extension', extension:getPrettyName())
-  hueBridge:getResourceMapById():next(processRessources):catch(function(reason)
+  hueBridge:getResourceMapById():next(function(resources)
+    updateReachability(true)
+    processRessources(resources)
+  end, function(reason)
+    updateReachability(false)
+    return Promise.reject(reason)
+  end):catch(function(reason)
     logger:warn('Polling %s extension error: %s', extension:getPrettyName(), reason)
   end)
 end)

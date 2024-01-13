@@ -1,5 +1,6 @@
 local logger = require('jls.lang.logger')
 local Promise = require('jls.lang.Promise')
+local Exception = require('jls.lang.Exception')
 local HttpClient = require('jls.net.http.HttpClient')
 local StreamHandler = require('jls.io.StreamHandler')
 local ChunkedStreamHandler = require('jls.io.streams.ChunkedStreamHandler')
@@ -38,7 +39,8 @@ return require('jls.lang.class').create(function(hueBridge)
         ['long_release'] = 'long-released',
         ['double_short_release'] = 'long-released',
         ['long_press'] = 'pressed',
-      }
+      },
+      BUTTON_NAME = {'On', 'DimUp', 'DimDown', 'Off'},
     })
   end
 
@@ -128,8 +130,7 @@ return require('jls.lang.class').create(function(hueBridge)
         logger:fine('device service rtypes: %s', List.join(rtypes, ', '))
       end
       logger:fine('get device services...')
-
-      local services = {}
+      self.bridgeResource = nil
       --[[
         return Promise.all(List.map(rtypes, function(rtype)
           return self:httpRequest('GET', '/clip/v2/resource/'..rtype)
@@ -138,14 +139,13 @@ return require('jls.lang.class').create(function(hueBridge)
       -- as of 2023-10 the bridge cannot handle concurrent requests on h2 stream replying "Oops, there appears to be no lighting here"
       -- https://developers.meethue.com/develop/hue-api-v2/core-concepts/#limitations
       return List.reduce(rtypes, function(p, rtype, index)
-        return p:next(function()
+        return p:next(function(services)
           return self:httpRequest('GET', '/clip/v2/resource/'..rtype):next(function(service)
             services[index] = service
+            return services
           end)
         end)
-      end, Promise.resolve()):next(function()
-        return services
-      end):next(function(services)
+      end, Promise.resolve({})):next(function(services)
         table.insert(services, devices)
         local byId = {}
         for _, items in ipairs(services) do
@@ -154,6 +154,9 @@ return require('jls.lang.class').create(function(hueBridge)
               logger:warn('duplicated id %s', item.id)
             end
             byId[item.id] = item
+            if item.type == 'bridge' then
+              self.bridgeResource = item
+            end
           end
         end
         return byId
@@ -174,9 +177,37 @@ return require('jls.lang.class').create(function(hueBridge)
     end
   end
 
-  function hueBridge:startEventStream(onEvent)
-    self.onEvent = onEvent
+  function hueBridge:startEventStream(onEvents)
+    self.onEvents = onEvents
     self:fetchEventStream()
+  end
+
+  function hueBridge:publishEvents(events)
+    if self.onEvents then
+      local status, e = Exception.pcall(self.onEvents, events)
+      if not status then
+        logger:warn('Hue event callback error "%s" with payload: %s', e, json.stringify(events))
+      end
+    end
+  end
+
+  function hueBridge:updateConnectedState(value)
+    logger:fine('updateConnectedState(%d)', value)
+    if self.bridgeResource then
+      self:publishEvents({
+        {
+          type = 'update',
+          data = {
+            id = self.bridgeResource.id,
+            owner = {
+              rid = self.bridgeResource.owner.rid,
+              rtype = 'device'
+            },
+            connected = value == true
+          }
+        }
+      })
+    end
   end
 
   function hueBridge:fetchEventStream()
@@ -191,6 +222,7 @@ return require('jls.lang.class').create(function(hueBridge)
         return
       end
       self.responseStream = response
+      self:updateConnectedState(true)
       local sh = StreamHandler:new(function(err, rawEvent)
         logger:finer('event: "%s", "%s"', err, rawEvent)
         if err then
@@ -200,10 +232,12 @@ return require('jls.lang.class').create(function(hueBridge)
             logger:info('Hue V2 event stream connected')
           end
           local index = string.find(rawEvent, 'data: ', 1, true)
-          if index and self.onEvent then
-            local event = json.parse(string.sub(rawEvent, index + 6))
-            if type(event) == 'table' then
-              self.onEvent(event)
+          if index and self.onEvents then
+            local status, events = pcall(json.parse, string.sub(rawEvent, index + 6))
+            if status and type(events) == 'table' then
+              self:publishEvents(events)
+            else
+              logger:warn('Hue event received invalid "%s" JSON payload: %s', events, rawEvent)
             end
           end
         else
@@ -228,27 +262,20 @@ return require('jls.lang.class').create(function(hueBridge)
   end
 
   function hueBridge:stopEventStream()
-    self.onEvent = nil
+    self.onEvents = nil
     if self.responseStream then
       self.responseStream:close()
       self.responseStream = nil
+      self:updateConnectedState(false)
     end
   end
 
   local function buildName(info, resource)
-    if info.name then
-      local name = utils.expand(info.name, resource)
-      if info.mapping then
-        local mn = info.mapping[name]
-        if mn then
-          return mn
-        end
-      end
-      return name
-    elseif info.path then
-      return info.path
-    end
-    return 'name'
+    return utils.expand(info.name, resource, info)
+  end
+
+  local function isValue(value)
+    return value ~= nil and value ~= json.null
   end
 
   function hueBridge:createThingFromDeviceId(resourceMap, id)
@@ -267,14 +294,10 @@ return require('jls.lang.class').create(function(hueBridge)
             end
           end
           for _, info in ipairs(type.properties) do
-            local value = tables.getPath(resource, info.path)
-            if value ~= nil then
+            local value = info.path and tables.getPath(resource, info.path)
+            if isValue(value) or info.mandatory then
               local name = buildName(info, resource)
-              if info.metadata then
-                thing:addPropertyFrom(name, utils.deepExpand(info.metadata, resource))
-              else
-                thing:addPropertyFromName(name)
-              end
+              utils.addThingPropertyFromInfo(thing, name, info, resource)
             end
           end
         end
@@ -289,13 +312,13 @@ return require('jls.lang.class').create(function(hueBridge)
     local type = self.mapping.types[resource.type]
     if type then
       for _, info in pairs(type.properties) do
-        local value = tables.getPath(data, info.path)
-        if value ~= nil then
+        local value = info.path and tables.getPath(data, info.path)
+        if isValue(value) then
           local name = buildName(info, resource)
           if info.adapter then
             value = info.adapter(value)
           end
-          if value ~= nil then
+          if isValue(value) then
             local publish = false
             if isEvent and value == 'hold' and info.path == 'button/button_report/event' then
               publish = true
@@ -340,7 +363,7 @@ return require('jls.lang.class').create(function(hueBridge)
         end
       end
     end
-    return Promise.reject()
+    return Promise.reject(string.format('cannot set value "%s" for resource id "%s"', name, id))
   end
 
 end)
