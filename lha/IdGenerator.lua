@@ -54,13 +54,6 @@ local function getTimeMillis()
   --return os.time() * 1000
 end
 
---[[
-lua -e "print(math.floor(64^6) // 60 // 60 // 24 // 365)"
-lua -e "print(math.floor(64^6) // 1000 // 60 // 60 // 24 // 365)"
-lua -e "print(math.floor(64^5), math.floor(64^6), math.floor(64^7)); print(os.time()//60, os.time(), os.time()*1000)"
-lua -e "for l = 2, 7 do print(l, math.floor(64^l)) end"
-]]
-
 -- This id generator is a compromise between collisions, readability, simplicity, shortness and usability.
 -- The ids are generated using the generator instanciation time, the id generation time and index.
 -- The ids have 14 characters length and are usable as file name or URL path.

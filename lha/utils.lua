@@ -114,9 +114,7 @@ function utils.findKey(map, value)
 end
 
 local function expand(value, m, ...)
-  if value == nil then
-    return value
-  elseif type(value) == 'string' then
+  if type(value) == 'string' then
     return (string.gsub(value, '%${([^{}]+)}', function(p)
       local w = tables.getPath(m, p)
       if w == nil then
@@ -125,12 +123,9 @@ local function expand(value, m, ...)
       return tostring(w)
     end))
   elseif type(value) == 'function' then
-    local e = value(m, ...)
-    if type(e) == 'string' then
-      return e
-    end
+    return value(m, ...)
   end
-  return ''
+  return nil
 end
 utils.expand = expand
 
