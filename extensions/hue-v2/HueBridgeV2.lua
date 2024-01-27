@@ -192,7 +192,7 @@ return require('jls.lang.class').create(function(hueBridge)
   end
 
   function hueBridge:updateConnectedState(value)
-    logger:fine('updateConnectedState(%d)', value)
+    logger:fine('updateConnectedState(%s)', value)
     if self.bridgeResource then
       self:publishEvents({
         {
@@ -212,6 +212,7 @@ return require('jls.lang.class').create(function(hueBridge)
 
   function hueBridge:fetchEventStream()
     local client = self:getHttpClient()
+    logger:fine('Hue V2 fetch event stream')
     client:fetch('/eventstream/clip/v2', {
       method = 'GET',
       headers = Map.assign({Accept = 'text/event-stream'}, self.headers)
@@ -224,23 +225,26 @@ return require('jls.lang.class').create(function(hueBridge)
       self.responseStream = response
       self:updateConnectedState(true)
       local sh = StreamHandler:new(function(err, rawEvent)
-        logger:finer('event: "%s", "%s"', err, rawEvent)
         if err then
+          logger:warn('Hue event error: "%s"', err)
           self:stopEventStream()
         elseif rawEvent then
-          if rawEvent == 'hi' then
-            logger:info('Hue V2 event stream connected')
-          end
+          logger:fine('event: "%s"', rawEvent)
           local index = string.find(rawEvent, 'data: ', 1, true)
-          if index and self.onEvents then
+          if index then
             local status, events = pcall(json.parse, string.sub(rawEvent, index + 6))
             if status and type(events) == 'table' then
               self:publishEvents(events)
             else
-              logger:warn('Hue event received invalid "%s" JSON payload: %s', events, rawEvent)
+              logger:warn('Hue event received invalid "%s" JSON payload: "%s"', events, rawEvent)
             end
+          elseif rawEvent == 'hi' or rawEvent == ': hi' then -- seems broken since 1962097030
+            logger:info('Hue V2 event stream connected')
+          else
+            logger:warn('Hue event received invalid payload: "%s"', rawEvent)
           end
         else
+          logger:fine('Hue event stream no data')
           self:stopEventStream()
         end
       end)
@@ -253,12 +257,13 @@ return require('jls.lang.class').create(function(hueBridge)
         end))
       end
       response:setBodyStreamHandler(csh)
+      logger:fine('Hue V2 consume event stream')
       return response:consume()
     end):next(function()
-        logger:info('event stream ended')
-      end, function(reason)
-        logger:info('event stream error: %s', reason)
-      end)
+      logger:info('event stream ended')
+    end, function(reason)
+      logger:warn('event stream error: %s', reason)
+    end)
   end
 
   function hueBridge:stopEventStream()
@@ -311,7 +316,7 @@ return require('jls.lang.class').create(function(hueBridge)
   function hueBridge:updateThingResource(thing, resource, data, isEvent)
     local type = self.mapping.types[resource.type]
     if type then
-      for _, info in pairs(type.properties) do
+      for _, info in ipairs(type.properties) do
         local value = info.path and tables.getPath(data, info.path)
         if isValue(value) then
           local name = buildName(info, resource)
@@ -349,7 +354,7 @@ return require('jls.lang.class').create(function(hueBridge)
         local resource = resourceMap[service.rid]
         local type = self.mapping.types[service.rtype]
         if resource and type then
-          for _, info in pairs(type.properties) do
+          for _, info in ipairs(type.properties) do
             local n = buildName(info, resource)
             if n == name then
               if info.setAdapter then
