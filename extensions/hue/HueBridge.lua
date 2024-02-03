@@ -7,7 +7,6 @@ local WebSocket = require('jls.net.http.ws').WebSocket
 local json = require('jls.util.json')
 local Date = require('jls.util.Date')
 local Map = require('jls.util.Map')
-local color = require('jls.util.color')
 
 local Thing = require('lha.Thing')
 local utils = require('lha.utils')
@@ -227,13 +226,13 @@ local function toPostColorTemperature(value)
 end
 
 local function hsvToRgbHex(h, s, v)
-  local r, g, b = color.hsvToRgb(h, s, v)
+  local r, g, b = utils.hsvToRgb(h, s, v)
   return Thing.formatRgbHex(r, g, b)
 end
 
 local function rgbHexToHsv(rgbHex)
   local r, g, b = Thing.parseRgbHex(rgbHex)
-  return color.rgbToHsv(r, g, b)
+  return utils.rgbToHsv(r, g, b)
 end
 
 local function computeColor(info)
