@@ -67,10 +67,6 @@ print('uname', luv.os_uname())
 print('hostname', luv.os_gethostname())
 print('pid', luv.os_getpid() >> 0)
 print('printing active handles on stdout'); luv.print_active_handles()
-
-require('jls.util.memprof').printReport(function(data)
-  print('report', data)
-end, false, false, 'csv')
 ]]
 extension:subscribeEvent('startup', function()
   local engine = extension:getEngine()

@@ -279,10 +279,6 @@ return require('jls.lang.class').create(function(hueBridge)
     return utils.expand(info.name, resource, info)
   end
 
-  local function isValue(value)
-    return value ~= nil and value ~= json.null
-  end
-
   function hueBridge:createThingFromDeviceId(resourceMap, id)
     local device = resourceMap[id]
     if device and device.type == 'device' then
@@ -300,7 +296,7 @@ return require('jls.lang.class').create(function(hueBridge)
           end
           for _, info in ipairs(type.properties) do
             local value = info.path and tables.getPath(resource, info.path)
-            if isValue(value) or info.mandatory then
+            if utils.isValue(value) or info.mandatory then
               local name = buildName(info, resource)
               utils.addThingPropertyFromInfo(thing, name, info, resource)
             end
@@ -318,12 +314,14 @@ return require('jls.lang.class').create(function(hueBridge)
     if type then
       for _, info in ipairs(type.properties) do
         local value = info.path and tables.getPath(data, info.path)
-        if isValue(value) then
+        local isValue = utils.isValue(value)
+        if isValue then
           local name = buildName(info, resource)
           if info.adapter then
             value = info.adapter(value)
+            isValue = utils.isValue(value)
           end
-          if isValue(value) then
+          if isValue then
             local publish = false
             if isEvent and value == 'hold' and info.path == 'button/button_report/event' then
               publish = true
