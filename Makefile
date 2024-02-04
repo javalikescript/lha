@@ -43,13 +43,13 @@ dist-bin: dist-bin-$(PLAT)
 	cp -u $(LUACLIBS)/lua$(EXE) $(LHA_DIST)/bin/
 	cp -u $(LUACLIBS)/cjson.$(SO) $(LHA_DIST)/bin/
 	cp -u $(LUACLIBS)/luv.$(SO) $(LHA_DIST)/bin/
+	cp -u $(LUACLIBS)/lxp.$(SO) $(LHA_DIST)/bin/
 	cp -u $(LUACLIBS)/openssl.$(SO) $(LHA_DIST)/bin/
 	cp -u $(LUACLIBS)/serial.$(SO) $(LHA_DIST)/bin/
 	cp -u $(LUACLIBS)/zlib.$(SO) $(LHA_DIST)/bin/
 	-cp -u $(LUACLIBS)/lpeg.$(SO) $(LHA_DIST)/bin/
 
 dist-any:
-	cp -u $(LUACLIBS)/XmlParser.lua $(LHA_DIST)/lua/
 	cp -ru $(LUAJLS)/jls/ $(LHA_DIST)/lua/
 	cp -ru lha/ $(LHA_DIST)/lua/
 	cp -u lha.sh $(LHA_DIST)/
