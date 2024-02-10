@@ -164,15 +164,20 @@ return require('jls.lang.class').create(function(hueBridge)
     end)
   end
 
-  function hueBridge:ping()
-    if self.client and not self.client:isClosed() then
-      if self.client.http2 then
-        logger:finer('pinging...')
-        self.client.http2:sendPing():next(function()
-          logger:fine('ping success')
-        end, function(reason)
-          logger:fine('ping failure "%s"', reason)
-        end)
+  function hueBridge:checkEventStream()
+    if self.onEvents then
+      if self.responseStream and self.client and not self.client:isClosed() then
+        if self.client.http2 then
+          logger:finer('pinging...')
+          self.client.http2:sendPing():next(function()
+            logger:fine('ping success')
+          end, function(reason)
+            logger:warn('ping failure "%s"', reason)
+            self:closeEventStream()
+          end)
+        end
+      else
+        self:fetchEventStream()
       end
     end
   end
@@ -211,15 +216,16 @@ return require('jls.lang.class').create(function(hueBridge)
   end
 
   function hueBridge:fetchEventStream()
-    local client = self:getHttpClient()
     logger:fine('Hue V2 fetch event stream')
+    self:closeEventStream()
+    local client = self:getHttpClient()
     client:fetch('/eventstream/clip/v2', {
       method = 'GET',
       headers = Map.assign({Accept = 'text/event-stream'}, self.headers)
     }):next(function(response)
       if response:getStatusCode() ~= 200 then
         logger:warn('Hue V2 event stream response status: %d', response:getStatusCode())
-        self:stopEventStream()
+        self:closeEventStream()
         return
       end
       self.responseStream = response
@@ -227,7 +233,7 @@ return require('jls.lang.class').create(function(hueBridge)
       local sh = StreamHandler:new(function(err, rawEvent)
         if err then
           logger:warn('Hue event error: "%s"', err)
-          self:stopEventStream()
+          self:closeEventStream()
         elseif rawEvent then
           logger:fine('event: "%s"', rawEvent)
           local index = string.find(rawEvent, 'data: ', 1, true)
@@ -245,7 +251,7 @@ return require('jls.lang.class').create(function(hueBridge)
           end
         else
           logger:fine('Hue event stream no data')
-          self:stopEventStream()
+          self:closeEventStream()
         end
       end)
       local csh = ChunkedStreamHandler:new(sh, '\n\n', true)
@@ -266,13 +272,17 @@ return require('jls.lang.class').create(function(hueBridge)
     end)
   end
 
-  function hueBridge:stopEventStream()
-    self.onEvents = nil
+  function hueBridge:closeEventStream()
     if self.responseStream then
       self.responseStream:close()
       self.responseStream = nil
       self:updateConnectedState(false)
     end
+  end
+
+  function hueBridge:stopEventStream()
+    self.onEvents = nil
+    self:closeEventStream()
   end
 
   local function buildName(info, resource)

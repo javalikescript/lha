@@ -29,6 +29,8 @@ local function setThingPropertyValue(thing, name, value)
   if hueBridge and id then
     hueBridge:setResourceValue(lastResourceMap, id, name, value):next(function()
       thing:updatePropertyValue(name, value)
+    end, function(reason)
+      logger:warn('Fail to set thing "%s" (id: %s) property "%s" to value "%s" due to "%s"', thing:getTitle(), id, name, value, reason)
     end)
   else
     thing:updatePropertyValue(name, value)
@@ -122,7 +124,7 @@ extension:subscribeEvent('refresh', function()
 end)
 
 extension:subscribeEvent('heartbeat', function()
-  hueBridge:ping()
+  hueBridge:checkEventStream()
 end)
 
 extension:subscribeEvent('startup', function()
