@@ -4,6 +4,7 @@ local logger = require('jls.lang.logger')
 local event = require('jls.lang.event')
 local Promise = require('jls.lang.Promise')
 local Exception = require('jls.lang.Exception')
+local File = require('jls.io.File')
 local mqtt = require('jls.net.mqtt')
 local WebSocket = require('jls.net.http.ws').WebSocket
 local Url = require('jls.net.Url')
@@ -322,7 +323,6 @@ local function startListeningWebSocket(webSocket)
     --logger:info('Z-Wave start_listening result: '..json.stringify(result, 2))
     if extension:getConfiguration().dumpNodes then
       logger:info('Z-Wave dumping nodes')
-      local File = require('jls.io.File')
       File:new('zwave-js.json'):write(json.stringify(result, 2))
     end
     onZWaveNodes(result.state.nodes)
@@ -336,7 +336,6 @@ local function startWebSocket(config)
   local timer = event:setTimeout(function()
     logger:warn('Z-Wave JS WebSocket start timeout')
     webSocket:close(false)
-    webSocket = nil
   end, 3000)
   webSocket:open():next(function()
     webSocket:readStart()
@@ -384,7 +383,6 @@ local function startWebSocket(config)
         startListeningWebSocket(webSocket):catch(function(reason)
           logger:warn('Z-Wave JS WebSocket start_listening failed "%s"', reason)
           webSocket:close(false)
-          webSocket = nil
         end)
       else
         logger:warn('Z-Wave JS WebSocket unsupported message type %s', message.type)
