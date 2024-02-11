@@ -1,4 +1,4 @@
-local logger = require('jls.lang.logger')
+local logger = require('jls.lang.loggerFactory')(...)
 local system = require('jls.lang.system')
 local event = require('jls.lang.event')
 local File = require('jls.io.File')

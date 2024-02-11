@@ -1,6 +1,6 @@
 local extension = ...
 
-local logger = require('jls.lang.logger')
+local logger = extension:getLogger()
 local mqtt = require('jls.net.mqtt')
 
 local mqttServer

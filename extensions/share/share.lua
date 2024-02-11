@@ -1,6 +1,6 @@
 local extension = ...
 
-local logger = require('jls.lang.logger')
+local logger = extension:getLogger()
 local FileHttpHandler = require('jls.net.http.handler.FileHttpHandler')
 local ProxyHttpHandler = require('jls.net.http.handler.ProxyHttpHandler')
 local WebDavHttpHandler = require('jls.net.http.handler.WebDavHttpHandler')

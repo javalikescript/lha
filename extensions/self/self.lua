@@ -1,6 +1,6 @@
 local extension = ...
 
-local logger = require('jls.lang.logger')
+local logger = extension:getLogger()
 local loader = require('jls.lang.loader')
 
 local luv = loader.tryRequire('luv')

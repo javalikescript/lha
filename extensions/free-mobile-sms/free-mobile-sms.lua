@@ -1,6 +1,6 @@
 local extension = ...
 
-local logger = require('jls.lang.logger')
+local logger = extension:getLogger()
 local class = require('jls.lang.class')
 local Promise = require('jls.lang.Promise')
 local HttpClient = require('jls.net.http.HttpClient')

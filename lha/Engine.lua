@@ -1,4 +1,5 @@
-local logger = require('jls.lang.logger')
+local logger = require('jls.lang.loggerFactory')(...)
+local rootLogger = require('jls.lang.logger')
 local class = require('jls.lang.class')
 local system = require('jls.lang.system')
 local event = require('jls.lang.event')
@@ -630,7 +631,7 @@ end, function(Engine)
     })
     local defaultConfig = options.config
     options.config = nil
-    logger:setLevel(options.loglevel)
+    rootLogger:setLevel(options.loglevel)
     local engine = Engine:new(options)
     engine:start(defaultConfig, customOptions.config)
     -- Do we need to poll at startup?

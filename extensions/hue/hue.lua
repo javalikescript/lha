@@ -1,6 +1,6 @@
 local extension = ...
 
-local logger = require('jls.lang.logger')
+local logger = extension:getLogger()
 local Date = require('jls.util.Date')
 
 local Thing = require('lha.Thing')

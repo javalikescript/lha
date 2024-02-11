@@ -1,6 +1,6 @@
 local extension = ...
 
-local logger = require('jls.lang.logger')
+local logger = extension:getLogger()
 local system = require('jls.lang.system')
 local Thing = require('lha.Thing')
 

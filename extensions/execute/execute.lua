@@ -1,6 +1,6 @@
 local extension = ...
 
-local logger = require('jls.lang.logger')
+local logger = extension:getLogger()
 local Promise = require('jls.lang.Promise')
 local SerialWorker = require('jls.util.SerialWorker')
 

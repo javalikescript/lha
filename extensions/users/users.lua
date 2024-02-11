@@ -1,7 +1,7 @@
 local extension = ...
 
 local class = require('jls.lang.class')
-local logger = require('jls.lang.logger')
+local logger = extension:getLogger()
 local form = require('jls.net.http.form')
 local HttpExchange = require('jls.net.http.HttpExchange')
 local HttpFilter = require('jls.net.http.HttpFilter')

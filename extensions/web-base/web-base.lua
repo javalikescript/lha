@@ -3,7 +3,7 @@ local extension = ...
 -- -config.extensions.web-base.assets ../../assets/www_static/
 
 local class = require('jls.lang.class')
-local logger = require('jls.lang.logger')
+local logger = extension:getLogger()
 local event = require('jls.lang.event')
 local File = require('jls.io.File')
 local HttpExchange = require('jls.net.http.HttpExchange')
