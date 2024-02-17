@@ -1,4 +1,4 @@
-local loggerFactory = require('jls.lang.loggerFactory')
+local logger = require('jls.lang.logger'):get(...)
 local loader = require('jls.lang.loader')
 local event = require('jls.lang.event')
 local Exception = require('jls.lang.Exception')
@@ -12,7 +12,6 @@ local system = require('jls.lang.system')
 
 local utils = require('lha.utils')
 local schema = utils.requireJson('lha.schema-extension')
-local logger = loggerFactory(...)
 
 --- A Extension class.
 -- @type Extension
@@ -79,7 +78,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
   end
 
   function extension:getLogger()
-    return loggerFactory(self.id)
+    return require('jls.lang.logger'):get(self.id)
   end
 
   function extension:getType()
