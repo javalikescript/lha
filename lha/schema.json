@@ -73,6 +73,10 @@
       "title": "The log level",
       "type": "string"
     },
+    "loglevels": {
+      "title": "The log levels",
+      "type": "string"
+    },
     "port": {
       "default": 8080,
       "maximum": 65535,
