@@ -4,6 +4,7 @@ local logger = extension:getLogger()
 local Promise = require('jls.lang.Promise')
 local File = require('jls.io.File')
 local json = require('jls.util.json')
+local Map = require('jls.util.Map')
 
 local HueBridgeV2 = extension:require('HueBridgeV2')
 
@@ -26,19 +27,21 @@ end
 
 local function setThingPropertyValue(thing, name, value)
   local id = getThingId(thing)
+  local function logFailure(reason)
+    logger:warn('Fail to set thing "%s" (id: %s) property "%s" to value "%s" due to "%s"', thing:getTitle(), id, name, value, reason)
+  end
   if hueBridge and id then
     hueBridge:setResourceValue(lastResourceMap, id, name, value):next(function()
       thing:updatePropertyValue(name, value)
-    end, function(reason)
-      logger:warn('Fail to set thing "%s" (id: %s) property "%s" to value "%s" due to "%s"', thing:getTitle(), id, name, value, reason)
-    end)
+    end, logFailure)
   else
+    logFailure('thing or bridge not available')
     thing:updatePropertyValue(name, value)
   end
 end
 
 extension:subscribeEvent('things', function()
-  logger:info('Looking for %s things', extension:getPrettyName())
+  logger:info('Looking for things')
   thingsMap = extension:getThingsByDiscoveryKey()
   for _, thing in pairs(thingsMap) do
     thing.setPropertyValue = setThingPropertyValue
@@ -53,7 +56,7 @@ local function processRessources(resources)
       if thing == nil then
         thing = hueBridge:createThingFromDeviceId(resources, id)
         if thing then
-          logger:info('New %s thing found with name "%s" id "%s"', extension:getPrettyName(), device.metadata.name, id)
+          logger:info('New thing found with name "%s" id "%s"', device.metadata.name, id)
           extension:discoverThing(id, thing)
         else
           thing = false
@@ -107,28 +110,33 @@ extension:subscribeEvent('poll', function()
   if not hueBridge then
     return
   end
-  logger:info('Polling %s extension', extension:getPrettyName())
+  logger:info('Polling')
   hueBridge:getResourceMapById():next(function(resources)
+    if logger:isLoggable(logger.FINE) then
+      logger:info('%d resources found', Map.size(resources))
+    end
     updateReachability(true)
     processRessources(resources)
   end, function(reason)
     updateReachability(false)
     return Promise.reject(reason)
   end):catch(function(reason)
-    logger:warn('Polling %s extension error: %s', extension:getPrettyName(), reason)
+    logger:warn('Polling error: %s', reason)
   end)
 end)
 
 extension:subscribeEvent('refresh', function()
-  logger:info('Refresh %s extension', extension:getPrettyName())
+  logger:info('Refresh')
 end)
 
 extension:subscribeEvent('heartbeat', function()
-  hueBridge:checkEventStream()
+  if hueBridge then
+    hueBridge:checkEventStream()
+  end
 end)
 
 extension:subscribeEvent('startup', function()
-  logger:info('startup %s extension', extension:getPrettyName())
+  logger:info('Starting')
   if hueBridge then
     hueBridge:close()
   end
