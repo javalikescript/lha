@@ -1,0 +1,18 @@
+{
+  "name": "Z-Wave JS (Preview)",
+  "description": "Z-Wave JS integration",
+  "version": "0.1",
+  "script": "zwave-js-2.lua",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "url": {
+        "title": "The WebSocket server URL",
+        "type": "string",
+        "pattern": "^ws://.+:%d+$",
+        "required": true,
+        "default": "ws://localhost:3000"
+      }
+    }
+  }
+}

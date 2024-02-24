@@ -1,0 +1,96 @@
+{
+  "title": "${deviceConfig/description}",
+  "description": "${deviceConfig/label} (${deviceConfig/manufacturer})",
+  "devices": [
+    {
+      "manufacturerId": "$ref:/manufacturer/FIBARO",
+      "productId": 4099,
+      "capabilities": ["SmokeSensor", "TemperatureSensor"],
+      "properties": [
+        "$ref:/property/battery",
+        "$ref:/property/air-temperature",
+        {
+          "commandClass": "$ref:/commandClass/alarm",
+          "property": "Smoke Alarm",
+          "propertyKey": "Sensor status",
+          "name": "smoke"
+        }
+      ]
+    },
+    {
+      "manufacturerId": "$ref:/manufacturer/Zooz",
+      "productId": 57348,
+      "capabilities": ["HumiditySensor", "TemperatureSensor"],
+      "properties": [
+        "$ref:/property/battery",
+        "$ref:/property/air-temperature",
+        "$ref:/property/humidity"
+      ]
+    },
+    {
+      "manufacturerId": "$ref:/manufacturer/Qubino",
+      "productId": 82,
+      "capabilities": ["MultiLevelSwitch"],
+      "properties": [
+        "$ref:/property/signal-order"
+      ]
+    },
+    {
+      "manufacturerId": "$ref:/manufacturer/Qubino",
+      "productId": 81,
+      "capabilities": ["MultiLevelSwitch"],
+      "properties": [
+        "$ref:/property/signal-order",
+        "$ref:/property/air-temperature"
+      ]
+    }
+  ],
+  "adapters": {
+    "mirek": "$lua:return color.mirekToColorTemperature(value)"
+  },
+  "property": {
+    "battery": {
+      "commandClass": "$ref:/commandClass/battery",
+      "property": "level",
+      "name": "battery"
+    },
+    "air-temperature": {
+      "commandClass": "$ref:/commandClass/sensor-multilevel",
+      "property": "Air temperature",
+      "name": "temperature"
+    },
+    "humidity": {
+      "commandClass": "$ref:/commandClass/sensor-multilevel",
+      "property": "Humidity",
+      "name": "humidity"
+    },
+    "signal-order": {
+      "commandClass": "$ref:/commandClass/switch-multilevel",
+      "property": "currentValue",
+      "setProperty": "targetValue",
+      "name": "value",
+      "metadata": "$ref:/metadata/signal-order"
+    }
+  },
+  "manufacturer": {
+    "FIBARO": 271,
+    "Qubino": 345,
+    "Zooz": 634
+  },
+  "commandClass": {
+    "switch-multilevel": 38,
+    "sensor-multilevel": 49,
+    "alarm": 113,
+    "battery": 128
+  },
+  "metadata": {
+    "signal-order": {
+      "@type": "LevelProperty",
+      "type": "integer",
+      "title": "Signal Order",
+      "description": "The signal order as a level, 0, 20, 30, 40, 50, 99 from stop, HG, eco to comfort",
+      "minimum": 0,
+      "maximum": 99
+    }
+  }
+}
