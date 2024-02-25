@@ -1,8 +1,8 @@
 {
-  "name": "Z-Wave JS (Preview)",
-  "description": "Z-Wave JS integration",
+  "name": "Z-Wave JS WS (Preview)",
+  "description": "Z-Wave JS WebSocket server integration",
   "version": "0.1",
-  "script": "zwave-js-2.lua",
+  "script": "zwave-js-ws.lua",
   "schema": {
     "type": "object",
     "properties": {

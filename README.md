@@ -22,12 +22,12 @@ The application is small, around 5MB, and does not need any dependency.
 ## Extensions
 
 Available extensions are:
-* [ConBee](https://phoscon.de/en/conbee), Dresden elektronik ConBee REST API  
+* [ConBee II](https://phoscon.de/en/conbee), Dresden elektronik ConBee REST API  
 The recommended tool is [deCONZ](https://github.com/deconz-community/deconz-docker) using docker
-* [Philips Hue](https://www.philips-hue.com/), Hue Bridge REST API  
+* [Philips Hue V2](https://www.philips-hue.com/), Hue Bridge REST API  
 The recommended tool is the Hue Bridge
-* [Z-Wave JS](https://github.com/zwave-js), Z-Wave JS API  
-The recommended tool is [Zwave to MQTT](https://zwave-js.github.io/zwavejs2mqtt/) using docker
+* [Z-Wave JS WS](https://github.com/zwave-js), Z-Wave JS API  
+The recommended tool is [Z-Wave JS UI](https://github.com/zwave-js/zwave-js-ui) using docker
 * [MQTT](https://mqtt.org/) Broker, provides a light message broker
 * Generic  
 Create virtual things, usefull for scripting
@@ -43,11 +43,11 @@ Automatically trigger thing modifications
 * Self monitoring, based on Lua and [libuv](https://github.com/luvit/luv)
 * Ping, Test the reachability of a host on the network
 
-You need to include your devices using the dedicated tool such as deCONZ, Hue App or Z-Wave to MQTT Control Panel.
+You need to include your devices using the dedicated tool such as deCONZ, Hue App or Z-Wave JS UI Control Panel.
 
 ## Devices
 
-Any device available through ConBee, Hue or Z-Wave JS could be added with some modifications.
+Any device available through ConBee, Hue or Z-Wave JS could be added by enhancing the extension JSON mapping files.
 
 See list of already available [devices](devices.md)
 
