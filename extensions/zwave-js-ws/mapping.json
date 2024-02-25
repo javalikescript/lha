@@ -13,7 +13,8 @@
           "commandClass": "$ref:/commandClass/alarm",
           "property": "Smoke Alarm",
           "propertyKey": "Sensor status",
-          "name": "smoke"
+          "name": "smoke",
+          "adapter": "$lua:return value ~= 0"
         }
       ]
     },
