@@ -167,10 +167,12 @@ return require('jls.lang.class').create(function(hueBridge)
   function hueBridge:checkEventStream()
     if self.onEvents then
       if self.responseStream and self.client and not self.client:isClosed() then
-        if self.client.http2 then
+        local http2 = self.client.http2
+        if http2 then
           logger:finer('pinging...')
-          self.client.http2:sendPing():next(function()
+          http2:sendPing():next(function()
             logger:fine('ping success')
+            --http2:closePendings(30)
           end, function(reason)
             logger:warn('ping failure "%s"', reason)
             self:closeEventStream()
