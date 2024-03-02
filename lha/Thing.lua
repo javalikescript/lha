@@ -1,6 +1,7 @@
 local tables = require('jls.util.tables')
 local List = require('jls.util.List')
-local hex = require('jls.util.hex')
+local Codec = require('jls.util.Codec')
+local hex = Codec.getInstance('hex')
 
 local ThingProperty = require('lha.ThingProperty')
 local utils = require('lha.utils')
@@ -339,7 +340,7 @@ end, function(Thing)
     if #rgbHex < 6 then
       return 0, 0, 0
     end
-    local rgb = hex.decode(rgbHex)
+    local rgb = hex:decode(rgbHex)
     local r, g, b = string.byte(rgb, 1, 3)
     return r / 255, g / 255, b / 255
   end

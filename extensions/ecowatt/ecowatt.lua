@@ -3,7 +3,8 @@ local extension = ...
 local logger = extension:getLogger()
 local HttpClient = require('jls.net.http.HttpClient')
 local Date = require('jls.util.Date')
-local base64 = require('jls.util.base64')
+local Codec = require('jls.util.Codec')
+local base64 = Codec.getInstance('base64')
 
 local Thing = require('lha.Thing')
 local utils = require('lha.utils')
@@ -80,7 +81,7 @@ extension:subscribePollEvent(function()
   fetchJson(oauth.url, {
     method = 'POST',
     headers = {
-      ['Authorization'] = 'Basic '..base64.encode(basicRaw),
+      ['Authorization'] = 'Basic '..base64:encode(basicRaw),
       ['Content-Type'] = 'application/x-www-form-urlencoded'
     }
   }):next(function(token)
