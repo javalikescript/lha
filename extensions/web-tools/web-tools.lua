@@ -28,46 +28,6 @@ local function addContext(server, ...)
   table.insert(contexts, context)
 end
 
---[[
-local function os(cmd)
- local f, err = io.popen(cmd)
- if f then
-  local r = f:read('a')
-  f:close()
-  return r
- end
- return err
-end
-os('uname -a')
-
-local m = {}
-for _, v in pairs(debug.getregistry()) do
- local t = type(v)
- if t == 'userdata' then
-  local ut = tostring(v)
-  ut = string.match(ut, '^([^:]+):.*')
-  if ut then
-   t = t..':'..ut
-  end
- end
- m[t] = (m[t] or 0) + 1
-end
-for t, c in pairs(m) do
- print(t, c)
-end
-
-local c = 0
-for cl, ex in pairs(engine:getHTTPServer().pendings) do
-  c = c + 1
-end
-print('pending clients', c)
-
-local luv = require('luv')
-print('uname', luv.os_uname())
-print('hostname', luv.os_gethostname())
-print('pid', luv.os_getpid() >> 0)
-print('printing active handles on stdout'); luv.print_active_handles()
-]]
 extension:subscribeEvent('startup', function()
   local engine = extension:getEngine()
   local server = engine:getHTTPServer()

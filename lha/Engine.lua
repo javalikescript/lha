@@ -1,5 +1,4 @@
 local logger = require('jls.lang.logger'):get(...)
-local rootLogger = require('jls.lang.logger')
 local class = require('jls.lang.class')
 local system = require('jls.lang.system')
 local event = require('jls.lang.event')
@@ -632,6 +631,7 @@ end, function(Engine)
     })
     local defaultConfig = options.config
     options.config = nil
+    local rootLogger = require('jls.lang.logger')
     rootLogger:setLevel(options.loglevel)
     if options.loglevels then
       rootLogger:applyConfig(options.loglevels)

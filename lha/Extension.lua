@@ -78,7 +78,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
   end
 
   function extension:getLogger()
-    return require('jls.lang.logger'):get(self.id)
+    return require('jls.lang.logger'):get('lha.extension.'..self.id)
   end
 
   function extension:getType()
@@ -181,7 +181,10 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
   end
 
   function extension:require(name, base)
-    return loader.load(name, base and self.dir:getParent() or self.dir:getPath())
+    if base then
+      return loader.load(name, self.dir:getParent())
+    end
+    return loader.load(string.format('%s.%s', self.dir:getName(), name), self.dir:getParent())
   end
 
   function extension:subscribePollEvent(fn, minIntervalSec, lastPollSec)

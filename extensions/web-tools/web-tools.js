@@ -13,6 +13,7 @@ define(['./web-tools.xml'], function(toolsTemplate) {
   var toolsVue = new Vue({
     template: toolsTemplate,
     data: {
+      logConfig: '',
       logLevel: '',
       lua: '',
       luaOut: '',
@@ -29,6 +30,11 @@ define(['./web-tools.xml'], function(toolsTemplate) {
           return response.text();
         }).then(function(logLevel) {
           page.logLevel = logLevel.toLowerCase();
+        });
+      },
+      applyLogConfig: function() {
+        fetch('/engine/admin/setLogConfig', {method: 'POST', body: this.logConfig}).then(assertIsOk).then(function() {
+          toaster.toast('Log configuration applied');
         });
       },
       applyLogLevel: function() {

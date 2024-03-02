@@ -1,4 +1,6 @@
-local logger = require('jls.lang.logger'):get(...)
+local rootLogger = require('jls.lang.logger')
+local Logger = rootLogger:getClass()
+local logger = rootLogger:get(...)
 local system = require('jls.lang.system')
 local event = require('jls.lang.event')
 local File = require('jls.io.File')
@@ -287,11 +289,16 @@ local REST_ADMIN = {
     end
   },
   getLogLevel = function(exchange)
-    return logger:getClass().levelToString(logger:getLevel())
+    return Logger.levelToString(rootLogger:getLevel())
   end,
   ['setLogLevel?method=POST'] = function(exchange)
     local request = exchange:getRequest()
-    logger:setLevel(request:getBody())
+    rootLogger:setLevel(request:getBody())
+  end,
+  ['setLogConfig?method=POST'] = function(exchange)
+    local request = exchange:getRequest()
+    rootLogger:cleanConfig()
+    rootLogger:applyConfig(request:getBody())
   end
 }
 
