@@ -5,7 +5,7 @@ local Exception = require('jls.lang.Exception')
 local File = require('jls.io.File')
 local json = require('jls.util.json')
 local Map = require('jls.util.Map')
-local WebSocket = require('jls.net.http.ws').WebSocket
+local WebSocket = require('jls.net.http.WebSocket')
 
 local Thing = require('lha.Thing')
 local utils = require('lha.utils')
