@@ -1,4 +1,5 @@
 local logger = require('jls.lang.logger'):get(...)
+local event = require('jls.lang.event')
 local system = require('jls.lang.system')
 local Promise = require('jls.lang.Promise')
 local File = require('jls.io.File')
@@ -69,6 +70,18 @@ function utils.rejectIfNotOk(response)
   end
   return response:consume():next(function()
     return Promise.reject(string.format('HTTP status not ok, %s: "%s"', status, reason))
+  end)
+end
+
+function utils.timeout(promise, delayMs, reason)
+  return Promise:new(function(resolve, reject)
+    local timer = event:setTimeout(function()
+      reject(reason or 'timeout')
+    end, delayMs or 30000)
+    promise:finally(function(...)
+      event:clearTimeout(timer)
+    end)
+    promise:next(resolve, reject)
   end)
 end
 

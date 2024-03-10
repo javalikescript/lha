@@ -625,17 +625,13 @@ end, function(Engine)
         w = 'work',
         p = 'port',
         ll = 'loglevel',
-        ls = 'loglevels',
       },
       schema = utils.requireJson('lha.schema')
     })
     local defaultConfig = options.config
     options.config = nil
     local rootLogger = require('jls.lang.logger')
-    rootLogger:setLevel(options.loglevel)
-    if options.loglevels then
-      rootLogger:applyConfig(options.loglevels)
-    end
+    rootLogger:applyConfig(options.loglevel)
     local engine = Engine:new(options)
     engine:start(defaultConfig, customOptions.config)
     -- Do we need to poll at startup?

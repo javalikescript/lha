@@ -59,22 +59,7 @@
     },
     "loglevel": {
       "default": "warn",
-      "enum": [
-        "error",
-        "warn",
-        "info",
-        "config",
-        "fine",
-        "finer",
-        "finest",
-        "debug",
-        "all"
-      ],
-      "title": "The log level",
-      "type": "string"
-    },
-    "loglevels": {
-      "title": "The log levels",
+      "title": "The log level configuration",
       "type": "string"
     },
     "port": {

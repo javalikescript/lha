@@ -1,5 +1,5 @@
 {
-  "name": "Z-Wave JS WS (Preview)",
+  "name": "Z-Wave JS WS",
   "description": "Z-Wave JS WebSocket server integration",
   "version": "0.1",
   "script": "zwave-js-ws.lua",

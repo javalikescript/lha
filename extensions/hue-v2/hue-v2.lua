@@ -1,7 +1,6 @@
 local extension = ...
 
 local logger = extension:getLogger()
-local event = require('jls.lang.event')
 local Promise = require('jls.lang.Promise')
 local File = require('jls.io.File')
 local json = require('jls.util.json')
@@ -107,24 +106,12 @@ local function processEvents(events)
   end
 end
 
-local function timeout(promise, delayMs)
-  return Promise:new(function(resolve, reject)
-    local timer = event:setTimeout(function()
-      reject('timeout')
-    end, delayMs or 30000)
-    promise:next(function(...)
-      event:clearTimeout(timer)
-      resolve(...)
-    end, reject)
-  end)
-end
-
 extension:subscribeEvent('poll', function()
   if not hueBridge then
     return
   end
   logger:info('Polling')
-  timeout(hueBridge:getResourceMapById()):next(function(resources)
+  hueBridge:getResourceMapById():next(function(resources)
     if logger:isLoggable(logger.FINE) then
       logger:info('%d resources found', Map.size(resources))
     end

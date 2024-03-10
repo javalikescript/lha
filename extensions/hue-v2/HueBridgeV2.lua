@@ -49,8 +49,8 @@ return require('jls.lang.class').create(function(hueBridge)
   end
 
   function hueBridge:closeHttpClient()
+    self:stopEventStream()
     if self.client then
-      self:stopEventStream()
       self.client:close()
     end
     self.client = nil
@@ -86,11 +86,11 @@ return require('jls.lang.class').create(function(hueBridge)
   function hueBridge:httpRequest(method, path, body)
     local client = self:getHttpClient()
     logger:fine('httpRequest(%s, %s)', method, path)
-    return client:fetch(path or '/', {
+    return utils.timeout(client:fetch(path or '/', {
       method = method or 'GET',
       headers = self.headers,
       body = formatBody(body),
-    }):next(function(response)
+    })):next(function(response)
       local status, reason = response:getStatusCode()
       logger:finer('response status: %d', status)
       if status ~= 200 then
@@ -166,11 +166,12 @@ return require('jls.lang.class').create(function(hueBridge)
 
   function hueBridge:checkEventStream()
     if self.onEvents then
-      if self.responseStream and self.client and not self.client:isClosed() then
-        local http2 = self.client.http2
+      local client = self.client
+      if self.responseStream and client and not client:isClosed() then
+        local http2 = client.http2
         if http2 then
           logger:finer('pinging...')
-          http2:sendPing():next(function()
+          return utils.timeout(http2:sendPing(), 5000):next(function()
             logger:fine('ping success')
             --http2:closePendings(30)
           end, function(reason)
@@ -179,14 +180,15 @@ return require('jls.lang.class').create(function(hueBridge)
           end)
         end
       else
-        self:fetchEventStream()
+        return self:fetchEventStream()
       end
     end
+    return Promise.resolve()
   end
 
   function hueBridge:startEventStream(onEvents)
     self.onEvents = onEvents
-    self:fetchEventStream()
+    return self:fetchEventStream()
   end
 
   function hueBridge:publishEvents(events)
