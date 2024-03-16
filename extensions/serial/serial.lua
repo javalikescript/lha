@@ -21,9 +21,7 @@ local ECHO_END_OF_TEXT = 3
 
 local function createMessage(commandId, thingId, value, propertyId)
   local message = '['..tostring(commandId)..','..tostring(thingId or 0)..','..tostring(value or -1)..','..tostring(propertyId or 0)..']'
-  if logger:isLoggable(logger.FINE) then
-    logger:fine('serial message: '..message)
-  end
+  logger:fine('serial message: %s', message)
   return message..'\r\n'
 end
 
@@ -35,10 +33,7 @@ local allThings = {}
 
 local serialLineHandler = StreamHandler:new()
 function serialLineHandler:onData(line)
-  if logger:isLoggable(logger.FINE) then
-    logger:fine('handleSerialLine("'..tostring(line)..'")')
-  end
-  --logger:info('serial received "'..tostring(line)..'"')
+  logger:fine('serial received "%s"', line)
   if not serial then
     logger:warn('serial is closed')
     return false
@@ -52,9 +47,9 @@ function serialLineHandler:onData(line)
   local data = json.decode(line)
   if data.success ~= true then
     if data.error then
-      logger:info('serial received error "'..tostring(data.error)..'"')
+      logger:info('serial received error "%s"', data.error)
     else
-      logger:info('serial received unsuccessful command "'..tostring(line)..'"')
+      logger:info('serial received unsuccessful command "%s"', line)
     end
     return true
   end
@@ -64,12 +59,12 @@ function serialLineHandler:onData(line)
   end
   if data.cmd == COMMAND.WELCOME then
     maxId = data.maxId or -1
-    logger:info('Serial welcome received with maxId '..tostring(maxId))
+    logger:info('Serial welcome received with maxId %s', maxId)
     local configuration = extension:getConfiguration()
     if type(configuration.setupMessages) == 'table' then
       for _, setupMessage in ipairs(configuration.setupMessages) do
         local message = createMessage(setupMessage.commandId, setupMessage.thingId, setupMessage.value, setupMessage.propertyId)
-        logger:info('serial sending setup message: '..string.gsub(message, '[\r\n]+', ''))
+        logger:info('serial sending setup message: %s', string.gsub(message, '[\r\n]+', ''))
         serial:write(message)
       end
     end
@@ -102,30 +97,26 @@ function serialLineHandler:onData(line)
         end
       end
       extension:discoverThing(thingId, thing)
-      logger:info('Serial thing info received "'..title..'" with id '..thingId)
+      logger:info('Serial thing info received "%s" with id %s', title, thingId)
     end
     serialThings[thingId] = thing
   elseif data.cmd == COMMAND.READ then
     local thing = serialThings[thingId]
     if thing then
       if logger:isLoggable(logger.FINE) then
-        logger:fine('serial looking for thing properties "'..tostring(List.join(thing:getPropertyNames(), '", "'))..'"')
+        logger:fine('serial looking for thing properties "%s"', List.join(thing:getPropertyNames(), '", "'))
       end
       for propertyName in pairs(thing:getProperties()) do
         local value = data[propertyName]
         if value then
-          if logger:isLoggable(logger.FINE) then
-            logger:fine('serial received read for thing '..thingId..' "'..tostring(propertyName)..'" = '..tostring(value))
-          end
+          logger:fine('serial received read for thing %s "%s" = %s', thingId, propertyName, value)
           thing:updatePropertyValue(propertyName, value)
         else
-          if logger:isLoggable(logger.FINE) then
-            logger:fine('serial received read for thing '..thingId..' with missing property "'..tostring(propertyName)..'"')
-          end
+          logger:fine('serial received read for thing %s with missing property "%s"', thingId, propertyName)
         end
       end
     else
-      logger:warn('serial received read from unknown thing "'..tostring(line)..'"')
+      logger:warn('serial received read from unknown thing "%s"', line)
     end
   elseif data.cmd == COMMAND.WRITE then
   elseif data.cmd == COMMAND.SUBSCRIBE then
@@ -137,12 +128,12 @@ function serialLineHandler:onData(line)
       return false
     end
   else
-    logger:warn('serial received unsupported command "'..tostring(line)..'"')
+    logger:warn('serial received unsupported command "%s"', line)
   end
   return true
 end
 function serialLineHandler:onError(err)
-  logger:warn('serialLineHandler:onError("'..err..'")')
+  logger:warn('serialLineHandler:onError("%s")', err)
 end
 
 extension:subscribeEvent('startup', function()
@@ -154,12 +145,12 @@ extension:subscribeEvent('startup', function()
   end
   serial = Serial:open(configuration.portName, configuration)
   if not serial then
-    logger:warn('Unable to open serial on "'..configuration.portName..'"')
+    logger:warn('Unable to open serial on "%s"', configuration.portName)
     return
   end
   -- the arduino serial receive buffer holds 64 bytes
   serial:readStart(bsHandler)
-  logger:info('Reading serial on "'..configuration.portName..'"')
+  logger:info('Reading serial on "%s"', configuration.portName)
 end)
 
 extension:subscribeEvent('things', function()
@@ -173,7 +164,7 @@ end)
 
 extension:subscribeEvent('poll', function()
   if serial then
-    logger:info('poll serial device '..tostring(maxId)..' things')
+    logger:info('poll serial device %s things', maxId)
     for id = 1, maxId do
       serial:write(createMessage(COMMAND.READ, id))
     end

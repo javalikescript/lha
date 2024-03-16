@@ -41,7 +41,7 @@ local REST_SCRIPTS = {
         blocksFile:write('<xml xmlns="http://www.w3.org/1999/xhtml"></xml>')
         scriptFile:write('local script = ...\n\n')
         manifestFile:write(json.stringify(manifest, 2))
-        logger:fine('Created script "'..scriptId..'"')
+        logger:fine('Created script "%s"', scriptId)
         engine:loadExtensionFromDirectory(scriptDir, 'script')
         return scriptId
       else

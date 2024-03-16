@@ -30,7 +30,7 @@ local function setupBridgeThing()
 end
 
 extension:subscribeEvent('things', function()
-  logger:info('Looking for '..extension:getPrettyName()..' things')
+  logger:info('Looking for things')
   setupBridgeThing()
   thingsMap = extension:getThingsByDiscoveryKey()
   for _, thing in pairs(thingsMap) do
@@ -44,7 +44,7 @@ local function onHueThing(id, info, time, lastTime)
     if thing == nil then
       thing = HueBridge.createThingForType(info)
       if thing then
-        logger:info('New '..extension:getPrettyName()..' thing found with type "'..tostring(info.type)..'" id "'..tostring(id)..'" and uniqueid "'..tostring(info.uniqueid)..'"')
+        logger:info('New thing found with type "%s" id "%s" and uniqueid "%s"', info.type, id, info.uniqueid)
         extension:discoverThing(info.uniqueid, thing)
       else
         thing = false
@@ -63,9 +63,8 @@ local function onHueEvent(info)
   if info.e == 'changed' then
     if info.r == 'lights' or info.r == 'sensors' then
       local thing = thingsMap[info.uniqueid]
-      if info.state and logger:isLoggable(logger.FINE) then
-        local json = require('jls.util.json')
-        logger:fine('Hue event received on "'..(thing and thing:getTitle() or 'n/a')..'" '..json.stringify(info, 2))
+      if info.state then
+        logger:fine('Hue event received on %s: %T', thing, info)
       end
       if thing then
         hueBridge:updateThing(thing, info, true)
@@ -83,7 +82,7 @@ extension:subscribeEvent('poll', function()
   if not hueBridge then
     return
   end
-  logger:info('Polling '..extension:getPrettyName()..' extension')
+  logger:info('Polling')
   -- TODO expose a bridge thing
   hueBridge:get(HueBridge.CONST.sensors):next(function(allSensors)
     local time = Date.now()
@@ -105,13 +104,13 @@ extension:subscribeEvent('poll', function()
     end
     bridgeThing:updatePropertyValue('reachable', true)
   end):catch(function(err)
-    logger:warn('fail to get '..extension:getPrettyName()..' things, due to "'..tostring(err)..'"')
+    logger:warn('fail to get things, due to "%s"', err)
     bridgeThing:updatePropertyValue('reachable', false)
   end)
 end)
 
 extension:subscribeEvent('refresh', function()
-  logger:info('Refresh '..extension:getPrettyName()..' extension')
+  logger:info('Refreshing')
   hueBridge:updateConfiguration()
 end)
 
@@ -120,7 +119,7 @@ extension:subscribeEvent('heartbeat', function()
 end)
 
 extension:subscribeEvent('startup', function()
-  logger:info('startup '..extension:getPrettyName()..' extension')
+  logger:info('Starting')
   setupBridgeThing()
   if hueBridge then
     hueBridge:close()
@@ -129,7 +128,7 @@ extension:subscribeEvent('startup', function()
   if configuration.useWebSocket then
     hueBridge:setOnWebSocket(onHueEvent)
   end
-  logger:info('Bridge '..extension:getPrettyName()..': "'..configuration.url..'"')
+  logger:info('Bridge URL is "%s"', configuration.url)
   hueBridge:updateConfiguration()
 end)
 

@@ -40,7 +40,7 @@ extension:subscribeEvent('startup', function()
     engine:setRootValues(path, value, true)
   end
   mqttClient:connect(tUrl.host, tUrl.port):next(function()
-    logger:info('MQTT connected on "'..configuration.url..'"')
+    logger:info('MQTT connected on "%s"', configuration.url)
     if configuration.subscribe then
       mqttClient:subscribe(prefix + '/#', configuration.qos)
     end

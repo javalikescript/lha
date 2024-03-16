@@ -21,7 +21,7 @@ local function onNode(node)
     if thing == nil then
       thing = zWaveJs:createThingFromNode(node, device)
       if thing then
-        logger:info('New thing found with title "%s" id "%s"', thing:getTitle(), id)
+        logger:info('New thing found with title %s id %s', thing, id)
         extension:discoverThing(id, thing)
       else
         thing = false
@@ -60,7 +60,7 @@ end
 local function setThingPropertyValue(thing, name, value)
   local id = utils.findKey(thingsMap, thing)
   local function logFailure(reason)
-    logger:warn('Fail to set thing "%s" (id: %s) property "%s" to value "%s" due to "%s"', thing:getTitle(), id, name, value, reason)
+    logger:warn('Fail to set thing %s (id: %s) property "%s" to value "%s" due to "%s"', thing, id, name, value, reason)
   end
   if id then
     local device = deviceMap[id]
@@ -91,9 +91,7 @@ extension:subscribeEvent('poll', function()
       command = 'node.get_state',
       nodeId = nodeId
     }):next(function(result)
-      if logger:isLoggable(logger.FINER) then
-        logger:finer('Z-Wave nodeId %s state: %s', nodeId, json.stringify(result))
-      end
+      logger:finer('Z-Wave nodeId %s state: %t', nodeId, result)
       onNode(result.state)
     end)
   end

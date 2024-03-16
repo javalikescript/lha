@@ -41,7 +41,7 @@ local function updateReachability(value)
 end
 
 extension:subscribeEvent('things', function()
-  logger:info('Looking for %s things', extension:getPrettyName())
+  logger:info('Looking for things')
   bridgeThing = extension:syncDiscoveredThingByKey('bridge', function()
     return Thing:new('Bridge', 'The Hue bridge', {'MultiLevelSensor'}):addPropertiesFromNames('connected', 'reachable')
   end, bridgeThing)
@@ -58,7 +58,7 @@ local function processRessources(resources)
     if thing == nil then
       thing = hueBridge:createThingFromDeviceId(resources, id)
       if thing then
-        logger:info('New %s thing found with id "%s"', extension:getPrettyName(), id)
+        logger:info('New thing found with id "%s"', id)
         extension:discoverThing(id, thing)
       else
         thing = false
@@ -87,9 +87,7 @@ local function onHueEvent(info)
       local thing = thingsMap[info.uniqueid]
       local resource = lastResourceMap[info.uniqueid]
       if thing and resource then
-        if logger:isLoggable(logger.FINE) then
-          logger:fine('Hue event received on "%s" %s', thing and thing:getTitle(), json.stringify(info))
-        end
+        logger:fine('Hue event received on %s %t', thing, info)
         hueBridge:updateThingResource(thing, resource, info, true)
       end
     elseif info.r == 'websocket' and bridgeThing then
@@ -99,7 +97,7 @@ local function onHueEvent(info)
 end
 
 extension:subscribeEvent('poll', function()
-  logger:info('Polling %s extension', extension:getPrettyName())
+  logger:info('Polling')
   if hueBridge then
     hueBridge:getResourceMapById():next(function(resources)
       updateReachability(true)
@@ -108,13 +106,13 @@ extension:subscribeEvent('poll', function()
       updateReachability(false)
       return Promise.reject(reason)
     end):catch(function(reason)
-      logger:warn('Polling %s extension error: %s', extension:getPrettyName(), reason)
+      logger:warn('Polling error: %s', reason)
     end)
   end
 end)
 
 extension:subscribeEvent('refresh', function()
-  logger:info('Refresh %s extension', extension:getPrettyName())
+  logger:info('Refreshing')
   if hueBridge then
     hueBridge:updateConfiguration()
   end
@@ -127,7 +125,7 @@ extension:subscribeEvent('heartbeat', function()
 end)
 
 extension:subscribeEvent('startup', function()
-  logger:info('startup %s extension', extension:getPrettyName())
+  logger:info('Starting')
   if hueBridge then
     hueBridge:close()
   end
@@ -140,7 +138,7 @@ extension:subscribeEvent('startup', function()
   if configuration.useWebSocket then
     hueBridge:setOnWebSocket(onHueEvent)
   end
-  logger:info('Bridge '..extension:getPrettyName()..': "'..configuration.url..'"')
+  logger:info('Bridge URL is "%s"', configuration.url)
   hueBridge:updateConfiguration()
 end)
 

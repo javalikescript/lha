@@ -345,9 +345,7 @@ return class.create(function(historicalTable)
       else
         computeChanges(t, key)
       end
-      if logger:isLoggable(logger.FINER) then
-        logger:finer('historicalTable:aggregateValue("'..path..'", '..tostring(value)..') '..json.stringify(t, 2))
-      end
+      logger:finer('historicalTable:aggregateValue("%s", %s) %T', path, value, t)
     end
     return prev
   end
@@ -375,9 +373,7 @@ return class.create(function(historicalTable)
   end
 
   function historicalTable:forEachTableInFile(file, fromTime, toTime, fn)
-    if logger:isLoggable(logger.FINE) then
-      logger:fine('historicalTable:forEachTableInFile('..file:getPath()..', '..tostring(fromTime)..', '..tostring(toTime)..'")')
-    end
+    logger:fine('historicalTable:forEachTableInFile(%s, %s, %s")', file, fromTime, toTime)
     -- file format is: kind, time, data size, data content
     local fd = FileDescriptor.openSync(file)
     local offset = 0
@@ -424,7 +420,7 @@ return class.create(function(historicalTable)
     end
     fd:closeSync()
     if err then
-      logger:warn('historicalTable:forEachTableInFile('..file:getPath()..') '..err)
+      logger:warn('historicalTable:forEachTableInFile(%s) %s', file, err)
       return nil, err
     end
     return t, time
@@ -459,9 +455,7 @@ return class.create(function(historicalTable)
   end
 
   function historicalTable:forEachFile(fromTime, toTime, fn)
-    if logger:isLoggable(logger.FINE) then
-      logger:fine('historicalTable:forEachFile('..tostring(fromTime)..', '..tostring(toTime)..'")')
-    end
+    logger:fine('historicalTable:forEachFile(%s, %s")', fromTime, toTime)
     local filePattern = self:getFilePattern()
     local filenames = self.dir:list()
     table.sort(filenames)
@@ -471,9 +465,7 @@ return class.create(function(historicalTable)
       if ts then
         local time = Date.fromTimestamp(ts, self.utc)
         if time then
-          if logger:isLoggable(logger.FINEST) then
-            logger:finest('historicalTable:forEachFile('..tostring(fromTime)..', '..tostring(toTime)..'") '..filename..': '..tostring(time))
-          end
+          logger:finest('historicalTable:forEachFile(%s, %s") %s: %s', fromTime, toTime, filename, time)
           if time > toTime then
             break
           end
@@ -511,9 +503,7 @@ return class.create(function(historicalTable)
   end
 
   function historicalTable:forEachPeriod(fromTime, toTime, period, periodFn, tableFn)
-    if logger:isLoggable(logger.FINE) then
-      logger:fine('historicalTable:forEachPeriod('..tostring(fromTime)..', '..tostring(toTime)..', '..tostring(period)..')')
-    end
+    logger:fine('historicalTable:forEachPeriod(%s, %s, %s)', fromTime, toTime, period)
     if fromTime >= toTime or not period or period <= 0 then
       return
     end
@@ -534,9 +524,7 @@ return class.create(function(historicalTable)
   end
 
   function historicalTable:loadValues(fromTime, toTime, period, path, valueType)
-    if logger:isLoggable(logger.FINE) then
-      logger:fine('historicalTable:loadValues('..tostring(fromTime)..', '..tostring(toTime)..', '..tostring(period)..', "'..tostring(path)..'")')
-    end
+    logger:fine('historicalTable:loadValues(%s, %s, %s, "%s")', fromTime, toTime, period, path)
     local values = {}
     local AggregatorClass = guessAggregatorClass(valueType) or AnyValueAggregator
     local periodAggregator = AggregatorClass:new()
@@ -551,10 +539,8 @@ return class.create(function(historicalTable)
   end
 
   function historicalTable:loadMultiValues(fromTime, toTime, period, paths, types)
-    if logger:isLoggable(logger.FINE) then
-      logger:fine('historicalTable:loadMultiValues('..tostring(fromTime)..', '..tostring(toTime)..', '..tostring(period)..', "'..tostring(#paths)..'")')
-    end
     local count = #paths
+    logger:fine('historicalTable:loadMultiValues(%s, %s, %s, #%d)', fromTime, toTime, period, count)
     local pathsValues = {}
     local pathsAggregator = {}
     for i = 1, count do
@@ -603,7 +589,7 @@ return class.create(function(historicalTable)
     if status then
       jsonFile:write(result)
     else
-      logger:error(tables.stringify(self.liveTable, 2))
+      logger:error('%T', self.liveTable)
       error(result)
     end
   end
@@ -622,9 +608,7 @@ return class.create(function(historicalTable)
   end
 
   function historicalTable:save(isFull, isNotEmpty, time)
-    if logger:isLoggable(logger.FINER) then
-      logger:finer('historicalTable:save('..tostring(isFull)..', '..tostring(isNotEmpty)..', '..tostring(time)..') '..self.name)
-    end
+    logger:finer('historicalTable:save(%s, %s, %s) %s', isFull, isNotEmpty, time, self.name)
     local currentTable, previousTable = self:rollover()
     if not time then
       time = Date.now()
@@ -664,7 +648,7 @@ return class.create(function(historicalTable)
       end
       fd:closeSync()
     else
-      logger:warn('historicalTable:save() Cannot append file '..file:getPath()..' due to '..tostring(err))
+      logger:warn('historicalTable:save() Cannot append file %s due to %s', file, err)
     end
     -- clean JSON file to avoid loading old values after a crash
     self:removeJson()

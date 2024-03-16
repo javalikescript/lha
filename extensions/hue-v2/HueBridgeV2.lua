@@ -118,9 +118,7 @@ return require('jls.lang.class').create(function(hueBridge)
     return self:httpRequest('GET', '/clip/v2/resource/device'):next(function(devices)
       local serviceTypeMap = {}
       for _, device in ipairs(devices) do
-        if logger:isLoggable(logger.FINEST) then
-          logger:finest(json.stringify(device, '  '))
-        end
+        logger:finest('%T', device)
         for _, service in ipairs(device.services) do
           serviceTypeMap[service.rtype] = true
         end
@@ -195,7 +193,7 @@ return require('jls.lang.class').create(function(hueBridge)
     if self.onEvents then
       local status, e = Exception.pcall(self.onEvents, events)
       if not status then
-        logger:warn('Hue event callback error "%s" with payload: %s', e, json.stringify(events))
+        logger:warn('Hue event callback error "%s" with payload: %t', e, events)
       end
     end
   end

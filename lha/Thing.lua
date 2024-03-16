@@ -143,7 +143,7 @@ return require('jls.lang.class').create(function(thing)
   end
 
   function thing:toString()
-    return self.title..' - '..self.description
+    return string.format('"%s"-"%s"', self.title, self.description)
   end
 
   function thing:addType(sType)

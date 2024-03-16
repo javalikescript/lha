@@ -22,7 +22,7 @@ function extension:execute(command, anyCode)
   if not serialWorker then
     return Promise.reject('Execute serialWorker not available')
   end
-  logger:finer('executing "'..command..'"')
+  logger:finer('executing "%s"', command)
   return serialWorker:call(os_execute, command):next(function(result)
     local status, kind, code = string.match(result, '^(%a+) (%a+) %-?(%d+)$')
     if status == 'true' or anyCode then

@@ -112,7 +112,7 @@ local function updateThingFromNodeInfo(thing, info)
   local property = info.property
   local value = info.value or info.newValue
   if cc == CC.SENSOR_MULTILEVEL then
-    --logger:info('Z-Wave update thing "'..thing:getTitle()..'" node info: '..json.stringify(info, 2))
+    --logger:info('Z-Wave update thing "%s" node info: %T', thing, info)
     if property == 'Air temperature' and type(value) == 'number' then
       thing:updatePropertyValue('temperature', value)
     elseif property == 'Humidity' and type(value) == 'number' then
@@ -163,7 +163,7 @@ local function onZWaveNode(node)
       thing = createThingFromNode(node)
       if thing then
         if logger:isLoggable(logger.INFO) then
-          logger:info('Z-Wave node %s found %s "%s"', did, thing:getTitle(), thing:getDescription())
+          logger:info('Z-Wave node %s found %s', did, thing)
         end
         extension:discoverThing(did, thing)
       else
@@ -195,7 +195,6 @@ local function onZWaveEvent(event)
     if event.event == 'value updated' and event.nodeId then
       local thing = thingsByNodeId[event.nodeId]
       if thing then
-        --logger:info('Z-Wave JS event on thing: '..json.stringify(event, 2))
         updateThingFromNodeInfo(thing, event.args)
         local time = utils.timeToString()
         if thing:hasProperty('lastseen') then
@@ -206,7 +205,7 @@ local function onZWaveEvent(event)
         end
       else
         if logger:isLoggable(logger.FINE) then
-          logger:fine('Z-Wave JS event without thing: '..json.stringify(event, 2))
+          logger:fine('Z-Wave JS event without thing: %T', event)
         end
       end
     elseif event.event == 'statistics updated' and event.nodeId and event.statistics then
@@ -218,13 +217,13 @@ local function onZWaveEvent(event)
     else
       logger:info('Z-Wave node event "%s"', event.event)
       if logger:isLoggable(logger.FINE) then
-        logger:fine('Z-Wave JS event: '..json.stringify(event, 2))
+        logger:fine('Z-Wave JS event: %s', json.stringify(event, 2))
       end
       -- 'wake up' / sleep, dead / alive, 'statistics updated'
     end
   elseif event.source == 'controller' and event.event == 'statistics updated' and event.statistics then
     if logger:isLoggable(logger.FINE) then
-      logger:fine('Z-Wave JS controller statistics updated: '..json.stringify(event.statistics))
+      logger:fine('Z-Wave JS controller statistics updated: %s', json.stringify(event.statistics))
     end
   else
     logger:info('Z-Wave %s event "%s"', event.source, event.event)
@@ -445,10 +444,10 @@ local function setThingPropertyValue(thing, name, value)
         return
       end
     else
-      logger:warn('Z-Wave unable to set value "%s", nodeId not found for thing id %s "%s", %d node ids', name, thing:getId(), thing:getTitle(), Map.size(thingsByNodeId))
+      logger:warn('Z-Wave unable to set value "%s", nodeId not found for thing id %s %s, %d node ids', name, thing:getId(), thing, Map.size(thingsByNodeId))
       if logger:isLoggable(logger.INFO) then
         for id, th in pairs(thingsByNodeId) do
-          logger:info('node id "%s" mapped to thing id %s "%s"', id, th:getId(), th:getTitle())
+          logger:info('node id "%s" mapped to thing id %s %s', id, th:getId(), th)
         end
       end
     end
@@ -465,7 +464,7 @@ extension:subscribeEvent('things', function()
 end)
 extension:subscribeEvent('poll', function()
   if logger:isLoggable(logger.INFO) then
-    logger:info('Polling %s extension, %d node ids', extension:getPrettyName(), Map.size(thingsByNodeId))
+    logger:info('Polling, %d node ids', Map.size(thingsByNodeId))
   end
   local pollTime = utils.time()
   local minPingTime = pollTime - 6 * 3600
@@ -537,7 +536,7 @@ extension:subscribeEvent('heartbeat', function()
 end)
 
 extension:subscribeEvent('startup', function()
-  logger:info('Starting %s extension', extension:getPrettyName())
+  logger:info('Starting')
   cleanup()
   setupControllerThing()
   local config = extension:getConfiguration()

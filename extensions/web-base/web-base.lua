@@ -77,7 +77,7 @@ local function addContext(server, ...)
 end
 
 local function onWebSocketClose(webSocket)
-  logger:fine('WebSocket closed '..tostring(webSocket))
+  logger:fine('WebSocket closed %s', webSocket)
   List.removeFirst(websockets, webSocket)
 end
 
@@ -85,9 +85,7 @@ local batchDataChange = true
 local dataChangeEvent = nil
 
 local function onDataChange(value, previousValue, path)
-  if logger:isLoggable(logger.FINE) then
-    logger:fine('onDataChange() "'..tostring(path)..'": "'..tostring(value)..'" '..tostring(#websockets))
-  end
+  logger:fine('onDataChange() "%s": "%s" %s', path, value, #websockets)
   if #websockets == 0 then
     return
   end
@@ -128,12 +126,12 @@ local addons = {}
 
 function extension:registerAddon(id, addon)
   addons[id] = addon
-  logger:info('Web base add-on "'..id..'" registered')
+  logger:info('Web base add-on "%s" registered', id)
 end
 
 function extension:unregisterAddon(name)
   addons[name] = nil
-  logger:info('Web base add-on "'..name..'" unregistered')
+  logger:info('Web base add-on "%s" unregistered', name)
 end
 
 function extension:registerAddonExtension(ext, script)
@@ -204,17 +202,17 @@ extension:subscribeEvent('startup', function()
   local assetsHandler
   if assets:isFile() then
     if string.find(assets:getPathName(), '%.zip$') then
-      logger:info('Using assets file "'..assets:getPath()..'"')
+      logger:info('Using assets file "%s"', assets)
       assetsHandler = ZipFileHttpHandler:new(assets)
     else
-      logger:warn('Invalid assets file "'..assets:getPath()..'"')
+      logger:warn('Invalid assets file "%s"', assets)
       assetsHandler = HttpContext.notFoundHandler
     end
   else
     if assets:isDirectory() then
-      logger:info('Using assets directory "'..assets:getPath()..'"')
+      logger:info('Using assets directory "%s"', assets)
     else
-      logger:warn('Missing assets directory "'..assets:getPath()..'"')
+      logger:warn('Missing assets directory "%s"', assets)
     end
     assetsHandler = FileHttpHandler:new(assets):setCacheControl(configuration.cache)
   end
@@ -224,9 +222,7 @@ extension:subscribeEvent('startup', function()
   addContext(server, '/static/(.*)', assetsHandler)
   addContext(server, '/addon/([^/]*)/?(.*)', HttpHandler:new(function(self, exchange)
     local name, path = exchange:getRequestArguments()
-    if logger:isLoggable(logger.FINE) then
-      logger:fine('add-on handler "'..tostring(name)..'" / "'..tostring(path)..'"')
-    end
+    logger:fine('add-on handler "%s" / "%s"', name, path)
     if name == '' then
       local list = {}
       for id, addon in pairs(addons) do
@@ -239,9 +235,7 @@ extension:subscribeEvent('startup', function()
     else
       local addon = addons[name]
       if addon and addon.handler then
-        if logger:isLoggable(logger.FINE) then
-          logger:fine('calling add-on "'..tostring(name)..'" handler')
-        end
+        logger:fine('calling add-on "%s" handler', name)
         return addon.handler:handle(exchange)
       end
       HttpExchange.notFound(exchange)
@@ -249,9 +243,7 @@ extension:subscribeEvent('startup', function()
   end))
   addContext(server, '/ws/', Map.assign(WebSocketUpgradeHandler:new(), {
     onOpen = function(_, webSocket, exchange)
-      if logger:isLoggable(logger.FINE) then
-        logger:fine('WebSocket openned '..tostring(webSocket))
-      end
+      logger:fine('WebSocket openned %s', webSocket)
       table.insert(websockets, webSocket)
       webSocket.onClose = onWebSocketClose
     end

@@ -62,7 +62,6 @@ local function updateWeatherThing(thing, w)
   if not (thing and type(w) == 'table') then
     return
   end
-  --logger:info('rain '..json.stringify(w, 2))
   if w.main then
     -- temp_min temp_max
     thing:updatePropertyValue('temperature', w.main.temp)

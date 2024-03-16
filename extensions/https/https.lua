@@ -45,14 +45,14 @@ extension:subscribeEvent('startup', function()
   local pkeyFile = utils.getAbsoluteFile(configuration.key, engine:getWorkDirectory())
   if not certFile:exists() or not pkeyFile:exists() then
     writeCertificateAndPrivateKey(certFile, pkeyFile, configuration.commonName)
-    logger:info('Generated certificate %s and associated private key %s', certFile:getPath(), pkeyFile:getPath())
+    logger:info('Generated certificate %s and associated private key %s', certFile, pkeyFile)
   else
     -- check and log certificate expiration
     local cert = readCertificate(certFile)
     local isValid, notbefore, notafter = cert:validat()
     local notafterDate = Date:new(notafter:get() * 1000)
     local notafterText = notafterDate:toISOString(true)
-    logger:info('Using certificate %s valid until %s', certFile:getPath(), notafterText)
+    logger:info('Using certificate %s valid until %s', certFile, notafterText)
     if not isValid then
       logger:warn('The certificate is no more valid since %s', notafterText)
     end

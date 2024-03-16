@@ -187,7 +187,7 @@ local function createThingsThing()
   return thing
 end
 
-logger:info('self extension under '..extension:getDir():getPath())
+logger:info('self extension under %s', extension:getDir())
 
 local luaThing, thingsThing
 
@@ -218,7 +218,6 @@ local function refreshThings()
           value = property:getValue()
           if type(value) == 'string' then
             value = utils.timeFromString(value)
-            --logger:info('Thing '..thingId..' lastseen: '..tostring(value)..'/'..tostring(time))
             if value and value < minLastseen then
               minLastseen = value
             end
@@ -277,12 +276,11 @@ extension:subscribeEvent('things', function()
   logger:fine('Looking for self things')
   luaThing = extension:syncDiscoveredThingByKey('lua', createLuaThing)
   thingsThing = extension:syncDiscoveredThingByKey('things', createThingsThing)
-  --logger:info('luaThing '..require('jls.util.json').encode(luaThing:asThingDescription()))
   refreshThings()
 end)
 
 extension:subscribeEvent('poll', function()
-  logger:fine('Polling '..extension:getPrettyName()..' extension')
+  logger:fine('Polling')
   refreshLua()
   refreshThings()
 end)

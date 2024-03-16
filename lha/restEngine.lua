@@ -39,7 +39,7 @@ local function refreshThingsDescription(engine, extension)
     if thing and extensionId and discoveryKey then
       things[thingId] = thing
       engine:disableThing(thingId)
-      logger:info('Thing "%s" (%s %s/%s) disabled', thing:getTitle(), thingId, extensionId, discoveryKey)
+      logger:info('Thing %s (%s %s/%s) disabled', thing, thingId, extensionId, discoveryKey)
     end
   end
   publisher:publishEvent('things')
@@ -72,7 +72,7 @@ local function refreshThingsDescription(engine, extension)
               discoveredThing:updatePropertyValue(name, value)
             end
           end
-          logger:fine('Thing "%s" (%s) discovered', thing:getTitle(), thingId)
+          logger:fine('Thing %s (%s) discovered', thing, thingId)
         end
       end
       thingIds = Map.skeys(things)
@@ -81,7 +81,7 @@ local function refreshThingsDescription(engine, extension)
         logger:info('Discovered ended, missing %d things', #thingIds)
         for thingId, thing in pairs(things) do
           engine.things[thingId] = thing
-          logger:warn('Thing "%s" (%s) restored', thing:getTitle(), thingId)
+          logger:warn('Thing %s (%s) restored', thing, thingId)
           local thingConfiguration = engine:getThingConfigurationById(thingId)
           if thingConfiguration then
             thingConfiguration.active = true

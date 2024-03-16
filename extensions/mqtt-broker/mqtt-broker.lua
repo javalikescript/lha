@@ -17,7 +17,7 @@ extension:subscribeEvent('startup', function()
   closeServer()
   mqttServer = mqtt.MqttServer:new()
   mqttServer:bind(configuration.address, configuration.port):next(function()
-    logger:info('MQTT Broker bound on "'..configuration.port..'"')
+    logger:info('MQTT Broker bound on "%s"', configuration.port)
   end)
 end)
 

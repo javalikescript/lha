@@ -22,7 +22,7 @@ end
 
 local function isValidPath(name)
   if not name or name == '' or name == 'engine' or name == 'things' then
-    logger:warn('Invalid share name "'..name..'"')
+    logger:warn('Invalid share name "%s"', name)
     return false
   end
   return true
@@ -36,12 +36,12 @@ extension:subscribeEvent('startup', function()
     for _, share in ipairs(configuration.shares) do
       local dir = utils.getAbsoluteFile(share.dir or 'share', extension:getDir())
       if not dir:exists() then
-        logger:warn('Share directory "'..dir:getPath()..'" not found')
+        logger:warn('Share directory "%s" not found', dir)
       elseif not dir:isDirectory() then
-        logger:warn('Invalid share directory "'..dir:getPath()..'"')
+        logger:warn('Invalid share directory "%s"', dir)
       end
       if isValidPath(share.name) then
-        logger:info('Share directory "'..dir:getPath()..'" on "'..tostring(share.name)..'"')
+        logger:info('Share directory "%s" on "%s"', dir, share.name)
         local path = '/'..share.name..'/(.*)'
         if share.useWebDAV then
           addContext(server, path, WebDavHttpHandler:new(dir, share.permissions))
@@ -54,7 +54,7 @@ extension:subscribeEvent('startup', function()
   if configuration.proxies then
     for _, proxy in ipairs(configuration.proxies) do
       if isValidPath(proxy.name) and proxy.url then
-        logger:info('Reverse proxy to "'..tostring(proxy.url)..'" on "'..tostring(proxy.name)..'"')
+        logger:info('Reverse proxy to "%s" on "%s"', proxy.url, proxy.name)
         local path = '/'..proxy.name..'/(.*)'
         addContext(server, path, ProxyHttpHandler:new():configureReverse(proxy.url))
       end

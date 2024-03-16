@@ -1,4 +1,4 @@
-local logger = require('jls.lang.logger'):get(...)
+local rootLogger = require('jls.lang.logger')
 local loader = require('jls.lang.loader')
 local event = require('jls.lang.event')
 local Exception = require('jls.lang.Exception')
@@ -43,6 +43,8 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     self.lastModified = 0
     self.scheduler = Scheduler:new()
     self.watchers = {}
+    self.timers = {}
+    self.logger = rootLogger:get('lha.extension.'..self.id)
     self.changeFn = function(path, value, previousValue)
       for _, watcher in ipairs(self.watchers) do
         if watcher.path and watcher.path == path then
@@ -55,19 +57,16 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
         end
       end
     end
-    self.timers = {}
     self:cleanExtension()
     self:connectConfiguration()
   end
 
   function extension:cleanExtension()
-    if logger:isLoggable(logger.FINE) then
-      logger:fine('extension:cleanExtension() '..self.id)
-    end
+    self.logger:fine('cleanExtension()')
     self.scheduler:removeAllSchedules()
     self:unsubscribeAllEvents()
     self:subscribeEvent('error', function(reason, eventName)
-      logger:warn('Error while handling event "%s" on extension "%s": "%s"', eventName, self.id, reason)
+      self.logger:warn('Error while handling event "%s" on extension "%s": "%s"', eventName, self.id, reason)
     end)
     self:clearTimers()
     self.watchers = {}
@@ -78,7 +77,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
   end
 
   function extension:getLogger()
-    return require('jls.lang.logger'):get('lha.extension.'..self.id)
+    return self.logger
   end
 
   function extension:getType()
@@ -93,12 +92,8 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     return self.id
   end
 
-  function extension:getPrettyName()
-    return self.id
-  end
-
   function extension:toString()
-    return self:getPrettyName()
+    return string.format('%s %s %s', self.id, self.type, self.manifest.name)
   end
 
   function extension:isLoaded()
@@ -113,7 +108,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
   end
 
   function extension:name()
-    return self.manifest.name or self:getPrettyName()
+    return self.manifest.name or self.id
   end
 
   function extension:description()
@@ -157,9 +152,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
   end
 
   function extension:initConfiguration()
-    if logger:isLoggable(logger.FINEST) then
-      logger:finest('initializing configuration for extension %s', self:getPrettyName())
-    end
+    self.logger:finest('initializing configuration')
     local configuration = self:getConfiguration()
     if self.manifest.config then
       -- we do not want to validate the config against the schema
@@ -169,9 +162,9 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
       local defaultValues, err = tables.getSchemaValue(self.manifest.schema, {}, true)
       if defaultValues then
         tables.merge(configuration, defaultValues, true)
-      elseif logger:isLoggable(logger.WARN) then
-        logger:warn('unable to get default values from schema, due to '..tostring(err))
-        logger:warn('schema :'..json.stringify(self.manifest.schema, 2))
+      elseif self.logger:isLoggable(self.logger.WARN) then
+        self.logger:warn('unable to get default values from schema, due to %s', err)
+        self.logger:warn('schema is %T', self.manifest.schema)
       end
     end
     if next(configuration) == nil then
@@ -201,22 +194,20 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
         lastPollSec = pollSec
         fn(...)
       else
-        if logger:isLoggable(logger.INFO) then
-          logger:info('minimum polling interval not reached (%ds) for extension %s', minIntervalSec + lastPollSec - pollSec, self:getPrettyName())
-        end
+        self.logger:info('minimum polling interval not reached (%ds)', minIntervalSec + lastPollSec - pollSec)
       end
     end)
   end
 
   function extension:fireExtensionEvent(...)
-    if logger:isLoggable(logger.INFO) then
-      logger:info('extension:fireExtensionEvent('..List.join(table.pack(...), ', ')..')')
+    if self.logger:isLoggable(self.logger.INFO) then
+      self.logger:info('fireExtensionEvent(%s)', List.join(table.pack(...), ', '))
     end
     self.engine:publishExtensionsEvent(self, ...)
   end
 
   function extension:reloadExtension()
-    logger:info('Reload extension %s', self)
+    self.logger:info('reloading extension')
     self:cleanExtension()
     self:loadExtension()
   end
@@ -320,10 +311,10 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
       if thing then
         return thing:getPropertyValue(propertyName)
       else
-        logger:warn('unknown thing for id "'..tostring(thingId)..'"')
+        self.logger:warn('unknown thing for id "%s"', thingId)
       end
     else
-      logger:warn('invalid path "'..tostring(path)..'"')
+      self.logger:warn('invalid path "%s"', path)
     end
     return nil
   end
@@ -335,10 +326,10 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
       if thing then
         thing:setPropertyValue(propertyName, value)
       else
-        logger:warn('unknown thing for id "'..tostring(thingId)..'"')
+        self.logger:warn('unknown thing for id "%s"', thingId)
       end
     else
-      logger:warn('invalid path "'..tostring(path)..'"')
+      self.logger:warn('invalid path "%s"', path)
     end
   end
 
@@ -366,9 +357,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
   -- @param key A uniq string identifying the thing in this extension.
   -- @param thing A thing to add.
   function extension:discoverThing(key, thing)
-    if logger:isLoggable(logger.FINE) then
-      logger:fine('the thing "'..key..'" on extension '..self.id..' has been discovered')
-    end
+    self.logger:fine('the thing "%s" has been discovered', key)
     self.discoveredThings[key] = thing
   end
 
@@ -427,9 +416,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     local thing = self:getThingByDiscoveryKey(key)
     if discoveredThing then
       if thing then
-        if logger:isLoggable(logger.FINE) then
-          logger:fine('the thing "'..key..'" on extension '..self.id..' is now managed by the engine')
-        end
+        self.logger:fine('the thing "%s" is now managed by the engine', key)
         for name, value in pairs(discoveredThing:getPropertyValues()) do
           thing:updatePropertyValue(name, value)
         end
@@ -453,9 +440,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
   function extension:refresh()
     local lastModified = self:getLastModified()
     if lastModified > self.lastModified then
-      if logger:isLoggable(logger.INFO) then
-        logger:info('reloading extension '..self.id)
-      end
+      self.logger:info('reloading extension')
       self:reloadExtension()
     elseif lastModified <= 0 then
       self.lastModified = 0
@@ -474,17 +459,13 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
   function extension:loadManifest()
     local manifestFile = self:getManifestFile()
     if manifestFile:isFile() then
-      if logger:isLoggable(logger.FINEST) then
-        logger:finest('reading manifest for extension '..self:getPrettyName())
-      end
+      self.logger:finest('reading manifest')
       local manifest = json.decode(manifestFile:readAll())
       local m, err = tables.getSchemaValue(schema, manifest, true)
       if m then
         return m
       end
-      if logger:isLoggable(logger.WARN) then
-        logger:warn('Invalid extension manifest, '..tostring(err))
-      end
+      self.logger:warn('Invalid extension manifest, %s', err)
       return manifest
     end
   end
@@ -502,18 +483,16 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     -- TODO handle dependencies
     local scriptFile = self:getScriptFile()
     if scriptFile:isFile() then
-      if logger:isLoggable(logger.FINEST) then
-        logger:finest('loading extension '..self:getPrettyName())
-      end
+      self.logger:finest('loading extension')
       local env = setmetatable({}, { __index = _G })
       local scriptFn, err = loadfile(scriptFile:getPath(), 't', env)
       if not scriptFn or err then
-        logger:warn('Cannot load extension "'..self:getPrettyName()..'" from script "'..scriptFile:getPath()..'" due to '..tostring(err))
+        self.logger:warn('Cannot load extension from script "%s" due to %s', scriptFile, err)
       else
         return scriptFn
       end
     else
-      logger:warn('Cannot load extension "'..self:getPrettyName()..'" from invalid script file "'..scriptFile:getPath()..'"')
+      self.logger:warn('Cannot load extension from invalid script file "%s"', scriptFile)
     end
   end
 
@@ -529,7 +508,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
         self.lastModified = lastModified
         self.loaded = true
       else
-        logger:warn('Cannot load extension "%s" due to %s', self:getPrettyName(), err)
+        self.logger:warn('Cannot load extension due to %s', err)
         self.manifest = {}
       end
     else

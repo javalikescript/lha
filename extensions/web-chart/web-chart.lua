@@ -39,7 +39,7 @@ local HistoricalDataHandler = class.create('jls.net.http.HttpHandler', function(
       local fromTime = tonumber(request:getHeader("X-FROM-TIME"))
       local subPaths = request:getHeader("X-PATHS")
       if logger:isLoggable(logger.FINE) then
-        logger:fine('process data request '..tostring(fromTime)..' - '..tostring(toTime)..' / '..tostring(period)..' on "'..tostring(path)..'"')
+        logger:fine('process data request %s - %s / %s on "%s"', fromTime, toTime, period, path)
       end
       period = period * 1000
       if not toTime then

@@ -28,7 +28,7 @@ end
 local function setThingPropertyValue(thing, name, value)
   local id = getThingId(thing)
   local function logFailure(reason)
-    logger:warn('Fail to set thing "%s" (id: %s) property "%s" to value "%s" due to "%s"', thing:getTitle(), id, name, value, reason)
+    logger:warn('Fail to set thing %s (id: %s) property "%s" to value "%s" due to "%s"', thing, id, name, value, reason)
   end
   if hueBridge and id then
     hueBridge:setResourceValue(lastResourceMap, id, name, value):next(function()

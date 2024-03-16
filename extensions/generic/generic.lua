@@ -115,7 +115,7 @@ local function createThings(thingsByKey, things)
           local discoveredThing = createThing(thingConfig)
           if discoveredThing then
             if logger:isLoggable(logger.FINEST) then
-              logger:finest('discoveredThing "%s": %s', thingConfig.id, require('jls.util.json').stringify(discoveredThing:asThingDescription(), 2))
+              logger:finest('discoveredThing "%s": %T', thingConfig.id, discoveredThing:asThingDescription())
             end
             extension:discoverThing(thingConfig.id, discoveredThing)
           end

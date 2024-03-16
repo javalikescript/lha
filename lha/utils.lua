@@ -12,9 +12,9 @@ local utils = {}
 function utils.createDirectoryOrExit(dir)
   if not dir:isDirectory() then
     if dir:mkdir() then
-      logger:info('Created directory "'..dir:getPath()..'"')
+      logger:info('Created directory "%s"', dir)
     else
-      logger:warn('Unable to create the directory "'..dir:getPath()..'"')
+      logger:warn('Unable to create the directory "%s"', dir)
       system.exit(1)
     end
   end
@@ -22,7 +22,7 @@ end
 
 function utils.checkDirectoryOrExit(dir)
   if not dir:isDirectory() then
-    logger:warn('The directory "'..dir:getPath()..'" does not exist')
+    logger:warn('The directory "%s" does not exist', dir)
     system.exit(1)
   end
 end
@@ -215,7 +215,7 @@ end
 
 function utils.addThingPropertyFromInfo(thing, name, info, t)
   if thing:hasProperty(name) then
-    logger:warn('The thing "%s" already has the property "%s"', thing:getTitle(), name)
+    logger:warn('The thing %s has already the property "%s"', thing, name)
   else
     local title = expand(info.title, t)
     local description = expand(info.description, t)

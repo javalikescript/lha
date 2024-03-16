@@ -37,6 +37,9 @@ return require('jls.lang.class').create(function(zWaveJs)
   end
 
   function zWaveJs:sendWebSocket(message, options)
+    if not self.webSocket then
+      return Promise.reject('not connected')
+    end
     self.zwMsgId = self.zwMsgId + 1
     local messageId = 'lha-zwave-js-'..tostring(self.zwMsgId)
     if type(message) == 'string' then
@@ -64,9 +67,7 @@ return require('jls.lang.class').create(function(zWaveJs)
     -- start receive the state and get events
     return self:sendWebSocket('start_listening'):next(function(result)
       logger:info('Z-Wave start_listening found %d nodes', #result.state.nodes)
-      if logger:isLoggable(logger.FINEST) then
-        logger:finest('Z-Wave start_listening result: '..json.stringify(result, 2))
-      end
+      logger:finest('Z-Wave start_listening result: %T', result)
       if self.dumpNodes then
         logger:info('Z-Wave dumping nodes')
         File:new('zwave-js.json'):write(json.stringify(result.state, 2))
@@ -94,9 +95,7 @@ return require('jls.lang.class').create(function(zWaveJs)
       local status, message = Exception.pcall(json.decode, payload)
       if status and message and message.type then
         if message.type == 'event' and message.event then
-          if logger:isLoggable(logger.FINER) then
-            logger:finer('Z-Wave JS event: %s', json.stringify(message.event, 2))
-          end
+          logger:finer('Z-Wave JS event: %T', message.event)
           self:publishEvent(message.event)
         elseif message.type == 'result' then
           local zwMsg = self.zwMsgMap[message.messageId]

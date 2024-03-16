@@ -30,41 +30,41 @@ return class.create(function(engine)
 
     local rootDir = File:new(options.engine):getAbsoluteFile():getParentFile()
     utils.checkDirectoryOrExit(rootDir)
-    logger:fine('rootDir is %s', rootDir:getPath())
+    logger:fine('rootDir is %s', rootDir)
     self.rootDir = rootDir
 
     -- setup
     local workDir = utils.getAbsoluteFile(options.work or 'work', rootDir)
     utils.checkDirectoryOrExit(workDir)
-    logger:fine('workDir is %s', workDir:getPath())
+    logger:fine('workDir is %s', workDir)
     self.workDir = workDir
 
     local configurationDir = File:new(workDir, 'configuration')
-    logger:fine('configurationDir is %s', configurationDir:getPath())
+    logger:fine('configurationDir is %s', configurationDir)
     utils.createDirectoryOrExit(configurationDir)
     self.configHistory = HistoricalTable:new(configurationDir, 'config', {fileMin = 43200})
 
     local dataDir = File:new(workDir, 'data')
-    logger:fine('dataDir is %s', dataDir:getPath())
+    logger:fine('dataDir is %s', dataDir)
     utils.createDirectoryOrExit(dataDir)
     self.dataHistory = HistoricalTable:new(dataDir, 'data')
 
     self.extensionsDir = File:new(workDir, 'extensions')
-    logger:fine('extensionsDir is %s', self.extensionsDir:getPath())
+    logger:fine('extensionsDir is %s', self.extensionsDir)
     utils.createDirectoryOrExit(self.extensionsDir)
 
     self.lhaExtensionsDir = nil
     if rootDir:getPath() ~= workDir:getPath() then
       self.lhaExtensionsDir = File:new(rootDir, 'extensions')
-      logger:fine('lhaExtensionsDir is %s', self.lhaExtensionsDir:getPath())
+      logger:fine('lhaExtensionsDir is %s', self.lhaExtensionsDir)
     end
 
     self.scriptsDir = File:new(workDir, 'scripts')
-    logger:fine('scriptsDir is %s', self.scriptsDir:getPath())
+    logger:fine('scriptsDir is %s', self.scriptsDir)
     utils.createDirectoryOrExit(self.scriptsDir)
 
     self.tmpDir = File:new(workDir, 'tmp')
-    logger:fine('tmpDir is %s', self.tmpDir:getPath())
+    logger:fine('tmpDir is %s', self.tmpDir)
     utils.createDirectoryOrExit(self.tmpDir)
   end
 
@@ -273,7 +273,7 @@ return class.create(function(engine)
   end
 
   function engine:loadExtensionFromDirectory(dir, type)
-    logger:info('Loading extension from directory "%s"', dir:getPath())
+    logger:info('Loading extension from directory "%s"', dir)
     local extension = Extension.read(self, dir, type)
     if extension then
       if self:getExtensionById(extension:getId()) then
@@ -284,15 +284,15 @@ return class.create(function(engine)
         self:addExtension(extension)
         logger:info('Extension %s loaded', extension:getId())
       else
-        logger:info('The extension %s cannot be loaded', dir:getPath())
+        logger:info('The extension %s cannot be loaded', dir)
       end
     else
-      logger:info('The extension %s is ignored', dir:getPath())
+      logger:info('The extension %s is ignored', dir)
     end
   end
 
   function engine:loadExtensionsFromDirectory(dir, type)
-    logger:info('Loading extensions from directory "%s"', dir:getPath())
+    logger:info('Loading extensions from directory "%s"', dir)
     for _, extensionDir in ipairs(dir:listFiles()) do
       if extensionDir:isDirectory() then
         self:loadExtensionFromDirectory(extensionDir, type)
@@ -567,17 +567,13 @@ return class.create(function(engine)
       data = self.dataHistory:getLiveTable()
     }
     if customConfig then
-      if logger:isLoggable(logger.FINE) then
-        logger:fine('customConfig: '..require('jls.util.json').stringify(customConfig, 2))
-      end
+      logger:fine('customConfig: %T', customConfig)
       tables.merge(self.root.configuration, customConfig)
     end
     if defaultConfig then
       tables.merge(self.root.configuration, defaultConfig, true)
     end
-    if logger:isLoggable(logger.FINER) then
-      logger:finer('config: '..require('jls.util.json').stringify(self.root.configuration, 2))
-    end
+    logger:finer('config: %T', self.root.configuration)
     tables.merge(self.root.configuration, {
       engine = {},
       extensions = {},

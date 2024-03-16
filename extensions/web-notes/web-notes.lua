@@ -22,7 +22,7 @@ end
 local function checkDir(dir)
   if not dir:isDirectory() then
     if not dir:mkdir() then
-      logger:warn('Unable to create the directory "'..dir:getPath()..'"')
+      logger:warn('Unable to create the directory "%s"', dir)
     end
   end
   return dir
