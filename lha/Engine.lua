@@ -228,7 +228,7 @@ return class.create(function(engine)
     logger:finest('Publishing Extensions Event %s', name)
     for _, extension in ipairs(self.extensions) do
       if extension ~= source and extension:isActive() then
-        logger:finer('Publishing event %s on extension %s', name, extension:getId())
+        logger:finer('Publishing event %s on extension %s', name, extension)
         extension:publishEvent(...)
       end
     end
@@ -273,18 +273,18 @@ return class.create(function(engine)
   end
 
   function engine:loadExtensionFromDirectory(dir, type)
-    logger:info('Loading extension from directory "%s"', dir)
+    logger:fine('Loading extension from directory "%s"', dir)
     local extension = Extension.read(self, dir, type)
     if extension then
       if self:getExtensionById(extension:getId()) then
-        logger:info('The extension %s already exists', extension:getId())
+        logger:warn('The extension %s already exists', extension)
         return nil
       end
       if extension:loadExtension() then
         self:addExtension(extension)
-        logger:info('Extension %s loaded', extension:getId())
+        logger:info('Extension %s loaded', extension)
       else
-        logger:info('The extension %s cannot be loaded', dir)
+        logger:warn('The extension %s cannot be loaded', dir)
       end
     else
       logger:info('The extension %s is ignored', dir)

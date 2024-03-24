@@ -21,7 +21,7 @@ local function onNode(node)
     if thing == nil then
       thing = zWaveJs:createThingFromNode(node, device)
       if thing then
-        logger:info('New thing found with title %s id %s', thing, id)
+        logger:info('New thing found %s with id %s', thing, id)
         extension:discoverThing(id, thing)
       else
         thing = false

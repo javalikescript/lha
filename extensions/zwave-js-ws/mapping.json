@@ -1,6 +1,6 @@
 {
-  "title": "${deviceConfig/description}",
-  "description": "${deviceConfig/label} (${deviceConfig/manufacturer})",
+  "title": "$lua: return value.name or value.label",
+  "description": "${deviceConfig/description} (${deviceConfig/manufacturer})",
   "devices": [
     {
       "manufacturerId": "$ref:/manufacturer/FIBARO",
