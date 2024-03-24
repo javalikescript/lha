@@ -1,6 +1,6 @@
 {
   "name": "Z-Wave JS",
-  "description": "Z-Wave JS integration",
+  "description": "Z-Wave JS integration - Deprecated, please use WS",
   "version": "1.1",
   "script": "zwave-js.lua",
   "schema": {
