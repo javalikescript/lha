@@ -15,6 +15,8 @@ The following devices are already availables.
   * Multi sensor
 * Mextronic
   * Switch ZG9101SAC
+* Aeotec
+  * aërQ Temperature and Humidity Sensor
 * FIBARO
   * Smoke Sensor
 * Qubino
