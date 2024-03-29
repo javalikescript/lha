@@ -19,6 +19,16 @@
       ]
     },
     {
+      "manufacturerId": "$ref:/manufacturer/Aeotec",
+      "productId": 9,
+      "capabilities": ["HumiditySensor", "TemperatureSensor"],
+      "properties": [
+        "$ref:/property/battery",
+        "$ref:/property/air-temperature",
+        "$ref:/property/humidity"
+      ]
+    },
+    {
       "manufacturerId": "$ref:/manufacturer/Zooz",
       "productId": 57348,
       "capabilities": ["HumiditySensor", "TemperatureSensor"],
@@ -74,6 +84,7 @@
     }
   },
   "manufacturer": {
+    "Aeotec": 881,
     "FIBARO": 271,
     "Qubino": 345,
     "Zooz": 634
