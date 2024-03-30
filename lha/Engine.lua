@@ -627,7 +627,7 @@ end, function(Engine)
     local defaultConfig = options.config
     options.config = nil
     local rootLogger = require('jls.lang.logger')
-    rootLogger:applyConfig(options.loglevel)
+    rootLogger:setConfig(options.loglevel)
     local engine = Engine:new(options)
     engine:start(defaultConfig, customOptions.config)
     -- Do we need to poll at startup?

@@ -297,8 +297,7 @@ local REST_ADMIN = {
   end,
   ['setLogConfig?method=POST'] = function(exchange)
     local request = exchange:getRequest()
-    rootLogger:cleanConfig()
-    rootLogger:applyConfig(request:getBody())
+    rootLogger:setConfig(request:getBody())
   end
 }
 
