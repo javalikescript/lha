@@ -82,7 +82,7 @@ return require('jls.lang.class').create(function(zWaveJs)
     local promise, cb = Promise.createWithCallback()
     local timer = event:setTimeout(function()
       cb('timeout')
-    end, 3000)
+    end, 15000)
     webSocket.onError = function(_, reason)
       logger:warn('Z-Wave JS WebSocket error "%s"', reason)
     end

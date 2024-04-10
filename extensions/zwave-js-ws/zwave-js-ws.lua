@@ -99,7 +99,7 @@ end)
 
 extension:subscribeEvent('heartbeat', function()
   if zWaveJs then
-    -- TODO check web socket
+    zWaveJs:refresh()
   end
 end)
 
