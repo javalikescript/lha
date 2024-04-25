@@ -379,7 +379,7 @@
   </section>
 </script>
 <script type="text/x-template" id="page-template">
-  <section v-bind:id="id" v-bind:class="[{page: true}, app.page === id ? '' : transitionClass]" tabindex="-1">
+  <section v-bind:id="id" v-bind:class="[{page: true, hideMenu: app.hideMenu}, app.page === id ? '' : transitionClass]" tabindex="-1">
     <header>
       <div>
         <slot name="bar-left">
@@ -388,7 +388,7 @@
           <button v-on:click="app.toPage(homePage)" v-if="homePage"><i class="fas fa-home"></i></button>
         </slot>
       </div>
-      <slot name="bar-middle">
+      <slot name="bar-middle">  
         <h1>{{ title }}</h1>
       </slot>
       <div>
@@ -399,6 +399,9 @@
         </template>
       </div>
     </header>
+    <div class="showMenu" v-if="app.hideMenu">
+      <button v-on:click="app.hideMenu = false"><i class="fa fa-chevron-down"></i></button>
+    </div>
     <slot>Article</slot>
   </section>
 </script>

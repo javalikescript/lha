@@ -19,6 +19,10 @@ section.page {
   transition: all 0.25s ease;
   background-color: #fff;
 }
+.theme_black section.page {
+  background-color: black;
+  color: white;
+}
 section.page.hideLeft {
   transform: translateX(-100%);
 }
@@ -127,12 +131,31 @@ section.menu.hideLeft {
 section.hidden {
   display: none;
 }
+section > div.showMenu {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 3rem;
+  width: 4rem;
+}
+section > div.showMenu button {
+  border: none;
+  background: none;
+  overflow: hidden;
+  padding: 0 1rem;
+}
 section > header {
   display: flex;
   justify-content: space-between;
   height: 5rem;
   width: 100%;
   overflow: hidden;
+}
+section.hideMenu > header {
+  display: none;
+  height: 0;
+  opacity: 0;
+  visibility: collapse;
 }
 section > header > div {
   overflow: hidden;
@@ -147,6 +170,11 @@ section > header > div {
   color: black;
   background-color: #ecf2f9;
 }
+.theme_black section > header,
+.theme_black section > header button {
+  color: white;
+  background-color: black;
+}
 section > header button {
   line-height: 5rem;
   height: 5rem;
@@ -158,6 +186,9 @@ section > article {
   height: calc(100% - 5rem);
   overflow-y: auto;
   width: 100%;
+}
+section.hideMenu > article {
+  height: 100%;
 }
 section > article a,
 section > article p,
@@ -454,6 +485,15 @@ article > section > table > tbody {
 .theme_light input:focus + .slider {
   box-shadow: 0 0 1px #000000;
 }
+.theme_black .slider {
+  background-color: black;
+}
+.theme_black input:checked + .slider {
+  background-color: gray;
+}
+.theme_black input:focus + .slider {
+  box-shadow: 0 0 1px lightgray;
+}
 
 input:checked + .slider:before {
   -webkit-transform: translateX(1rem);
@@ -504,7 +544,7 @@ input:checked + .slider:before {
     visibility: collapse;
   }    
 }
-@media all and (max-width: 799px) {
+@media all and (min-width: 640px) and (max-width: 799px) {
   .tile {
     height: 16rem;
     width: 16rem;
@@ -517,6 +557,30 @@ input:checked + .slider:before {
     max-width: 60rem;
   }
   .show-l, .show-xl {
+    display: none;
+    width: 0;
+    height: 0;
+    opacity: 0;
+    visibility: collapse;
+  }    
+}
+
+@media all and (max-width: 639px) {
+  html {
+    font-size: 50%;
+  }
+  .tile {
+    height: 12rem;
+    width: 12rem;
+  }
+  .tile p.tile-value {
+    font-size: 3rem;
+    line-height: 4rem;
+  }  
+  section > article > section {
+    max-width: 50rem;
+  }
+  .show-m, .show-l, .show-xl {
     display: none;
     width: 0;
     height: 0;

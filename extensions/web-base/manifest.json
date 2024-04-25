@@ -29,7 +29,8 @@
         "type": "string",
         "enumValues": [
           {"const": "light", "title": "Light"},
-          {"const": "ms", "title": "Windows"}
+          {"const": "ms", "title": "Windows"},
+          {"const": "black", "title": "Dark"}
         ],
         "default": "light"
       },
