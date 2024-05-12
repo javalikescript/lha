@@ -1,0 +1,7 @@
+{
+  "name": "Web Time",
+  "description": "Display date and time",
+  "dependencies": ["web-base"],
+  "version": "1.0",
+  "script": "../web-base/web-ext.lua"
+}
