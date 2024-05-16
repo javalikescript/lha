@@ -49,9 +49,11 @@ function getLocationPath() {
   return formatNavigationPath('home');
 }
 
-app.$on('page-selected', function(id, path) {
+function replaceLocationByNavigationPath(id, path) {
   window.location.replace(window.location.pathname + '#' + formatNavigationPath(id, path));
-});
+}
+
+app.$on('page-selected', replaceLocationByNavigationPath);
 
 window.addEventListener('hashchange', function() {
   app.navigateTo(getLocationPath());
@@ -85,7 +87,10 @@ window.addEventListener('hashchange', function() {
     }));
   }
 }).then(function() {
-  app.navigateTo(getLocationPath());
+  if (!app.navigateTo(getLocationPath(), true)) {
+    replaceLocationByNavigationPath('home');
+    app.navigateTo(getLocationPath(), true);
+  }
   function setupWebSocket() {
     var protocol = location.protocol.replace('http', 'ws');
     var url = protocol + '//' + location.host + '/ws/';
