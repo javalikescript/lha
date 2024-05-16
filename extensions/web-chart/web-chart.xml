@@ -31,7 +31,7 @@
         <option value="315360000">10 years</option>
       </select>
       <span class="show-l">Period:</span>
-      <select v-model="period" v-on:change="reloadHistoricalData">
+      <select class="show-m" v-model="period" v-on:change="reloadHistoricalData">
         <option value="0">Auto</option>
         <option value="60">1 min</option>
         <option value="180">3 min</option>
@@ -43,7 +43,7 @@
         <option value="86400">24 hours</option>
       </select>
       <span class="show-l">To:</span>
-      <select v-model="toDays" v-on:change="reloadHistoricalData">
+      <select class="show-m" v-model="toDays" v-on:change="reloadHistoricalData">
         <option value="0">Now</option>
         <option value="1">1 day ago</option>
         <option value="2">2 days ago</option>
@@ -61,7 +61,7 @@
         <option value="line">Lines</option>
         <option value="bar">Bars</option>
       </select>
-      <select v-model="chartBeginAtZero" v-on:change="reloadHistoricalData">
+      <select class="show-m" v-model="chartBeginAtZero" v-on:change="reloadHistoricalData">
         <option value="false">Centered</option>
         <option value="true">Zero based</option>
       </select>

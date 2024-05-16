@@ -20,7 +20,7 @@ section.page {
   background-color: #fff;
 }
 .theme_black section.page {
-  background-color: black;
+  background-color: #1E1E1E;
   color: white;
 }
 section.page.hideLeft {
@@ -125,6 +125,12 @@ span.required {
   color: black;
   background-color: #d9e6f2;
 }
+.theme_black section.menu,
+.theme_black section.menu > header,
+.theme_black section.menu > header button {
+  color: lightgrey;
+  background-color: #2E2E2E;
+}
 section.menu.hideLeft {
   transform: translateX(-30rem);
 }
@@ -173,7 +179,7 @@ section > header > div {
 .theme_black section > header,
 .theme_black section > header button {
   color: white;
-  background-color: black;
+  background-color: darkslategrey;
 }
 section > header button {
   line-height: 5rem;
@@ -240,6 +246,10 @@ section > article > section > h1 {
   line-height: 5rem;
   height: 5rem;
   vertical-align: left;
+}
+.theme_black section > article button,
+.theme_black section > article input {
+  background-color: darkgrey;
 }
 header button {
   border: none;
@@ -340,6 +350,9 @@ article.tiles, .tile-container {
 .tile:hover {
   background-color: rgba(0,0,0,0.01);
 }
+.theme_black .tile {
+  border-color: slategrey;
+}
 .tile-width {
   width: 36.5rem;
 }
@@ -408,6 +421,9 @@ section > article > section, .card {
 }
 .card:hover {
   background-color: rgba(0,0,0,0.01);
+}
+.theme_black .card {
+  border-color: slategrey;
 }
 .card > .bar {
   height: 3rem;
@@ -542,9 +558,12 @@ input:checked + .slider:before {
     height: 0;
     opacity: 0;
     visibility: collapse;
-  }    
+  }
 }
-@media all and (min-width: 320px) and (max-width: 799px) {
+@media all and (min-width: 360px) and (max-width: 799px) {
+  html {
+    font-size: 60%;
+  }
   .tile {
     height: 16rem;
     width: 16rem;
@@ -552,7 +571,7 @@ input:checked + .slider:before {
   .tile p.tile-value {
     font-size: 4rem;
     line-height: 5rem;
-  }  
+  }
   section > article > section {
     max-width: 60rem;
   }
@@ -562,12 +581,12 @@ input:checked + .slider:before {
     height: 0;
     opacity: 0;
     visibility: collapse;
-  }    
+  }
 }
 
-@media all and (max-width: 319px) {
+@media all and (max-width: 359px) {
   html {
-    font-size: 50%;
+    font-size: 45%;
   }
   .tile {
     height: 12rem;
@@ -576,7 +595,7 @@ input:checked + .slider:before {
   .tile p.tile-value {
     font-size: 3rem;
     line-height: 4rem;
-  }  
+  }
   section > article > section {
     max-width: 50rem;
   }
@@ -586,5 +605,5 @@ input:checked + .slider:before {
     height: 0;
     opacity: 0;
     visibility: collapse;
-  }    
+  }
 }

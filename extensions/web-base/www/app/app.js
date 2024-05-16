@@ -22,7 +22,7 @@ var app = new Vue({
   el: '#app',
   data: {
     menu: '',
-    hideMenu: window.innerWidth <= 320,
+    hideMenu: window.innerWidth < 360,
     dialog: '',
     page: '',
     path: '',
