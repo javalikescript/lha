@@ -21,6 +21,7 @@ var fetchInitNoCache = {
 var app = new Vue({
   el: '#app',
   data: {
+    theme: 'boot',
     menu: '',
     hideMenu: window.innerWidth < 360,
     dialog: '',
@@ -32,6 +33,16 @@ var app = new Vue({
     user: {}
   },
   methods: {
+    setTheme: function(theme) {
+      if (this.theme !== theme) {
+        this.theme = theme;
+        var body = document.getElementsByTagName('body')[0];
+        body.setAttribute('class', 'theme_' + theme);
+      }
+    },
+    getTheme: function() {
+      return this.theme;
+    },
     toPage: function(id, path) {
       this.navigateTo(formatNavigationPath(id, path));
     },
@@ -439,6 +450,12 @@ var homePage = new Vue({
           window.open(tile.url, '_blank');
         }
       }
+    },
+    nextTheme: function() {
+      var theme = app.getTheme();
+      var themes = ['light', 'ms', 'black'];
+      var index = (themes.indexOf(theme) + 1) % themes.length;
+      app.setTheme(themes[index]);
     }
   },
   computed: {

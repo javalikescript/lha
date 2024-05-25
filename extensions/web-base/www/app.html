@@ -285,7 +285,9 @@
   -->
   <app-page id="home" :title="title" hide-back="true">
     <template slot="bar-right">
+      <button v-on:click="nextTheme()" title="Next theme"><i class="fas fa-brush"></i></button>
       <button v-if="app.canAdminister" v-on:click="app.toPage('engineSettings')" title="Configuration"><i class="fas fa-cog"></i></button>
+      <button v-on:click="app.hideMenu = !app.hideMenu" title="Hide Menu"><i class="fas fa-expand-alt"></i></button>
     </template>
     <article class="tiles">
       <div class="tile" v-for="tile in sortedTiles" v-on:click="onTile(tile)">

@@ -73,8 +73,7 @@ window.addEventListener('hashchange', function() {
     homePage.title = webBaseConfig.title;
   }
   if (webBaseConfig.theme) {
-    var body = document.getElementsByTagName('body')[0];
-    body.setAttribute('class', 'theme_' + webBaseConfig.theme);
+    app.setTheme(webBaseConfig.theme);
   }
   app.user = results[2];
   var addons = results[1];
