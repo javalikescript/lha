@@ -148,6 +148,25 @@ local function createLuaThing()
     readOnly = true,
     unit = 'date time'
   }, '')
+  thing:addProperty('total_fs', {
+    ['@type'] = 'LevelProperty',
+    title = 'File System Size',
+    type = 'integer',
+    description = 'The file system total size where the engine is running',
+    minimum = 0,
+    readOnly = true,
+    unit = 'byte'
+  }, 0)
+  thing:addProperty('used_fs', {
+    ['@type'] = 'LevelProperty',
+    title = 'Used File System',
+    type = 'number',
+    description = 'The file system space used where the engine is running',
+    minimum = 0,
+    maximum = 100,
+    readOnly = true,
+    unit = 'percent'
+  }, 0)
   return thing
 end
 
@@ -260,7 +279,7 @@ local function refreshLua()
     local total_memory = luv.get_total_memory()
     if total_memory > 0 then
       luaThing:updatePropertyValue('total_memory', math.floor(total_memory))
-      luaThing:updatePropertyValue('used_memory', 100 - round(luv.get_free_memory() * 100 / total_memory))
+      luaThing:updatePropertyValue('used_memory', 100 - (luv.get_free_memory() * 1000 // total_memory) / 10)
     end
     local info = sumCpuInfo(luv.cpu_info())
     luaThing:updatePropertyValue('host_cpu_usage', computeCpuUsage(lastInfo, info))
@@ -268,7 +287,13 @@ local function refreshLua()
     --local rusage = getRUsage(luv.getrusage())
     luaThing:updatePropertyValue('engine_start_date', engineStartDate)
     luaThing:updatePropertyValue('system_start_date', systemStartDate)
-end
+
+    local stat = luv.fs_statfs('.')
+    if stat then
+      luaThing:updatePropertyValue('total_fs', stat.bsize * stat.blocks)
+      luaThing:updatePropertyValue('used_fs', 100 - (stat.bfree * 1000 // stat.blocks) / 10)
+    end
+  end
   lastClock = clock
 end
 
