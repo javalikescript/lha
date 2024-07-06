@@ -68,6 +68,11 @@
       "minimum": 0,
       "type": "integer"
     },
+    "disableScripts": {
+      "default": false,
+      "title": "Disable the script extensions",
+      "type": "boolean"
+    },
     "work": {
       "default": "work",
       "title": "The work directory",

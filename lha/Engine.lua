@@ -302,7 +302,11 @@ return class.create(function(engine)
 
   function engine:loadScriptExtensions()
     if self.scriptsDir:isDirectory() then
-      self:loadExtensionsFromDirectory(self.scriptsDir, 'script')
+      if self.options.disableScripts then
+        logger:info('Script extensions disabled')
+      else
+        self:loadExtensionsFromDirectory(self.scriptsDir, 'script')
+      end
     end
   end
 
