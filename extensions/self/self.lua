@@ -288,10 +288,12 @@ local function refreshLua()
     luaThing:updatePropertyValue('engine_start_date', engineStartDate)
     luaThing:updatePropertyValue('system_start_date', systemStartDate)
 
-    local stat = luv.fs_statfs('.')
-    if stat then
-      luaThing:updatePropertyValue('total_fs', stat.bsize * stat.blocks)
-      luaThing:updatePropertyValue('used_fs', 100 - (stat.bfree * 1000 // stat.blocks) / 10)
+    if luaThing:hasProperty('used_fs') then
+      local stat = luv.fs_statfs('.')
+      if stat then
+        luaThing:updatePropertyValue('total_fs', stat.bsize * stat.blocks)
+        luaThing:updatePropertyValue('used_fs', 100 - (stat.bfree * 1000 // stat.blocks) / 10)
+      end
     end
   end
   lastClock = clock
