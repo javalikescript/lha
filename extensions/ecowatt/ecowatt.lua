@@ -27,7 +27,7 @@ end
 
 
 -- 1 vert, 2 orange, 3 rouge
-local SIGNAL_ENUM = {1, 2, 3}
+local SIGNAL_ENUM = {0, 1, 2, 3}
 
 local function createThing(targetName)
   local thing = Thing:new('Ecowatt', 'Ecowatt signals', {Thing.CAPABILITIES.MultiLevelSensor})
