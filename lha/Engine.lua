@@ -147,11 +147,15 @@ return class.create(function(engine)
     end
   end
 
+  function engine:getHeartbeatDelay()
+    return math.floor(self.options.heartbeat * 1000 + 0.5)
+  end
+
   function engine:startHeartbeat()
     self.eventId = event:setInterval(function()
       self.scheduler:runTo()
       self:publishEvent('heartbeat')
-    end, math.floor(self.options.heartbeat * 1000 + 0.5))
+    end, self:getHeartbeatDelay())
   end
 
   function engine:stopHeartbeat()
@@ -215,12 +219,6 @@ return class.create(function(engine)
 
   function engine:publishEvent(...)
     self:publishExtensionsEvent(nil, ...)
-  end
-
-  function engine:publishEventAsync(...)
-    event:setTimeout(function(...)
-      self:publishExtensionsEvent(nil, ...)
-    end, 0, ...)
   end
 
   function engine:publishExtensionsEvent(source, ...)
@@ -590,7 +588,6 @@ return class.create(function(engine)
     end
     self:createScheduler()
     self:startHTTPServer()
-    self:startHeartbeat()
     self:loadExtensions()
     self:loadThings()
     self:loadThingValues()
@@ -599,6 +596,7 @@ return class.create(function(engine)
     self:publishEvent('configuration')
     self:publishEvent('extensions')
     self:publishEvent('things')
+    self:startHeartbeat()
   end
 
   function engine:stop()
@@ -616,7 +614,7 @@ end, function(Engine)
 
   function Engine.launch(arguments)
     local options, customOptions = tables.createArgumentTable(arguments, {
-      configPath = 'file',
+      configPath = 'engine',
       emptyPath = 'work',
       helpPath = 'help',
       disableSchemaDefaults = true,
@@ -634,8 +632,11 @@ end, function(Engine)
     rootLogger:setConfig(options.loglevel)
     local engine = Engine:new(options)
     engine:start(defaultConfig, customOptions.config)
-    -- Do we need to poll at startup?
-    engine:publishEventAsync('poll')
+    -- Poll before first heartbeat
+    event:setTimeout(function()
+      logger:info('Start polling')
+      engine:publishEvent('poll')
+    end, engine:getHeartbeatDelay() // 3)
     return engine
   end
 
