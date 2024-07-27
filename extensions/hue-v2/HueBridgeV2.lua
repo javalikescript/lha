@@ -76,11 +76,12 @@ return require('jls.lang.class').create(function(hueBridge)
     end
   end
 
-  local function rejectResponse(response, reason)
-    return response:text():next(function(text)
-      logger:fine('response body "%s"', text)
-      return Promise.reject(reason)
-    end)
+  local function formatErrors(errors)
+    local descriptions = {}
+    for _, item in errors do
+      table.insert(descriptions, item.description)
+    end
+    return table.concat(descriptions, ', ')
   end
 
   function hueBridge:httpRequest(method, path, body)
@@ -92,30 +93,36 @@ return require('jls.lang.class').create(function(hueBridge)
       body = formatBody(body),
     })):next(function(response)
       local status, reason = response:getStatusCode()
-      logger:finer('response status: %d', status)
-      if status ~= 200 then
-        -- TODO Process errors content
-        -- TODO Use exception
-        return rejectResponse(response, string.format('response status is %s', status))
-      end
+      logger:finer('response status %d "%s"', status, reason)
       local contentType = response:getHeader('content-type')
       if not strings.equalsIgnoreCase(contentType, 'application/json') then
-        return rejectResponse(response, 'Invalid or missing content type')
+        return response:text():next(function(text)
+          logger:fine('response body "%s"', text)
+          return Promise.reject('Invalid or missing content type')
+        end)
       end
-      return response:json()
-    end):next(function(content)
-      if not (type(content) == 'table' and type(content.data) == 'table' and type(content.errors) == 'table') then
-        return Promise.reject('Invalid or missing content')
-      end
-      if #content.errors > 0 then
-        return Promise.reject('Error, '..tostring(content.errors[1].description))
-      end
-      return content.data
+      return response:json():next(function(content)
+        if not (type(content) == 'table' and type(content.data) == 'table' and type(content.errors) == 'table') then
+          return Promise.reject('Invalid or missing content')
+        end
+        if status == 200 then
+          return content.data
+        end
+        local description = formatErrors(content.errors)
+        if status == 207 then
+          if #description > 0 then
+            logger:info('%s on %s has errors: %s', method, path, description)
+          end
+          return content.data
+        end
+        return Promise.reject(string.format('Bad status (%d) %s', status, description))
+      end)
     end)
   end
 
-  function hueBridge:getResourceMapById()
-    return self:httpRequest('GET', '/clip/v2/resource/device'):next(function(devices)
+  function hueBridge:getResourceMapById(name)
+    name = name or 'device'
+    return self:httpRequest('GET', '/clip/v2/resource/'..name):next(function(devices)
       local serviceTypeMap = {}
       for _, device in ipairs(devices) do
         logger:finest('%T', device)
@@ -125,10 +132,9 @@ return require('jls.lang.class').create(function(hueBridge)
       end
       local rtypes = Map.skeys(serviceTypeMap)
       if logger:isLoggable(logger.FINE) then
-        logger:fine('device service rtypes: %s', List.join(rtypes, ', '))
+        logger:fine('%s service rtypes: %s', name, List.join(rtypes, ', '))
       end
-      logger:fine('get device services...')
-      self.bridgeResource = nil
+      logger:fine('get %s services...', name)
       --[[
         return Promise.all(List.map(rtypes, function(rtype)
           return self:httpRequest('GET', '/clip/v2/resource/'..rtype)
