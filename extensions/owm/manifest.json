@@ -18,9 +18,20 @@
         "writeOnly": true,
         "required": true
       },
-      "cityId": {
-        "title": "City ID",
-        "type": "string",
+      "latitude": {
+        "title": "Latitude",
+        "type": "number",
+        "default": 49.181,
+        "minimum": -90,
+        "maximum": 90,
+        "required": true
+      },
+      "longitude": {
+        "title": "Longitude",
+        "type": "number",
+        "default": -0.370,
+        "minimum": -180,
+        "maximum": 180,
         "required": true
       },
       "units": {
@@ -33,7 +44,12 @@
         "title": "Units of measurement",
         "type": "string"
       },
-        "maxPollingDelay": {
+      "lang": {
+        "title": "language",
+        "type": "string",
+        "pattern": "^%a%a_?%a*$"
+      },
+      "maxPollingDelay": {
         "title": "Minimum Call Interval in seconds",
         "type": "integer",
         "default": 600,

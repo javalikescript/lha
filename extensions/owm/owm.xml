@@ -1,0 +1,28 @@
+<app-page id="owm" title="Weather">
+  <article class="content">
+    <section>
+    <div class="content-flex" style="padding-top: 1rem">
+      <template v-for="item in times">
+        <div class="tile-free" :title="item.title + ' ' + item.date">
+          <p>{{ item.label }}</p>
+          <div :title="item.cloud + unit.cloud + ' - ' + item.pressure + unit.pressure" style="font-size: 3rem">
+            <i :class="['fa', item.faIcon]"></i>
+          </div>
+          <p><label>{{ item.temperature }}</label><label class="unit">{{ unit.temperature }}</label></p>
+          <p class="show-m"><label>{{ item.humidity }}</label><label class="unit">{{ unit.humidity }}</label></p>
+          <p>
+            <template v-if="typeof item.rain === 'number'">
+              <label>{{ item.rain }}</label><label class="unit">{{ unit.rain }}</label>
+            </template>
+            <template v-else>&nbsp;</template>
+          </p>
+          <p :title="item.windDirection + unit.windDirection" style="text-align: center">
+            <label>{{ formatDirection(item.windDirection) }}</label><br/>
+            <label>{{ item.windSpeed }}</label><label class="unit">{{ unit.windSpeed }}</label>
+          </p>
+        </div>
+      </template>
+    </div>
+    </section>
+  </article>
+</app-page>

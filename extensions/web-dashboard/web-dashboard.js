@@ -10,18 +10,7 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
     "AlarmSensor": "AlarmProperty"
   };
 
-  var unitAlias = {
-    "ampere": "A",
-    "degree celsius": "°C",
-    "hectopascal": "hPa",
-    "hertz": "Hz",
-    "kelvin": "K",
-    "lux": "lx",
-    "percent": "%",
-    "volt": "V",
-    "voltampere": "VA",
-    "watt": "W"
-  };
+  var unitAlias = app.getUnitAliases();
 
   var unitByType = {
     "BarometricPressureProperty": "hectopascal",

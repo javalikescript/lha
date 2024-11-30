@@ -330,12 +330,13 @@ article.tiles, .tile-container {
   padding: 1rem;
   width: calc(100% - 2rem);
 }
+.unit {
+  font-size: 0.8em;
+}
 .tile-row {
   width: 100%;
 }
-.tile {
-  height: 18rem;
-  width: 18rem;
+.tile, .tile-free {
   background: transparent;
   border: 1px solid transparent;
   border-radius: 0.5rem;
@@ -346,6 +347,10 @@ article.tiles, .tile-container {
   padding: 0.5rem;
   overflow: hidden;
   cursor: pointer;
+}
+.tile {
+  height: 18rem;
+  width: 18rem;
 }
 .tile:hover {
   background-color: rgba(0,0,0,0.01);

@@ -15,6 +15,21 @@ var fetchInitNoCache = {
   cache: 'no-store'
 };
 
+var unitAlias = {
+  "ampere": "A",
+  "degree": "°",
+  "degree celsius": "°C",
+  "hectopascal": "hPa",
+  "hertz": "Hz",
+  "kelvin": "K",
+  "lux": "lx",
+  "meter/sec": "m/s",
+  "percent": "%",
+  "volt": "V",
+  "voltampere": "VA",
+  "watt": "W"
+};
+
 /************************************************************
  * Main application
  ************************************************************/
@@ -125,7 +140,7 @@ var app = new Vue({
               }
             }
           }
-          this.callPage(this.page, 'onDataChange');
+          this.callPage(this.page, 'onDataChange', message.data);
         }
         break;
       case 'logs':
@@ -171,6 +186,9 @@ var app = new Vue({
           return fn ? fn(value) : value;
         });
       });
+    },
+    getUnitAliases: function() {
+      return unitAlias;
     },
     getThings: function() {
       return this.fetchWithCache('/engine/things', function(things) {
