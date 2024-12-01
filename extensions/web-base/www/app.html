@@ -332,7 +332,10 @@
     <select v-else-if="hasEnumValues" v-model="value">
       <option v-for="ev in enumValues" :value="ev.const">{{ev.title}}</option>
     </select>
-    <input v-else-if="schema.type === 'string'" v-model="value" :readonly="schema.readOnly" :type="schema.writeOnly ? 'password' : 'text'" placeholder="String Value">
+    <template v-else-if="schema.type === 'string'">
+      <textarea v-if="schema.contentMediaType && schema.contentMediaType.startsWith('text/')" v-model="value" spellcheck="false" wrap="off" placeholder="Text Value" :readonly="schema.readOnly"></textarea>
+      <input v-else v-model="value" :readonly="schema.readOnly" :type="schema.writeOnly ? 'password' : 'text'" placeholder="String Value">
+    </template>
     <input v-else-if="schema.type === 'number' || schema.type === 'integer'" v-model="value" :readonly="schema.readOnly" type="number" placeholder="Number Value">
     <label v-else-if="schema.type === 'boolean'" class="switch big">
       <input type="checkbox" v-model="value" />

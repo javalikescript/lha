@@ -291,6 +291,7 @@ article > ul > li {
 }
 section > article > section > ul li button,
 section > article > section > ul li select,
+section > article > section > ul li textarea,
 section > article > section > ul li input[type="text"],
 section > article > section > ul li input[type="number"],
 section > article > section > ul li input[type="checkbox"],
@@ -300,6 +301,10 @@ section > article > section > ul li input[type="password"] {
   font-weight: normal;
   line-height: 2.5rem;
   padding-bottom: 0.5rem;
+}
+
+section > article > section > ul li textarea {
+  resize: vertical;
 }
 
 textarea.full {
