@@ -12,8 +12,8 @@
         {
           "path": "color/xy",
           "name": "color",
-          "adapter": "$lua:return Thing.formatRgbHex(color.xyBriToRgb(value.x, value.y, 1.0))",
-          "setAdapter": "$lua:local x, y = color.rgbToXy(Thing.parseRgbHex(value)); return {x = x, y = y}"
+          "adapter": "$lua:return utils.formatRgbHex(utils.xyBriToRgb(value.x, value.y, 1.0))",
+          "setAdapter": "$lua:local x, y = utils.rgbToXy(utils.parseRgbHex(value)); return {x = x, y = y}"
         },
         {
           "path": "dimming/brightness",
@@ -126,7 +126,7 @@
     }
   },
   "adapters": {
-    "mirek": "$lua:return color.mirekToColorTemperature(value)"
+    "mirek": "$lua:return utils.mirekToColorTemperature(value)"
   },
   "metadata": {
     "button": {

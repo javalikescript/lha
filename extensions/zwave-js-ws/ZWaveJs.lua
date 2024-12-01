@@ -15,8 +15,9 @@ return require('jls.lang.class').create(function(zWaveJs)
   function zWaveJs:initialize(url, mapping)
     self.url = url
     self.mapping = utils.replaceRefs(mapping or {}, {
-      Thing = Thing,
-      color = utils,
+      Thing = Thing, -- TODO remove
+      color = utils, -- TODO remove
+      utils = utils,
       math = math,
     })
   end

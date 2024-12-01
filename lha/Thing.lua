@@ -1,7 +1,5 @@
 local tables = require('jls.util.tables')
 local List = require('jls.util.List')
-local Codec = require('jls.util.Codec')
-local hex = Codec.getInstance('hex')
 
 local ThingProperty = require('lha.ThingProperty')
 local utils = require('lha.utils')
@@ -328,22 +326,6 @@ return require('jls.lang.class').create(function(thing)
   end
 
 end, function(Thing)
-
-  function Thing.formatRgbHex(r, g, b)
-    return string.format('#%02X%02X%02X', math.floor(r * 255), math.floor(g * 255), math.floor(b * 255))
-  end
-
-  function Thing.parseRgbHex(rgbHex)
-    if string.sub(rgbHex, 1, 1) == '#' then
-      rgbHex = string.sub(rgbHex, 2)
-    end
-    if #rgbHex < 6 then
-      return 0, 0, 0
-    end
-    local rgb = hex:decode(rgbHex)
-    local r, g, b = string.byte(rgb, 1, 3)
-    return r / 255, g / 255, b / 255
-  end
 
   function Thing.getDefaultValueForType(valueType, value)
     if valueType == 'boolean' then

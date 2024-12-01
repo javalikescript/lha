@@ -18,8 +18,9 @@ return require('jls.lang.class').create(function(hueBridge)
     self.url = Url:new(apiUrl)
     self.user = user or ''
     self.mapping = utils.replaceRefs(mapping or {}, {
-      Thing = Thing,
-      color = utils,
+      Thing = Thing, -- TODO remove
+      color = utils, -- TODO remove
+      utils = utils,
       math = math,
       BUTTON_EVENT = {'pressed', 'hold', 'released', 'long-released'}
     })

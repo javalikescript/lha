@@ -57,7 +57,7 @@
     }
   ],
   "adapters": {
-    "mirek": "$lua:return color.mirekToColorTemperature(value)"
+    "mirek": "$lua:return utils.mirekToColorTemperature(value)"
   },
   "property": {
     "battery": {

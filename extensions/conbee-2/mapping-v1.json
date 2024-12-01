@@ -88,8 +88,8 @@
       {
         "path": "state/xy",
         "name": "color",
-        "adapter": "$lua:return Thing.formatRgbHex(color.xyBriToRgb(value[1], value[2], 1.0))",
-        "setAdapter": "$lua:return {color.rgbToXy(Thing.parseRgbHex(value))}"
+        "adapter": "$lua:return utils.formatRgbHex(utils.xyBriToRgb(value[1], value[2], 1.0))",
+        "setAdapter": "$lua:return {utils.rgbToXy(utils.parseRgbHex(value))}"
       }
     ],
     "TemperatureSensor": [
@@ -181,7 +181,7 @@
     ]
   },
   "adapters": {
-    "mirek": "$lua:return color.mirekToColorTemperature(value)"
+    "mirek": "$lua:return utils.mirekToColorTemperature(value)"
   },
   "metadata": {
     "button": {

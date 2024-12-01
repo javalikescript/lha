@@ -28,8 +28,9 @@ return require('jls.lang.class').create(function(hueBridge)
       ['hue-application-key'] = self.key
     }
     self.mapping = utils.replaceRefs(mapping or {}, {
-      Thing = Thing,
-      color = utils,
+      Thing = Thing, -- TODO remove
+      color = utils, -- TODO remove
+      utils = utils,
       math = math,
       -- one of initial_press, repeat, short_release, long_release, double_short_release, long_press
       BUTTON_EVENT = {
