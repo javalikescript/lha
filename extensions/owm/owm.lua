@@ -120,8 +120,8 @@ local function updateForecastThing(data, time)
   updateWeatherThing(thingByKey.nextDays, adapter.computeNextDays(data, time))
 end
 
-local demo = false
-if demo then
+if configuration.demo then
+  logger:info('OpenWeatherMap DEMO mode')
   extension:subscribeEvent('poll', function()
     local json = require('jls.util.json')
     local File = require('jls.io.File')

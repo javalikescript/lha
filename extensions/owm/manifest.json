@@ -18,6 +18,12 @@
         "writeOnly": true,
         "required": true
       },
+      "cityId": {
+        "title": "City ID",
+        "type": "string",
+        "deprecated": true,
+        "required": true
+      },
       "latitude": {
         "title": "Latitude",
         "type": "number",
@@ -48,6 +54,11 @@
         "title": "language",
         "type": "string",
         "pattern": "^%a%a_?%a*$"
+      },
+      "demo": {
+        "type": "boolean",
+        "default": false,
+        "format": "hidden"
       },
       "maxPollingDelay": {
         "title": "Minimum Call Interval in seconds",
