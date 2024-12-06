@@ -27,15 +27,6 @@ local function createWeatherThing(title, description)
     readOnly = true,
     unit = 'percent'
   })
-  thing:addProperty('rain', {
-    ['@type'] = 'LevelProperty',
-    title = 'Rain volume',
-    type = 'number',
-    description = 'The rain volume in millimeter',
-    minimum = 0,
-    readOnly = true,
-    unit = 'mm'
-  })
   thing:addProperty('windSpeed', {
     ['@type'] = 'LevelProperty',
     title = 'Wind speed',
@@ -54,6 +45,20 @@ local function createWeatherThing(title, description)
     maximum = 360,
     readOnly = true,
     unit = 'degree'
+  })
+  return thing
+end
+
+local function createForecastThing(title, description)
+  local thing = createWeatherThing(title or 'Weather', description or 'Weather Data')
+  thing:addProperty('rain', {
+    ['@type'] = 'LevelProperty',
+    title = 'Rain volume',
+    type = 'number',
+    description = 'The rain volume in millimeter',
+    minimum = 0,
+    readOnly = true,
+    unit = 'mm'
   })
   thing:addProperty('date', {
     ['@type'] = "DateTimeProperty",
@@ -78,9 +83,10 @@ end
 
 local THINGS_BY_KEY = {
   current = createWeatherThing('Weather Now'),
-  nextHours = createWeatherThing('Weather Next Hours'),
-  tomorrow = createWeatherThing('Weather Tomorrow'),
-  nextDays = createWeatherThing('Weather Next Days')
+  nextHours = createForecastThing('Weather Next Hours'),
+  today = createForecastThing('Weather Today'),
+  tomorrow = createForecastThing('Weather Tomorrow'),
+  nextDays = createForecastThing('Weather Next Days')
 }
 local thingByKey = {}
 local configuration = extension:getConfiguration()
@@ -114,9 +120,10 @@ extension:subscribeEvent('things', function()
   end
 end)
 
-local function updateForecastThing(data, time)
-  updateWeatherThing(thingByKey.tomorrow, adapter.computeTomorrow(data, time))
+local function updateForecastThings(data, time)
   updateWeatherThing(thingByKey.nextHours, adapter.computeNextHours(data, time))
+  updateWeatherThing(thingByKey.today, adapter.computeToday(data, time))
+  updateWeatherThing(thingByKey.tomorrow, adapter.computeTomorrow(data, time))
   updateWeatherThing(thingByKey.nextDays, adapter.computeNextDays(data, time))
 end
 
@@ -129,7 +136,7 @@ if configuration.demo then
     updateWeatherThing(thingByKey.current, adapter.computeCurrent(data))
     data = json.parse(File:new('work-misc/forecast.json'):readAll())
     local time = data.list[1].dt - 3600
-    updateForecastThing(data, time)
+    updateForecastThings(data, time)
   end)
 else
   -- Do not send OWM requests more than 1 time per 10 minutes from one device/one API key
@@ -149,7 +156,7 @@ else
       updateWeatherThing(thingByKey.current, adapter.computeCurrent(data))
       return client:fetch(path..'forecast'..query)
     end):next(utils.rejectIfNotOk):next(utils.getJson):next(function(data)
-      updateForecastThing(data, os.time())
+      updateForecastThings(data, os.time())
     end):catch(function(reason)
       logger:warn('fail to get OWM, due to "%s"', reason)
     end):finally(function()

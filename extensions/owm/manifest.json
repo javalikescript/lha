@@ -21,8 +21,7 @@
       "cityId": {
         "title": "City ID",
         "type": "string",
-        "deprecated": true,
-        "required": true
+        "deprecated": true
       },
       "latitude": {
         "title": "Latitude",

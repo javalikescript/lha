@@ -74,7 +74,7 @@ define(['./owm.xml'], function(owmTemplate) {
               //console.info('units:', this.unit);
             }
             var props = properties[thing.thingId];
-            if (props) {
+            if (props && thing.properties.date) {
               var t = props.date ? new Date(props.date).getTime() : 0;
               var h = t > now ? Math.floor((t - now) / 3600000) : 0;
               var item = Object.assign({

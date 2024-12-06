@@ -7,6 +7,10 @@ local utils = require('lha.utils')
 local adapter = require('extensions.owm.adapter')
 
 local data = json.parse(File:new(arg[1]):readAll())
+local time
+if arg[2] then
+  time = utils.timeFromString(arg[2])
+end
 
 local function printWeather(w, l)
   if l then
@@ -18,7 +22,7 @@ local function printWeather(w, l)
 end
 
 if data.list then
-  local time = data.list[1].dt - 3600
+  time = time or (data.list[1].dt - 3600)
   print('', 'date', 'temp', 'rain', 'cloud', 'wind')
   for i, w in ipairs(data.list) do
     local d = utils.timeToString(w.dt)

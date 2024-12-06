@@ -315,7 +315,8 @@
         <select v-if="hasOfSchema" v-model="ofIndex" style="width: unset; border-color: lightgray;">
           <option v-for="(name, i) in ofSchemaLabels" :value="i">{{name}}</option>
         </select>
-        <span v-else v-on:click.exact="toggle()" v-on:click.alt.exact="toggleAll()">{{ label }}</span>
+        <span v-else-if="schema.deprecated"><s>{{ label }}</s></span>
+        <span v-else v-on:click.exact="toggle()">{{ label }}</span>
         <span class="required" v-if="schema.required" title="The value is required">*</span>
       </span>
       <span class="hover-visible" v-if="isListItem">

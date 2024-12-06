@@ -22,6 +22,9 @@ local CUMULATIVE_FIELD_MAP = {
   rain = true,
 }
 
+local HOUR_SEC = 3600
+local DAY_SEC = 86400
+
 local function adapt(w, d)
   local a = {}
   for k, p in pairs(FIELD_MAP) do
@@ -46,17 +49,28 @@ local function sumFields(a, w)
   return a
 end
 
-local function rangeHours(hours, time)
-  local t = time or os.time()
-  local tt = t + hours * 3600
+local function between(from, to)
   return function(w)
-    return w.dt >= t and w.dt < tt
+    return w.dt >= from and w.dt < to
   end
+end
+
+local function tomorrow(time)
+  local d = os.date('*t', time + DAY_SEC)
+  d.hour = 0
+  d.min = 15
+  d.sec = 0
+  return os.time(d)
+end
+
+local function hour(time)
+  local d = os.date('*t', time + DAY_SEC)
+  return d.hour
 end
 
 local function range(days, from, to, time)
   local t = time or os.time()
-  local d = os.date('*t', t + 86400 * (days or 0))
+  local d = os.date('*t', t + DAY_SEC * (days or 0))
   d.min = 15
   d.sec = 0
   d.hour = from or 0
@@ -98,6 +112,9 @@ local function aggregate(list)
   return a
 end
 
+local DAY_MORNING = 7
+local DAY_EVENING = 19
+
 -- 5 day forecast includes weather forecast data with 3-hour step
 
 return {
@@ -105,12 +122,20 @@ return {
     return adapt(weather)
   end,
   computeNextHours = function(forecast, time)
-    return aggregate(List.filter(forecast.list, rangeHours(8, time)))
+    local t = time or os.time()
+    return aggregate(List.filter(forecast.list, between(t, t + 4 * HOUR_SEC)))
+  end,
+  computeToday = function(forecast, time)
+    local t = time or os.time()
+    if hour(t) <= 12 then
+      return aggregate(List.filter(forecast.list, range(0, DAY_MORNING, DAY_EVENING, t)))
+    end
+    return aggregate(List.filter(forecast.list, between(t, tomorrow(t))))
   end,
   computeTomorrow = function(forecast, time)
-    return aggregate(List.filter(forecast.list, range(1, 7, 19, time)))
+    return aggregate(List.filter(forecast.list, range(1, DAY_MORNING, DAY_EVENING, time)))
   end,
   computeNextDays = function(forecast, time)
-    return aggregate(List.filter(forecast.list, ranges(7, 19, time)))
+    return aggregate(List.filter(forecast.list, ranges(DAY_MORNING, DAY_EVENING, time)))
   end
 }
