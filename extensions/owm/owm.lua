@@ -49,6 +49,15 @@ local function createWeatherThing(title, description)
     readOnly = true,
     unit = 'degree'
   })
+  thing:addProperty('date', {
+    ['@type'] = "DateTimeProperty",
+    configuration = true,
+    description = "The date of the data",
+    readOnly = true,
+    title = "Date",
+    type = "string",
+    unit = "date time"
+  })
   return thing
 end
 
@@ -62,15 +71,6 @@ local function createForecastThing(title, description)
     minimum = 0,
     readOnly = true,
     unit = 'mm'
-  })
-  thing:addProperty('date', {
-    ['@type'] = "DateTimeProperty",
-    configuration = true,
-    description = "The date of the data",
-    readOnly = true,
-    title = "Date",
-    type = "string",
-    unit = "date time"
   })
   return thing
 end
