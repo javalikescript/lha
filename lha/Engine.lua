@@ -72,6 +72,10 @@ return class.create(function(engine)
     return self.idGenerator:generate()
   end
 
+  function engine:getExtensionsDirectory()
+    return self.extensionsDir
+  end
+
   function engine:getScriptsDirectory()
     return self.scriptsDir
   end

@@ -196,9 +196,7 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
     methods: {
       onShow: function() {
         Promise.all([
-          fetch('/engine/configuration/extensions/' + extensionId).then(function(response) {
-            return response.json();
-          }).then(function(response) {
+          fetch('/engine/configuration/extensions/' + extensionId).then(rejectIfNotOk).then(getJson).then(function(response) {
             return response.value;
           }),
           app.getThingsById(),
