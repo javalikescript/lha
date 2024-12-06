@@ -31,6 +31,9 @@
     <block type="lha_date"></block>
     <block type="lha_parse_time"></block>
     <block type="lha_format_time"></block>
+    <block type="lha_color"></block>
+    <block type="lha_color_hsv"></block>
+    <block type="lha_color_rgb"></block>
   </category>
   <category name="Experimental" colour="0">
     <block type="lha_log"></block>

@@ -142,6 +142,33 @@ define(function() {
       }
       return [code, Blockly.JavaScript.ORDER_MEMBER];
     },
+    "lha_color": function(block) {
+      var field = block.getFieldValue('FIELD');
+      var value = Blockly.Lua.valueToCode(block, 'VALUE', Blockly.JavaScript.ORDER_NONE);
+      var o = "utils.parseRgbHex(" + value + ")";
+      var indices = {"r": 1, "g": 2, "b": 3, "h": 11, "s": 12, "v": 13};
+      var n = indices[field];
+      if (n > 10) {
+        n = n - 10;
+        var o = "utils.rgbToHsv(" + o + ")";
+      }
+      var code = 'select(' + n + ', ' + o + ')';
+      return [code, Blockly.JavaScript.ORDER_MEMBER];
+    },
+    "lha_color_hsv": function(block) {
+      var h = Blockly.Lua.valueToCode(block, 'HUE', Blockly.JavaScript.ORDER_NONE);
+      var s = Blockly.Lua.valueToCode(block, 'SATURATION', Blockly.JavaScript.ORDER_NONE);
+      var v = Blockly.Lua.valueToCode(block, 'VALUE', Blockly.JavaScript.ORDER_NONE);
+      var code = 'utils.formatRgbHex(utils.hsvToRgb(' + h + ', ' + s + ', ' + v + '))';
+      return [code, Blockly.JavaScript.ORDER_MEMBER];
+    },
+    "lha_color_rgb": function(block) {
+      var r = Blockly.Lua.valueToCode(block, 'RED', Blockly.JavaScript.ORDER_NONE);
+      var g = Blockly.Lua.valueToCode(block, 'GREEN', Blockly.JavaScript.ORDER_NONE);
+      var b = Blockly.Lua.valueToCode(block, 'BLUE', Blockly.JavaScript.ORDER_NONE);
+      var code = 'utils.formatRgbHex(' + r + ', ' + g + ', ' + b + ')';
+      return [code, Blockly.JavaScript.ORDER_MEMBER];
+    },
     // -- Experimental --------
     "lha_get_field": function(block) {
       var name = block.getFieldValue('NAME');

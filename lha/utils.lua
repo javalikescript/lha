@@ -368,8 +368,16 @@ function utils.rgbToHsv(r, g, b)
   return h, s, v
 end
 
+local function floatToByte(v)
+  return math.floor(v * 255) & 255
+end
+
+local function byteToFloat(v)
+  return (v & 255) / 255
+end
+
 function utils.formatRgbHex(r, g, b)
-  return string.format('#%02X%02X%02X', math.floor(r * 255), math.floor(g * 255), math.floor(b * 255))
+  return string.format('#%02X%02X%02X', floatToByte(r), floatToByte(g), floatToByte(b))
 end
 
 function utils.parseRgbHex(rgbHex)
@@ -381,8 +389,7 @@ function utils.parseRgbHex(rgbHex)
   end
   local rgb = hex:decode(rgbHex)
   local r, g, b = string.byte(rgb, 1, 3)
-  return r / 255, g / 255, b / 255
+  return byteToFloat(r), byteToFloat(g), byteToFloat(b)
 end
-
 
 return utils

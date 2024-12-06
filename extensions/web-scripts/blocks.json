@@ -125,7 +125,7 @@
 
   "lha_to_string": {
     "tooltip" : "A string representing the value",
-    "message0": "to String %1",
+    "message0": "to string %1",
     "args0": [{
       "type": "input_value",
       "name": "VALUE"
@@ -145,7 +145,7 @@
   },
   "lha_time": {
     "tooltip" : "The current time in seconds since epoch",
-    "message0": "get time",
+    "message0": "time",
     "args0": [],
     "output": null,
     "colour": "$lhaExpressionColor"
@@ -202,7 +202,7 @@
   },
   "lha_date": {
     "tooltip" : "The date time field value from the time in seconds since epoch",
-    "message0": "get date field %1 from %2",
+    "message0": "date field %1 from %2",
     "args0": [{
       "type": "field_dropdown",
       "name": "FIELD",
@@ -221,6 +221,61 @@
       "type": "input_value",
       "name": "VALUE"
     }],
+    "output": null,
+    "colour": "$lhaExpressionColor"
+  },
+  "lha_color": {
+    "tooltip" : "The color component from 0 to 1",
+    "message0": "color component %1 from %2",
+    "args0": [{
+      "type": "field_dropdown",
+      "name": "FIELD",
+      "options": [
+        [ "red", "r" ],
+        [ "green", "g" ],
+        [ "blue", "b" ],
+        [ "hue", "h" ],
+        [ "saturation", "s" ],
+        [ "value", "v" ]
+      ]
+    }, {
+      "type": "input_value",
+      "name": "VALUE"
+    }],
+    "output": null,
+    "colour": "$lhaExpressionColor"
+  },
+  "lha_color_hsv": {
+    "tooltip" : "The color from HSV components",
+    "message0": "hsv %1 %2 %3",
+    "args0": [{
+      "type": "input_value",
+      "name": "HUE"
+    }, {
+      "type": "input_value",
+      "name": "SATURATION"
+    }, {
+      "type": "input_value",
+      "name": "VALUE"
+    }],
+    "inputsInline": true,
+    "output": null,
+    "colour": "$lhaExpressionColor"
+  },
+  "lha_color_rgb": {
+    "tooltip" : "The color from RGB components",
+    "message0": "rgb %1 %2 %3",
+    "args0": [{
+      "type": "input_value",
+      "name": "RED"
+    }, {
+      "type": "input_value",
+      "name": "GREEN"
+    }, {
+      "type": "input_value",
+      "name": "BLUE"
+    }],
+    "inputsInline": true,
     "output": null,
     "colour": "$lhaExpressionColor"
   },
