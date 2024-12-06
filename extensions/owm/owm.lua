@@ -8,6 +8,9 @@ local Thing = require('lha.Thing')
 local utils = require('lha.utils')
 
 local adapter = extension:require('adapter')
+local webBaseAddons = extension:require('web-base.addons', true)
+
+webBaseAddons.registerAddonExtension(extension)
 
 local function createWeatherThing(title, description)
   local thing = Thing:new(title or 'Weather', description or 'Weather Data', {
@@ -90,19 +93,6 @@ local THINGS_BY_KEY = {
 }
 local thingByKey = {}
 local configuration = extension:getConfiguration()
-
-extension:subscribeEvent('startup', function()
-  logger:info('OpenWeatherMap at %s - %s', configuration.latitude, configuration.longitude)
-  extension:getEngine():onExtension('web-base', function(webBaseExtension)
-    webBaseExtension:registerAddonExtension(extension, true)
-  end)
-end)
-
-extension:subscribeEvent('shutdown', function()
-  extension:getEngine():onExtension('web-base', function(webBaseExtension)
-    webBaseExtension:unregisterAddonExtension(extension)
-  end)
-end)
 
 extension:subscribeEvent('things', function()
   logger:info('looking for OpenWeatherMap things')

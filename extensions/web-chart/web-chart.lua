@@ -8,6 +8,10 @@ local strings = require('jls.util.strings')
 local tables = require('jls.util.tables')
 local Date = require('jls.util.Date')
 
+local webBaseAddons = extension:require('web-base.addons', true)
+
+webBaseAddons.registerAddonExtension(extension)
+
 local HistoricalDataHandler = class.create('jls.net.http.HttpHandler', function(tableHandler)
 
   function tableHandler:initialize(dataHistory)
@@ -71,30 +75,7 @@ local HistoricalDataHandler = class.create('jls.net.http.HttpHandler', function(
   end
 end)
 
-local context
-
-local function cleanup(server)
-  if context then
-    server:removeContext(context)
-  end
-end
-
 extension:subscribeEvent('startup', function()
   local engine = extension:getEngine()
-  local server = engine:getHTTPServer()
-  cleanup(server)
-  -- TODO Move to extension handler
-  context = server:createContext('/engine/historicalData/(.*)', HistoricalDataHandler:new(engine.dataHistory))
-  engine:onExtension('web-base', function(webBaseExtension)
-    webBaseExtension:registerAddonExtension(extension, true)
-  end)
-end)
-
-extension:subscribeEvent('shutdown', function()
-  local engine = extension:getEngine()
-  local server = engine:getHTTPServer()
-  engine:onExtension('web-base', function(webBaseExtension)
-    webBaseExtension:unregisterAddonExtension(extension)
-  end)
-  cleanup(server)
+  extension:addContext('/engine/historicalData/(.*)', HistoricalDataHandler:new(engine.dataHistory))
 end)

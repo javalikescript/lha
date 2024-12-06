@@ -6,7 +6,6 @@ local File = require('jls.io.File')
 local json = require('jls.util.json')
 local tables = require('jls.util.tables')
 local List = require('jls.util.List')
-local Map = require('jls.util.Map')
 local Scheduler = require('jls.util.Scheduler')
 local system = require('jls.lang.system')
 
@@ -44,6 +43,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     self.scheduler = Scheduler:new()
     self.watchers = {}
     self.timers = {}
+    self.contexts = {}
     self.logger = rootLogger:get('lha.extension.'..self.id)
     self.changeFn = function(path, value, previousValue)
       for _, watcher in ipairs(self.watchers) do
@@ -69,6 +69,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
       self.logger:warn('Error while handling event "%s" on extension "%s": "%s"', eventName, self.id, reason)
     end)
     self:clearTimers()
+    self:clearContexts()
     self.watchers = {}
   end
 
@@ -174,10 +175,13 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
   end
 
   function extension:require(name, base)
+    local n
     if base then
-      return loader.load(name, self.dir:getParent())
+      n = name
+    else
+      n = string.format('%s.%s', self.dir:getName(), name)
     end
-    return loader.load(string.format('%s.%s', self.dir:getName(), name), self.dir:getParent())
+    return loader.load(n, self.dir:getParent())
   end
 
   function extension:subscribePollEvent(fn, minIntervalSec, lastPollSec)
@@ -197,6 +201,26 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
         self.logger:info('minimum polling interval not reached (%ds)', minIntervalSec + lastPollSec - pollSec)
       end
     end)
+  end
+
+  function extension:addContext(...)
+    local server = self.engine:getHTTPServer()
+    local context = server:createContext(...)
+    table.insert(self.contexts, context)
+    if #self.contexts == 1 then
+      self:subscribeEventOnce('shutdown', function()
+        self:clearContexts()
+      end)
+    end
+    return context
+  end
+
+  function extension:clearContexts()
+    local server = self.engine:getHTTPServer()
+    for _, context in ipairs(self.contexts) do
+      server:removeContext(context)
+    end
+    self.contexts = {}
   end
 
   function extension:fireExtensionEvent(...)

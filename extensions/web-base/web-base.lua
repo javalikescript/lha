@@ -59,21 +59,11 @@ local RollingList = class.create(List, function(rollingList)
   end
 end)
 
-local contexts = {}
 local websockets = {}
 
-local function cleanup(server)
-  for _, context in ipairs(contexts) do
-    server:removeContext(context)
-  end
-  contexts = {}
+local function cleanup()
   websockets = {}
   Logger.setLogRecorder(recordLog)
-end
-
-local function addContext(server, ...)
-  local context = server:createContext(...)
-  table.insert(contexts, context)
 end
 
 local function onWebSocketClose(webSocket)
@@ -140,7 +130,7 @@ function extension:registerAddonExtension(ext, script)
   end
   self:registerAddon(ext:getId(), {
     handler = AddonFileHttpHandler:new(ext:getDir()),
-    script = script or 'main.js' -- TODO change to init
+    script = script or 'init.js'
   })
 end
 
@@ -151,12 +141,8 @@ end
 extension:watchPattern('^data/.*', onDataChange)
 
 extension:subscribeEvent('startup', function()
-  local engine = extension:getEngine()
   local configuration = extension:getConfiguration()
-  local server = engine:getHTTPServer()
-
-  cleanup(server)
-
+  cleanup()
   local maxMessageSize = 1024
   local maxMessageCount = 60
   local maxWebSocketLevel = Logger.LEVEL.FINE
@@ -218,9 +204,9 @@ extension:subscribeEvent('startup', function()
   end
   local wwwDir = File:new(extension:getDir(), 'www')
 
-  addContext(server, '/(.*)', FileHttpHandler:new(wwwDir, 'r', 'app.html'))
-  addContext(server, '/static/(.*)', assetsHandler)
-  addContext(server, '/addon/([^/]*)/?(.*)', HttpHandler:new(function(self, exchange)
+  extension:addContext('/(.*)', FileHttpHandler:new(wwwDir, 'r', 'app.html'))
+  extension:addContext('/static/(.*)', assetsHandler)
+  extension:addContext('/addon/([^/]*)/?(.*)', HttpHandler:new(function(self, exchange)
     local name, path = exchange:getRequestArguments()
     logger:fine('add-on handler "%s" / "%s"', name, path)
     if name == '' then
@@ -241,21 +227,18 @@ extension:subscribeEvent('startup', function()
       HttpExchange.notFound(exchange)
     end
   end))
-  addContext(server, '/ws/', Map.assign(WebSocketUpgradeHandler:new(), {
+  extension:addContext('/ws/', Map.assign(WebSocketUpgradeHandler:new(), {
     onOpen = function(_, webSocket, exchange)
       logger:fine('WebSocket openned %s', webSocket)
       table.insert(websockets, webSocket)
       webSocket.onClose = onWebSocketClose
     end
   }))
-  addContext(server, '/logs/', HttpHandler:new(function(self, exchange)
+  extension:addContext('/logs/', HttpHandler:new(function(self, exchange)
     local l = List.concat({}, logMessages:values(), warnMessages:values())
     HttpExchange.ok(exchange, json.stringify(l), 'application/json')
   end))
   logger:info('WebSocket available on /ws/')
 end)
 
-extension:subscribeEvent('shutdown', function()
-  local server = extension:getEngine():getHTTPServer()
-  cleanup(server)
-end)
+extension:subscribeEvent('shutdown', cleanup)

@@ -3,7 +3,7 @@
   "description": "Expose things on dashboard",
   "dependencies": ["web-base"],
   "version": "0.2",
-  "script": "../web-base/web-ext.lua",
+  "script": "../web-base/addon.lua",
   "schema": {
     "type": "object",
     "properties": {

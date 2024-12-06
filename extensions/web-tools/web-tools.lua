@@ -8,31 +8,25 @@ local RestHttpHandler = require('jls.net.http.handler.RestHttpHandler')
 local LogHttpFilter = require('jls.net.http.filter.LogHttpFilter')
 
 local hasPermission = extension:require('users.hasPermission', true)
+local webBaseAddons = extension:require('web-base.addons', true)
+
+webBaseAddons.registerAddonExtension(extension)
 
 local logFilter
-local contexts = {}
 
-local function cleanup(server)
-  for _, context in ipairs(contexts) do
-    server:removeContext(context)
-  end
-  contexts = {}
+local function cleanup()
   if logFilter then
+    local server = extension:getEngine():getHTTPServer()
     server:removeFilter(logFilter)
     logFilter = nil
   end
 end
 
-local function addContext(server, ...)
-  local context = server:createContext(...)
-  table.insert(contexts, context)
-end
-
 extension:subscribeEvent('startup', function()
   local engine = extension:getEngine()
   local server = engine:getHTTPServer()
-  cleanup(server)
-  addContext(server, '/engine/tools/(.*)', RestHttpHandler:new({
+  cleanup()
+  extension:addContext('/engine/tools/(.*)', RestHttpHandler:new({
     ['run?method=POST'] = function(exchange)
       if not hasPermission(exchange, 'rwca') then
         return false
@@ -76,20 +70,10 @@ extension:subscribeEvent('startup', function()
       end)
     end
   }))
-  engine:onExtension('web-base', function(webBaseExtension)
-    webBaseExtension:registerAddonExtension(extension, true)
-  end)
   if extension:getConfiguration().log then
     logFilter = LogHttpFilter:new()
     server:addFilter(logFilter)
   end
 end)
 
-extension:subscribeEvent('shutdown', function()
-  local engine = extension:getEngine()
-  local server = engine:getHTTPServer()
-  engine:onExtension('web-base', function(webBaseExtension)
-    webBaseExtension:unregisterAddonExtension(extension)
-  end)
-  cleanup(server)
-end)
+extension:subscribeEvent('shutdown', cleanup)

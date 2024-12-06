@@ -2,6 +2,7 @@
   "name": "Open Weather Map",
   "description": "Open Weather Map",
   "version": "2.0",
+  "dependencies": ["web-base"],
   "script": "owm.lua",
   "schema": {
     "type": "object",

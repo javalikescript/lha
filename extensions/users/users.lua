@@ -2,12 +2,14 @@ local extension = ...
 
 local class = require('jls.lang.class')
 local logger = extension:getLogger()
-local form = require('jls.net.http.form')
 local HttpExchange = require('jls.net.http.HttpExchange')
 local HttpFilter = require('jls.net.http.HttpFilter')
 local Url = require('jls.net.Url')
 local MessageDigest = require('jls.util.MessageDigest')
 local Codec = require('jls.util.Codec')
+local webBaseAddons = extension:require('web-base.addons', true)
+
+webBaseAddons.registerAddonExtension(extension)
 
 local User = class.create(function(user)
   function user:initialize(configuration)
@@ -20,27 +22,17 @@ local User = class.create(function(user)
   end
 end)
 
-local contexts, filter, base64, md, userMap
+local filter, base64, md, userMap
 
-local function cleanup(server)
-  if contexts then
-    for _, context in ipairs(contexts) do
-      server:removeContext(context)
-    end
-  end
-  contexts = {}
+local function cleanup()
   if filter then
+    local server = extension:getEngine():getHTTPServer()
     server:removeFilter(filter)
     filter = nil
   end
   userMap = {}
   base64 = Codec.getInstance('base64')
   md = MessageDigest.getInstance('SHA-1')
-end
-
-local function addContext(server, ...)
-  local context = server:createContext(...)
-  table.insert(contexts, context)
 end
 
 local function encrypt(value)
@@ -65,25 +57,24 @@ local sessionFilter
 
 extension:subscribeEvent('startup', function()
   local configuration = extension:getConfiguration()
-  local engine = extension:getEngine()
-  local server = engine:getHTTPServer()
+  local server = extension:getEngine():getHTTPServer()
   if sessionFilter then
     sessionFilter:close()
   end
   sessionFilter = HttpFilter.session(configuration.maxAge, configuration.idleTimeout)
-  cleanup(server)
+  cleanup()
   refreshUsers(configuration.users)
   function sessionFilter:onCreated(session)
     session.attributes.user = nil
     session.attributes.permission = configuration.defaultPermission or ''
   end
-  addContext(server, '/logout', function(exchange)
+  extension:addContext('/logout', function(exchange)
     if HttpExchange.methodAllowed(exchange, 'POST') then
       sessionFilter:onCreated(exchange:getSession())
       HttpExchange.redirect(exchange, '/')
     end
   end)
-  addContext(server, '/login', function(exchange)
+  extension:addContext('/login', function(exchange)
     if not HttpExchange.methodAllowed(exchange, 'POST') then
       return
     end
@@ -136,9 +127,6 @@ extension:subscribeEvent('startup', function()
   end
   filter = HttpFilter.byPath(filters):exclude('^/static')
   server:addFilter(filter)
-  engine:onExtension('web-base', function(webBaseExtension)
-    webBaseExtension:registerAddonExtension(extension, 'user.js')
-  end)
 end)
 
 extension:subscribeEvent('poll', function()
@@ -153,10 +141,5 @@ extension:subscribeEvent('refresh', function()
 end)
 
 extension:subscribeEvent('shutdown', function()
-  local engine = extension:getEngine()
-  local server = engine:getHTTPServer()
-  engine:onExtension('web-base', function(webBaseExtension)
-    webBaseExtension:unregisterAddonExtension(extension)
-  end)
-  cleanup(server)
+  cleanup()
 end)

@@ -8,6 +8,10 @@ local RestHttpHandler = require('jls.net.http.handler.RestHttpHandler')
 local HttpExchange = require('jls.net.http.HttpExchange')
 local json = require('jls.util.json')
 
+local webBaseAddons = extension:require('web-base.addons', true)
+
+webBaseAddons.registerAddonExtension(extension)
+
 local REST_SCRIPTS = {
   [''] = function(exchange)
     local request = exchange:getRequest()
@@ -90,37 +94,8 @@ local REST_SCRIPTS = {
   },
 }
 
-local contexts = {}
-
-local function cleanup(server)
-  for _, context in ipairs(contexts) do
-    server:removeContext(context)
-  end
-  contexts = {}
-end
-
-local function addContext(server, ...)
-  local context = server:createContext(...)
-  table.insert(contexts, context)
-end
-
 extension:subscribeEvent('startup', function()
   local engine = extension:getEngine()
-  local server = engine:getHTTPServer()
-  cleanup(server)
-  -- TODO Move to extension handler
-  addContext(server, '/engine/scripts/(.*)', RestHttpHandler:new(REST_SCRIPTS, {engine = engine}))
-  addContext(server, '/engine/scriptFiles/(.*)', FileHttpHandler:new(engine:getScriptsDirectory(), 'rw'))
-  engine:onExtension('web-base', function(webBaseExtension)
-    webBaseExtension:registerAddonExtension(extension, true)
-  end)
-end)
-
-extension:subscribeEvent('shutdown', function()
-  local engine = extension:getEngine()
-  local server = engine:getHTTPServer()
-  engine:onExtension('web-base', function(webBaseExtension)
-    webBaseExtension:unregisterAddonExtension(extension)
-  end)
-  cleanup(server)
+  extension:addContext('/engine/scripts/(.*)', RestHttpHandler:new(REST_SCRIPTS, {engine = engine}))
+  extension:addContext('/engine/scriptFiles/(.*)', FileHttpHandler:new(engine:getScriptsDirectory(), 'rw'))
 end)
