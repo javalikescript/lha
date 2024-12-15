@@ -1,7 +1,7 @@
 
-local function onStartup(extension)
+local function onStartup(extension, script)
   extension:getEngine():onExtension('web-base', function(webBaseExtension)
-    webBaseExtension:registerAddonExtension(extension, true)
+    webBaseExtension:registerAddonExtension(extension, script or true)
   end)
 end
 
@@ -11,9 +11,9 @@ local function onShutdown(extension)
   end)
 end
 
-local function registerAddonExtension(extension)
+local function registerAddonExtension(extension, script)
   extension:subscribeEvent('startup', function()
-    onStartup(extension)
+    onStartup(extension, script)
   end)
   extension:subscribeEvent('shutdown', function()
     onShutdown(extension)

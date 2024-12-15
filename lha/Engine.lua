@@ -327,39 +327,15 @@ return class.create(function(engine)
     self:loadScriptExtensions()
   end
 
-  function engine:getScriptExtensions()
-    local scripts = {}
-    local others = {}
-    for _, extension in ipairs(self.extensions) do
-      if extension:getType() == 'script' then
-        table.insert(scripts, extension)
-      else
-        table.insert(others, extension)
-      end
-    end
-    return scripts, others
-  end
-
-  function engine:reloadExtensions(full, excludeScripts)
-    if excludeScripts then
-      local scripts, others = self:getScriptExtensions()
-      if full then
-        self.extensions = scripts
-        self:loadOtherExtensions()
-      else
-        for _, extension in ipairs(others) do
-          extension:restartExtension()
-        end
-      end
+  function engine:reloadExtensions(full)
+    if full then
+      self.extensions = List.filter(self.extensions, function(extension)
+        return extension:getType() == 'script'
+      end)
+      self:loadOtherExtensions()
     else
-      if full then
-        self:publishEvent('shutdown')
-        self:loadExtensions()
-        self:publishEvent('startup')
-        self:publishEvent('configuration')
-        self:publishEvent('things')
-      else
-        for _, extension in ipairs(self.extensions) do
+      for _, extension in ipairs(self.extensions) do
+        if extension:getType() ~= 'script' then
           extension:restartExtension()
         end
       end
@@ -367,13 +343,16 @@ return class.create(function(engine)
   end
 
   function engine:reloadScripts(full)
-    local scripts, others = self:getScriptExtensions()
     if full then
-      self.extensions = others
+      self.extensions = List.filter(self.extensions, function(extension)
+        return extension:getType() ~= 'script'
+      end)
       self:loadScriptExtensions()
     else
-      for _, extension in ipairs(scripts) do
-        extension:restartExtension()
+      for _, extension in ipairs(self.extensions) do
+        if extension:getType() == 'script' then
+          extension:restartExtension()
+        end
       end
     end
   end
