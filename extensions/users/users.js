@@ -1,4 +1,4 @@
-define(['./user.xml'], function(loginTemplate) {
+define(['./users.xml'], function(loginTemplate) {
 
   function urlEncodeForm(keyValues) {
     var tuples = [];
