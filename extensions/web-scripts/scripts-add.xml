@@ -1,0 +1,12 @@
+<app-page id="scripts-add" title="Add Script">
+  <template slot="bar-right">
+    <button v-on:click="app.back()" title="Close"><i class="fa fa-window-close"></i></button>
+  </template>
+  <article>
+    <section>
+      <button v-on:click="newBlocks"><i class="fa fa-plus"></i>&nbsp;Add Blocks</button>
+      <button v-on:click="newView"><i class="fa fa-plus"></i>&nbsp;Add View</button>
+      <button v-on:click="newScript"><i class="fa fa-plus"></i>&nbsp;Add Script</button>
+    </section>
+  </article>
+</app-page>

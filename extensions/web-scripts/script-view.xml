@@ -1,4 +1,4 @@
-<app-page id="scriptsBlockly" title="Blocks Editor">
+<app-page id="scriptsView" title="View Editor">
   <template slot="bar-middle">
     <h1 v-if="newName === false" v-on:click="newName = name">{{ name }}</h1>
     <div v-else>
@@ -8,14 +8,11 @@
     </div>
   </template>
   <template slot="bar-right">
-    <input v-on:change="uploadThenSave" type="file" accept=".xml" ref="uploadInput" style="display: none;" />
     <button v-on:click="onDelete()" title="Delete"><i class="fa fa-trash"></i>&nbsp;Delete</button>
     <button v-on:click="onApply()" title="Save then reload"><i class="fas fa-redo"></i></button>
-    <button v-on:click="onTest()" title="Test"><i class="fas fa-vial"></i></button>
-    <button v-on:click="onPoll()" title="Poll"><i class="far fa-bell"></i></button>
     <button v-on:click="onSave" title="Save"><i class="far fa-save"></i></button>
   </template>
   <article class="content">
-    <div id="scriptsEditorBlocklyDiv" style="height: 100%; width: 100%;"></div>
+    <textarea v-model="text" spellcheck="false" wrap="off" class="full"></textarea>
   </article>
 </app-page>

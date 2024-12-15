@@ -1,4 +1,6 @@
-define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolbox.xml', './blocks.json', './blocks-lua'], function(scriptsTemplate, scriptBlocklyTemplate, scriptEditorTemplate, toolboxXml, blocks, blocksLua) {
+define(['./scripts.xml', './scripts-add.xml', './script-blockly.xml', './script-view.xml', './script-editor.xml', './toolbox.xml', './blocks.json', './blocks-lua'],
+  function(scriptsTemplate, scriptsAddTemplate, scriptBlocklyTemplate, scriptViewTemplate, scriptEditorTemplate, toolboxXml, blocks, blocksLua)
+{
 
   function getMatches(s, r) {
     var matches = [];
@@ -151,6 +153,7 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
         fetch('/engine/scripts/' + scriptId + '/', {
           method: 'DELETE'
         }).then(assertIsOk).then(function() {
+          app.replacePage('scripts');
           toaster.toast('Deleted');
         });
       });
@@ -174,40 +177,6 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
     }).then(function() {
       toaster.toast('Script reloaded');
     });
-  }
-  function onPoll() {
-    return fetch('/engine/extensions/' + this.scriptId + '/poll', {method: 'POST'}).then(function() {
-      toaster.toast('Script polled');
-    });
-  }
-  function onTest() {
-    console.log('Testing script');
-    fetch('/engine/extensions/' + this.scriptId + '/test', {method: 'POST'});
-  }
-  function onLogs(logs) {
-    if (logs) {
-      for (var i = 0; i < logs.length; i++) {
-        var log = logs[i];
-        var msg = 'Engine: ' + log.message
-        switch (log.level) {
-        case 100:
-          console.error(msg);
-          break;
-        case 90:
-          console.warn(msg);
-          break;
-        case 80:
-          console.info(msg);
-          break;
-        case 70:
-          console.log(msg);
-          break;
-        default:
-          console.debug(msg);
-          break;
-        }
-      }
-    }
   }
 
   var scriptsBlocklyVue = new Vue({
@@ -254,12 +223,43 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
           self.refresh();
         });
       },
-      onLogs: onLogs,
+      onPoll: function() {
+        return fetch('/engine/extensions/' + this.scriptId + '/poll', {method: 'POST'}).then(function() {
+          toaster.toast('Script polled');
+        });
+      },
+      onTest: function() {
+        console.log('Testing script');
+        return fetch('/engine/extensions/' + this.scriptId + '/test', {method: 'POST'});
+      },
+      onLogs: function(logs) {
+        if (logs) {
+          for (var i = 0; i < logs.length; i++) {
+            var log = logs[i];
+            var msg = 'Engine: ' + log.message
+            switch (log.level) {
+            case 100:
+              console.error(msg);
+              break;
+            case 90:
+              console.warn(msg);
+              break;
+            case 80:
+              console.info(msg);
+              break;
+            case 70:
+              console.log(msg);
+              break;
+            default:
+              console.debug(msg);
+              break;
+            }
+          }
+        }
+      },
       onDelete: onDelete,
       onRename: onRename,
       onApply: onApply,
-      onPoll: onPoll,
-      onTest: onTest,
       onSave: function() {
         var scriptId = this.scriptId;
         console.log('scriptsEditor.onSave(), scriptId is "' + scriptId + '"');
@@ -312,6 +312,49 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
     }
   });
 
+  var scriptsViewVue = new Vue({
+    template: scriptViewTemplate,
+    data: {
+      scriptId: '',
+      newName: false,
+      name: '',
+      text: ''
+    },
+    methods: {
+      onShow: function(scriptId) {
+        if (scriptId) {
+          this.scriptId = scriptId;
+          this.refresh();
+        }
+      },
+      onDelete: onDelete,
+      onRename: onRename,
+      onApply: onApply,
+      onSave: function() {
+        var scriptId = this.scriptId;
+        console.log('scriptsEditor.onSave(), scriptId is "' + scriptId + '"');
+        if (!scriptId) {
+          return;
+        }
+        return fetch('/engine/scriptFiles/' + scriptId + '/view.xml', {
+          method: 'PUT',
+          body: this.text
+        }).then(assertIsOk).then(function() {
+          toaster.toast('Saved');
+        });
+      },
+      refresh: function() {
+        return Promise.all([
+          fetch('/engine/scriptFiles/' + this.scriptId + '/view.xml').then(assertIsOk).then(getResponseText),
+          fetch('/engine/scriptFiles/' + this.scriptId + '/manifest.json').then(assertIsOk).then(getJson)
+        ]).then(apply(this, function(text, manifest) {
+          this.text = text;
+          this.name = manifest.name;
+        }));
+      }
+    }
+  });
+
   var scriptsEditorVue = new Vue({
     template: scriptEditorTemplate,
     data: {
@@ -327,12 +370,9 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
           this.refresh();
         }
       },
-      onLogs: onLogs,
       onDelete: onDelete,
       onRename: onRename,
       onApply: onApply,
-      onPoll: onPoll,
-      onTest: onTest,
       onSave: function() {
         var scriptId = this.scriptId;
         console.log('scriptsEditor.onSave(), scriptId is "' + scriptId + '"');
@@ -348,16 +388,75 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
       },
       refresh: function() {
         return Promise.all([
-          fetch('/engine/scriptFiles/' + this.scriptId + '/script.lua').then(function(response) {
-            return response.text();
-          }),
-          fetch('/engine/scriptFiles/' + this.scriptId + '/manifest.json').then(function(response) {
-            return response.json();
-          })
+          fetch('/engine/scriptFiles/' + this.scriptId + '/script.lua').then(assertIsOk).then(getResponseText),
+          fetch('/engine/scriptFiles/' + this.scriptId + '/manifest.json').then(assertIsOk).then(getJson)
         ]).then(apply(this, function(luaText, manifest) {
           this.text = luaText;
           this.name = manifest.name;
         }));
+      }
+    }
+  });
+
+  var scriptsAddVue = new Vue({
+    template: scriptsAddTemplate,
+    methods: {
+      newScript: function () {
+        fetch('/engine/scripts/', {
+          method: 'PUT'
+        }).then(assertIsOk).then(function() {
+          app.replacePage('scripts');
+        });
+      },
+      newBlocks: function () {
+        fetch('/engine/scripts/', {
+          method: 'PUT'
+        }).then(assertIsOk).then(getResponseText).then(function(scriptId) {
+          return fetch('/engine/scriptFiles/' + scriptId + '/blocks.xml', {
+            method: 'PUT',
+            body: '<xml xmlns="http://www.w3.org/1999/xhtml"></xml>'
+          });
+        }).then(function() {
+          app.replacePage('scripts');
+        });
+      },
+      newView: function () {
+        fetch('/engine/scripts/', {
+          method: 'PUT'
+        }).then(assertIsOk).then(getResponseText).then(function(scriptId) {
+          return Promise.all([
+            fetch('/engine/scriptFiles/' + scriptId + '/view.xml', {
+              method: 'PUT',
+              body: [
+                '<app-page id="' + scriptId + '" title="Scripts">',
+                '</app-page>'
+              ].join('\n')
+            }),
+            fetch('/engine/scriptFiles/' + scriptId + '/init.js', {
+              method: 'PUT',
+              body: [
+                "define(['./view.xml'], function(viewTemplate) {",
+                "  var viewVue = new Vue({",
+                "    template: viewTemplate",
+                "  });",
+                "  addPageComponent(viewVue);",
+                "});"
+              ].join('\n')
+            }),
+            fetch('/engine/scriptFiles/' + scriptId + '/script.lua', {
+              method: 'PUT',
+              body: [
+                "local extension = ...",
+                "local loader = require('jls.lang.loader')",
+                "local coreExtPath = extension:getEngine().lhaExtensionsDir:getPath()",
+                "local webBaseAddons = loader.load('web-base.addons', coreExtPath)",
+                "webBaseAddons.registerAddonExtension(extension, 'init.js')"
+              ].join('\n')
+            }),
+          ]);
+        }).then(function() {
+          app.replacePage('scripts');
+        });
       }
     }
   });
@@ -392,19 +491,13 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
         });
       },
       openScript: function (script) {
-        app.toPage(script.hasBlocks ? 'scriptsBlockly' : 'scriptsEditor', script.id);
-      },
-      onTransform: function(script) {
-        if (script.id && script.hasBlocks) {
-          confirmation.ask('Transform the script?').then(function() {
-            script.hasBlocks = false;
-            fetch('/engine/scriptFiles/' + script.id + '/blocks.xml', {
-              method: 'DELETE'
-            }).then(assertIsOk).then(function() {
-              toaster.toast('Transformed');
-            });
-          });
+        var pageId = 'scriptsEditor';
+        if (script.hasBlocks) {
+          pageId = 'scriptsBlockly';
+        } else if (script.hasView) {
+          pageId = 'scriptsView';
         }
+        app.toPage(pageId, script.id);
       },
       activateScript: function (script) {
         //console.log('activateScript()' + script.active);
@@ -413,16 +506,15 @@ define(['./scripts.xml', './script-blockly.xml', './script-editor.xml', './toolb
           toaster.toast('Script ' + (activate ? 'enabled' : 'disabled'));
         });
       },
-      newScript: function () {
-        fetch('/engine/scripts/', {
-          method: 'PUT'
-        }).then(assertIsOk);
-        this.onShow();
+      onNew: function() {
+        app.toPage('scripts-add');
       }
     }
   });
 
+  addPageComponent(scriptsAddVue);
   addPageComponent(scriptsBlocklyVue);
+  addPageComponent(scriptsViewVue);
   addPageComponent(scriptsEditorVue);
   addPageComponent(scriptsVue, 'fa-scroll');
 

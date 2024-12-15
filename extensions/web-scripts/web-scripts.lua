@@ -13,80 +13,62 @@ local webBaseAddons = extension:require('web-base.addons', true)
 webBaseAddons.registerAddonExtension(extension)
 
 local REST_SCRIPTS = {
-  [''] = function(exchange)
-    local request = exchange:getRequest()
-    local method = string.upper(request:getMethod())
-    local engine = exchange:getAttribute('engine')
-    if method == HTTP_CONST.METHOD_GET then
-      local list = {}
-      for _, ext in ipairs(engine.extensions) do
-        if ext:getType() == 'script' then
-          --local scriptDir = File:new(engine.scriptsDir, ext:getId())
-          local blocksFile = File:new(ext:getDir(), 'blocks.xml')
-          local item = ext:toJSON()
-          item.hasBlocks = blocksFile:isFile()
-          table.insert(list, item)
-        end
+  ['(engine)?method=GET'] = function(exchange, engine)
+    local list = {}
+    for _, ext in ipairs(engine.extensions) do
+      if ext:getType() == 'script' then
+        local item = ext:toJSON()
+        item.hasBlocks = File:new(ext:getDir(), 'blocks.xml'):isFile()
+        item.hasView = File:new(ext:getDir(), 'view.xml'):isFile()
+        table.insert(list, item)
       end
-      return list
-    elseif method == HTTP_CONST.METHOD_PUT then
-      if engine.scriptsDir:isDirectory() then
-        local scriptId = engine:generateId()
-        local scriptDir = File:new(engine.scriptsDir, scriptId)
-        scriptDir:mkdir()
-        local blocksFile = File:new(scriptDir, 'blocks.xml')
-        local scriptFile = File:new(scriptDir, 'script.lua')
-        local manifestFile = File:new(scriptDir, 'manifest.json')
-        local manifest = {
-          name = "New script",
-          version = "1.0",
-          script = scriptFile:getName()
-        }
-        blocksFile:write('<xml xmlns="http://www.w3.org/1999/xhtml"></xml>')
-        scriptFile:write('local script = ...\n\n')
-        manifestFile:write(json.stringify(manifest, 2))
-        logger:fine('Created script "%s"', scriptId)
-        engine:loadExtensionFromDirectory(scriptDir, 'script')
-        return scriptId
-      else
-        logger:warn('Cannot create script')
-      end
-    else
-      HttpExchange.methodNotAllowed(exchange)
+    end
+    return list
+  end,
+  ['(engine)?method=PUT'] = function(exchange, engine)
+    local dir = engine:getScriptsDirectory()
+    local scriptName = 'script.lua'
+    local extId = engine:generateId()
+    local extDir = File:new(dir, extId)
+    extDir:mkdir()
+    local scriptFile = File:new(extDir, scriptName)
+    scriptFile:write('local script = ...\n\n')
+    local manifestFile = File:new(extDir, 'manifest.json')
+    local manifest = {
+      name = 'New script',
+      version = '1.0',
+      script = scriptName
+    }
+    manifestFile:write(json.stringify(manifest, 2))
+    logger:fine('Created script "%s"', extId)
+    engine:loadExtensionFromDirectory(extDir, 'script')
+    return extId
+  end,
+  ['{+}(engine)'] = function(exchange, name, engine)
+    local ext = engine:getExtensionById(name)
+    if ext:getType() ~= 'script' then
+      HttpExchange.notFound(exchange)
       return false
     end
-  end,
-  ['{+}'] = function(exchange, name)
-    local engine = exchange:getAttribute('engine')
-    exchange:setAttribute('extension', engine:getExtensionById(name))
+    exchange:setAttribute('extension', ext)
   end,
   ['{extensionId}'] = {
-    [''] = function(exchange)
-      local request = exchange:getRequest()
-      local method = string.upper(request:getMethod())
-      local engine = exchange:getAttribute('engine')
-      local ext = exchange:getAttribute('extension')
-      if method == HTTP_CONST.METHOD_DELETE and ext:getType() == 'script' then
-        local extensionDir = ext:getDir()
-        if ext:isActive() then
-          ext:publishEvent('shutdown')
-        end
-        engine:removeExtension(ext)
-        extensionDir:deleteRecursive()
-      else
-        HttpExchange.methodNotAllowed(exchange)
-        return false
+    ['(engine, extension)?method=DELETE'] = function(exchange, engine, ext)
+      local extensionDir = ext:getDir()
+      if ext:isActive() then
+        ext:publishEvent('shutdown')
       end
+      ext:cleanExtension()
+      engine:removeExtension(ext)
+      extensionDir:deleteRecursive()
     end,
-    reload = function(exchange)
-      exchange.attributes.extension:restartExtension()
+    ['reload(extension)'] = function(exchange, ext)
+      ext:restartExtension()
     end,
-    ['name?method=PUT'] = function(exchange)
+    ['name(extension)?method=PUT'] = function(exchange, ext)
       local name = exchange:getRequest():getBody()
-      local ext = exchange:getAttribute('extension')
       local extensionDir = ext:getDir()
       local manifestFile = File:new(extensionDir, 'manifest.json')
-      --local manifest = json.decode(manifestFile:readAll())
       ext.manifest.name = name
       manifestFile:write(json.stringify(ext.manifest, 2))
       return 'Renamed'

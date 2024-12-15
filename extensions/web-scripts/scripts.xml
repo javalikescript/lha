@@ -1,15 +1,12 @@
 <app-page id="scripts" title="Scripts">
   <template slot="bar-right">
-    <button v-on:click="newScript" title="Create"><i class="fa fa-plus"></i></button>
+    <button v-on:click="onNew" title="Add"><i class="fa fa-plus"></i></button>
   </template>
   <article class="cards">
     <div class="card" v-for="script in scripts">
       <div class="bar">
         <p>{{ script.name }}</p>
         <div>
-          <!--
-          <button v-if="script.hasBlocks" v-on:click="onTransform(script)"><i class="fas fa-recycle"></i>&nbsp;Lua</button>
-          -->
           <button v-on:click="reloadScript(script)"><i class="fas fa-redo"></i>&nbsp;Reload</button>
           <button v-on:click="pollScript(script)"><i class="far fa-bell"></i>&nbsp;Poll</button>
           <button v-on:click="openScript(script)"><i class="fas fa-edit"></i>&nbsp;Open</button>
@@ -19,7 +16,7 @@
       <p><input type="checkbox" v-model="script.active" v-on:click="activateScript(script)" /> Active</p>
     </div>
     <section>
-      <button v-on:click="newScript"><i class="fa fa-plus"></i>&nbsp;Add</button>
+      <button v-on:click="onNew"><i class="fa fa-plus"></i>&nbsp;Add</button>
     </section>
   </article>
 </app-page>

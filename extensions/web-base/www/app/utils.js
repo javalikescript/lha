@@ -127,6 +127,26 @@ function hsvToRgb(h, s, v) {
   return 'rgb(' + Math.floor(r * 255) + ',' + Math.floor(g * 255) + ',' + Math.floor(b * 255) + ')';
 }
 
+function parseRgb(v) {
+  var parts = /^#?(\w\w)(\w\w)(\w\w)$/.exec(v);
+  return parts ? {
+    r: parseInt(parts[1], 16),
+    g: parseInt(parts[2], 16),
+    b: parseInt(parts[3], 16)
+  } : null;
+}
+
+function toHex(v) {
+  var h = (v & 0xff).toString(16);
+  return h.length == 1 ? '0' + h : h;
+}
+function formatRgb(r, g, b) {
+  if (typeof r === 'object') {
+    return parseRgb(r.r, r.g, r.b);
+  }
+  return "#" + toHex(r) + toHex(g) + toHex(b);
+}
+
 function hashString(value) {
   var hash = 0;
   if (typeof value === 'string') {
@@ -188,6 +208,14 @@ function extname(path, invert) {
 
 function getJson(response) {
   return response.json();
+}
+
+function getResponseJson(response) {
+  return response.json();
+}
+
+function getResponseText(response) {
+  return response.text();
 }
 
 function rejectIfNotOk(response) {
