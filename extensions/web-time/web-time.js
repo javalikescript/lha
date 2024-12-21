@@ -42,6 +42,6 @@ define(['./web-time.xml'], function(timeTemplate) {
     }
   });
 
-  addPageComponent(timeVue, 'fa-clock');
+  addPageComponent(timeVue, 'clock');
 
 });

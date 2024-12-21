@@ -47,6 +47,6 @@ define(['./users.xml'], function(loginTemplate) {
     }
   });
   
-  addPageComponent(userVue, 'fa-user');
+  addPageComponent(userVue, 'user');
 
 });

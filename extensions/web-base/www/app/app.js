@@ -627,6 +627,6 @@ function addPageComponent(vue, menuIcon) {
   var component = vue.$mount();
   document.getElementById('pages').appendChild(component.$el);
   if (menuIcon) {
-    registerPageVue(vue, typeof menuIcon === 'string' ? menuIcon : undefined);
+    registerPageVue(vue, ((typeof menuIcon === 'string') && (menuIcon !== '')) ? 'fa-' + menuIcon : undefined);
   }
 }

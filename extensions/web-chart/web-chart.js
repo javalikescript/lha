@@ -346,6 +346,6 @@ define(['./web-chart.xml'], function(pageXml) {
     }
   });
   
-  addPageComponent(vue, 'fa-chart-line');
+  addPageComponent(vue, 'chart-line');
 
 });

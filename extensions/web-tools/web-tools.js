@@ -130,7 +130,7 @@ define(['./web-tools.xml'], function(toolsTemplate) {
   });
   
   if (app.canAdminister) {
-    addPageComponent(toolsVue, 'fa-tools');
+    addPageComponent(toolsVue, 'tools');
   }
 
 });
