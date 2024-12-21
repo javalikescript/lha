@@ -2,7 +2,6 @@ local extension = ...
 
 local logger = extension:getLogger()
 local File = require('jls.io.File')
-local HTTP_CONST = require('jls.net.http.HttpMessage').CONST
 local FileHttpHandler = require('jls.net.http.handler.FileHttpHandler')
 local RestHttpHandler = require('jls.net.http.handler.RestHttpHandler')
 local HttpExchange = require('jls.net.http.HttpExchange')

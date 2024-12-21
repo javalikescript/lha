@@ -1,0 +1,41 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "title": "Id",
+      "type": "string",
+      "default": "view",
+      "required": true
+    },
+    "title": {
+      "title": "Title",
+      "type": "string",
+      "default": "View",
+      "required": true
+    },
+    "icon": {
+      "title": "Icon",
+      "description": "The fontawesome icon to use for the view tile and menu entry, such as 'house'",
+      "type": "string"
+    },
+    "properties": {
+      "title": "Properties",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string",
+            "required": true
+          },
+          "path": {
+            "title": "Property",
+            "type": "string",
+            "enumVar": "readablePropertyPaths"
+          }
+        }
+      }
+    }
+  }
+}

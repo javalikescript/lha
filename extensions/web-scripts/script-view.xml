@@ -9,10 +9,11 @@
   </template>
   <template slot="bar-right">
     <button v-on:click="onDelete()" title="Delete"><i class="fa fa-trash"></i>&nbsp;Delete</button>
+    <button v-on:click="app.toPage('scriptsViewConfig', scriptId)" title="Configuration"><i class="fas fa-cog"></i></button>
     <button v-on:click="onApply()" title="Save then reload"><i class="fas fa-redo"></i></button>
     <button v-on:click="onSave" title="Save"><i class="far fa-save"></i></button>
   </template>
   <article class="content">
-    <textarea v-model="text" spellcheck="false" wrap="off" class="full"></textarea>
+    <textarea v-model="text" v-on:keydown.ctrl.s.exact.prevent.stop="onSave()" spellcheck="false" wrap="off" class="full"></textarea>
   </article>
 </app-page>

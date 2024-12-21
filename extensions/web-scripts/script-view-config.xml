@@ -1,0 +1,9 @@
+<app-page id="scriptsViewConfig" title="View Configuration" transition-class="hideTop">
+  <template slot="bar-right">
+    <button v-on:click="app.back()" title="Close"><i class="fa fa-window-close"></i></button>
+  </template>
+  <page-article>
+    <json :name="'Configuration'" :obj="config" :schema="schema"></json>
+    <button v-on:click="onSave()"><i class="far fa-save"></i>&nbsp;Save</button>
+  </page-article>
+</app-page>

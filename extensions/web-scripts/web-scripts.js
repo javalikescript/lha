@@ -1,5 +1,11 @@
-define(['./scripts.xml', './scripts-add.xml', './script-blockly.xml', './script-view.xml', './script-editor.xml', './toolbox.xml', './blocks.json', './blocks-lua'],
-  function(scriptsTemplate, scriptsAddTemplate, scriptBlocklyTemplate, scriptViewTemplate, scriptEditorTemplate, toolboxXml, blocks, blocksLua)
+define(['./scripts.xml', './scripts-add.xml',
+  './script-blockly.xml', './toolbox.xml', './blocks.json', './blocks-lua',
+  './script-view.xml', './script-view-config.xml', './view-schema.json', './view-init.js!', './view-script.lua', 
+  './script-editor.xml'],
+  function(scriptsTemplate, scriptsAddTemplate,
+    scriptBlocklyTemplate, toolboxXml, blocks, blocksLua,
+    scriptViewTemplate, scriptViewConfigTemplate, scriptsViewConfigSchema, viewInitJs, viewScriptLua,
+    scriptEditorTemplate)
 {
 
   function getMatches(s, r) {
@@ -104,6 +110,9 @@ define(['./scripts.xml', './scripts-add.xml', './script-blockly.xml', './script-
     return workspace;
   };
 
+  var scriptPath = '/engine/scripts/';
+  var scriptFilesPath = '/engine/scriptFiles/';
+
   var blockEnv = {
     lhaDataColor: 38,
     lhaEventColor: 58,
@@ -150,7 +159,7 @@ define(['./scripts.xml', './scripts-add.xml', './script-blockly.xml', './script-
     console.log('scriptsEditor.onDelete(), scriptId is "' + scriptId + '"');
     if (scriptId) {
       confirmation.ask('Delete the script?').then(function() {
-        fetch('/engine/scripts/' + scriptId + '/', {
+        fetch(scriptPath + scriptId + '/', {
           method: 'DELETE'
         }).then(assertIsOk).then(function() {
           app.replacePage('scripts');
@@ -161,7 +170,7 @@ define(['./scripts.xml', './scripts-add.xml', './script-blockly.xml', './script-
   }
   function onRename() {
     var self = this;
-    return fetch('/engine/scripts/' + this.scriptId + '/name', {
+    return fetch(scriptPath + this.scriptId + '/name', {
       method: 'PUT',
       body: this.newName
     }).then(assertIsOk).then(function() {
@@ -173,7 +182,7 @@ define(['./scripts.xml', './scripts-add.xml', './script-blockly.xml', './script-
   function onApply() {
     var scriptId = this.scriptId;
     return this.onSave().then(function() {
-      return fetch('/engine/scripts/' + scriptId + '/reload', {method: 'POST'});
+      return fetch(scriptPath + scriptId + '/reload', {method: 'POST'});
     }).then(function() {
       toaster.toast('Script reloaded');
     });
@@ -215,7 +224,7 @@ define(['./scripts.xml', './scripts-add.xml', './script-blockly.xml', './script-
           return;
         }
         var self = this;
-        fetch('/engine/scriptFiles/' + self.scriptId + '/blocks.xml', {
+        fetch(scriptFilesPath + self.scriptId + '/blocks.xml', {
           method: 'PUT',
           body: input.files[0]
         }).then(assertIsOk).then(function() {
@@ -278,11 +287,11 @@ define(['./scripts.xml', './scripts-add.xml', './script-blockly.xml', './script-
         }
         // save
         return Promise.all([
-          fetch('/engine/scriptFiles/' + scriptId + '/blocks.xml', {
+          fetch(scriptFilesPath + scriptId + '/blocks.xml', {
             method: 'PUT',
             body: xmlText
           }).then(assertIsOk),
-          fetch('/engine/scriptFiles/' + scriptId + '/script.lua', {
+          fetch(scriptFilesPath + scriptId + '/script.lua', {
             method: 'PUT',
             body: code
           }).then(assertIsOk)
@@ -296,10 +305,10 @@ define(['./scripts.xml', './scripts-add.xml', './script-blockly.xml', './script-
           return Promise.reject('workspace not initialized');
         }
         return Promise.all([
-          fetch('/engine/scriptFiles/' + this.scriptId + '/blocks.xml').then(function(response) {
+          fetch(scriptFilesPath + this.scriptId + '/blocks.xml').then(function(response) {
             return response.text();
           }),
-          fetch('/engine/scriptFiles/' + this.scriptId + '/manifest.json').then(function(response) {
+          fetch(scriptFilesPath + this.scriptId + '/manifest.json').then(function(response) {
             return response.json();
           })
         ]).then(apply(this, function(xmlText, manifest) {
@@ -336,17 +345,17 @@ define(['./scripts.xml', './scripts-add.xml', './script-blockly.xml', './script-
         if (!scriptId) {
           return;
         }
-        return fetch('/engine/scriptFiles/' + scriptId + '/view.xml', {
-          method: 'PUT',
-          body: this.text
-        }).then(assertIsOk).then(function() {
+        return Promise.all([
+          fetch(scriptFilesPath + scriptId + '/view.xml', {method: 'PUT', body: this.text}).then(assertIsOk),
+          fetch(scriptFilesPath + scriptId + '/init.js', {method: 'PUT', body: viewInitJs}).then(assertIsOk)
+        ]).then(function() {
           toaster.toast('Saved');
         });
       },
       refresh: function() {
         return Promise.all([
-          fetch('/engine/scriptFiles/' + this.scriptId + '/view.xml').then(assertIsOk).then(getResponseText),
-          fetch('/engine/scriptFiles/' + this.scriptId + '/manifest.json').then(assertIsOk).then(getJson)
+          fetch(scriptFilesPath + this.scriptId + '/view.xml').then(assertIsOk).then(getResponseText),
+          fetch(scriptFilesPath + this.scriptId + '/manifest.json').then(assertIsOk).then(getJson)
         ]).then(apply(this, function(text, manifest) {
           this.text = text;
           this.name = manifest.name;
@@ -355,6 +364,37 @@ define(['./scripts.xml', './scripts-add.xml', './script-blockly.xml', './script-
     }
   });
 
+  var scriptsViewConfigVue = new Vue({
+    template: scriptViewConfigTemplate,
+    data: {
+      scriptId: '',
+      schema: {},
+      config: {}
+    },
+    methods: {
+      onShow: function(scriptId) {
+        this.scriptId = scriptId;
+        return Promise.all([
+          fetch(scriptFilesPath + this.scriptId + '/config.json').then(getJson),
+          app.getEnumsById()
+        ]).then(apply(this, function(config, enumsById) {
+          //console.info('schema:', populateJsonSchema(scriptsViewConfigSchema, enumsById));
+          this.schema = populateJsonSchema(scriptsViewConfigSchema, enumsById);
+          this.config = config;
+        }));
+      },
+      onSave: function() {
+        return fetch(scriptFilesPath + this.scriptId + '/config.json', {
+          method: 'PUT',
+          body: JSON.stringify(this.config)
+        }).then(assertIsOk).then(function() {
+          app.back();
+          toaster.toast('Saved');
+        });
+      }
+    }
+  });
+  
   var scriptsEditorVue = new Vue({
     template: scriptEditorTemplate,
     data: {
@@ -379,7 +419,7 @@ define(['./scripts.xml', './scripts-add.xml', './script-blockly.xml', './script-
         if (!scriptId) {
           return;
         }
-        return fetch('/engine/scriptFiles/' + scriptId + '/script.lua', {
+        return fetch(scriptFilesPath + scriptId + '/script.lua', {
           method: 'PUT',
           body: this.text
         }).then(assertIsOk).then(function() {
@@ -388,8 +428,8 @@ define(['./scripts.xml', './scripts-add.xml', './script-blockly.xml', './script-
       },
       refresh: function() {
         return Promise.all([
-          fetch('/engine/scriptFiles/' + this.scriptId + '/script.lua').then(assertIsOk).then(getResponseText),
-          fetch('/engine/scriptFiles/' + this.scriptId + '/manifest.json').then(assertIsOk).then(getJson)
+          fetch(scriptFilesPath + this.scriptId + '/script.lua').then(assertIsOk).then(getResponseText),
+          fetch(scriptFilesPath + this.scriptId + '/manifest.json').then(assertIsOk).then(getJson)
         ]).then(apply(this, function(luaText, manifest) {
           this.text = luaText;
           this.name = manifest.name;
@@ -402,17 +442,17 @@ define(['./scripts.xml', './scripts-add.xml', './script-blockly.xml', './script-
     template: scriptsAddTemplate,
     methods: {
       newScript: function () {
-        fetch('/engine/scripts/', {
+        fetch(scriptPath, {
           method: 'PUT'
         }).then(assertIsOk).then(function() {
           app.replacePage('scripts');
         });
       },
       newBlocks: function () {
-        fetch('/engine/scripts/', {
+        fetch(scriptPath, {
           method: 'PUT'
         }).then(assertIsOk).then(getResponseText).then(function(scriptId) {
-          return fetch('/engine/scriptFiles/' + scriptId + '/blocks.xml', {
+          return fetch(scriptFilesPath + scriptId + '/blocks.xml', {
             method: 'PUT',
             body: '<xml xmlns="http://www.w3.org/1999/xhtml"></xml>'
           });
@@ -421,38 +461,14 @@ define(['./scripts.xml', './scripts-add.xml', './script-blockly.xml', './script-
         });
       },
       newView: function () {
-        fetch('/engine/scripts/', {
+        fetch(scriptPath, {
           method: 'PUT'
         }).then(assertIsOk).then(getResponseText).then(function(scriptId) {
           return Promise.all([
-            fetch('/engine/scriptFiles/' + scriptId + '/view.xml', {
-              method: 'PUT',
-              body: [
-                '<app-page id="' + scriptId + '" title="Scripts">',
-                '</app-page>'
-              ].join('\n')
-            }),
-            fetch('/engine/scriptFiles/' + scriptId + '/init.js', {
-              method: 'PUT',
-              body: [
-                "define(['./view.xml'], function(viewTemplate) {",
-                "  var viewVue = new Vue({",
-                "    template: viewTemplate",
-                "  });",
-                "  addPageComponent(viewVue);",
-                "});"
-              ].join('\n')
-            }),
-            fetch('/engine/scriptFiles/' + scriptId + '/script.lua', {
-              method: 'PUT',
-              body: [
-                "local extension = ...",
-                "local loader = require('jls.lang.loader')",
-                "local coreExtPath = extension:getEngine().lhaExtensionsDir:getPath()",
-                "local webBaseAddons = loader.load('web-base.addons', coreExtPath)",
-                "webBaseAddons.registerAddonExtension(extension, 'init.js')"
-              ].join('\n')
-            }),
+            fetch(scriptFilesPath + scriptId + '/view.xml', {method: 'PUT', body: '<!-- View content -->'}),
+            fetch(scriptFilesPath + scriptId + '/config.json', {method: 'PUT', body: '{"id": "view-' + scriptId + '", "title": "View ' + scriptId + '"}'}),
+            fetch(scriptFilesPath + scriptId + '/init.js', {method: 'PUT', body: viewInitJs}),
+            fetch(scriptFilesPath + scriptId + '/script.lua', {method: 'PUT', body: viewScriptLua}),
           ]);
         }).then(function() {
           app.replacePage('scripts');
@@ -470,7 +486,7 @@ define(['./scripts.xml', './scripts-add.xml', './script-blockly.xml', './script-
       onShow: function () {
         this.scripts = [];
         var self = this;
-        fetch('/engine/scripts/', {
+        fetch(scriptPath, {
           headers: {
             "Accept": 'application/json'
           }
@@ -486,7 +502,7 @@ define(['./scripts.xml', './scripts-add.xml', './script-blockly.xml', './script-
         });
       },
       reloadScript: function (script) {
-        fetch('/engine/scripts/' + script.id + '/reload', {method: 'POST'}).then(function() {
+        fetch(scriptPath + script.id + '/reload', {method: 'POST'}).then(function() {
           toaster.toast('Script reloaded');
         });
       },
@@ -515,7 +531,8 @@ define(['./scripts.xml', './scripts-add.xml', './script-blockly.xml', './script-
   addPageComponent(scriptsAddVue);
   addPageComponent(scriptsBlocklyVue);
   addPageComponent(scriptsViewVue);
+  addPageComponent(scriptsViewConfigVue);
   addPageComponent(scriptsEditorVue);
-  addPageComponent(scriptsVue, 'fa-scroll');
+  addPageComponent(scriptsVue, 'scroll');
 
 });
