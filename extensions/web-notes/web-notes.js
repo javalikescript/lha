@@ -1,51 +1,60 @@
 define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTemplate, noteTemplate, drawTemplate) {
 
-  function readLink(note) {
-    return fetch('/user-notes/' + note.name).then(assertIsOk).then(function(response) {
-      return response.text();
-    }).then(function(content) {
-      note.url = content;
-    });
-  }
+  var notesPath = '/user-notes/';
 
   var notesVue = new Vue({
     template: notesTemplate,
     data: {
-      notes: []
+      notes: [],
+      path: ''
     },
     methods: {
-      onShow: function() {
+      onShow: function(path) {
+        if (!path) {
+          path = '';
+        }
+        this.notes = [];
+        this.path = path;
+        if (path === '' && app.user && app.user.logged) {
+          this.notes.push({name: 'me', type: 'dir'});
+        }
         var self = this;
-        self.notes = [];
-        return fetch('/user-notes/', {
+        return fetch(notesPath + path, {
           headers: {
             "Accept": 'application/json'
           }
-        }).then(rejectIfNotOk).then(function(response) {
-          return response.json();
-        }).then(function(response) {
+        }).then(rejectIfNotOk).then(getResponseJson).then(function(response) {
           if (isArrayWithItems(response)) {
-            self.notes = response.filter(function(note) {
+            var notes = response.filter(function(note) {
               return !note.isDir;
             }).map(function(note) {
-              if (endsWith(note.name, '.txt')) {
+              if (note.isDir) {
+                note.type = 'dir';
+              } else if (endsWith(note.name, '.txt')) {
                 note.type = 'text';
               } else if (endsWith(note.name, '.png')) {
                 note.type = 'draw';
               } else if (endsWith(note.name, '.lnk')) {
                 note.type = 'link';
-                readLink(note);
+                fetch(path + note.name).then(getResponseText).then(function(content) {
+                  note.url = content;
+                });
               }
               return note;
             });
+            self.notes = self.notes.concat(notes);
           }
         });
       },
       openNote: function(note) {
-        if (note.type === 'text') {
-          app.toPage('note', note.name);
+        var path = this.path + note.name;
+        console.info('openning note "' + path + '"');
+        if (note.type === 'dir') {
+          app.toPage('notes', path + '/');
+        } else if (note.type === 'text') {
+          app.toPage('note', path);
         } else if (note.type === 'draw') {
-          app.toPage('draw', note.name);
+          app.toPage('draw', path);
         } else if ((note.type === 'link') && note.url) {
           open(note.url, '_blank');
         }
@@ -56,19 +65,19 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
   var noteVue = new Vue({
     template: noteTemplate,
     data: {
+      path: '',
       name: '',
       newName: false,
       text: ''
     },
     methods: {
-      onShow: function(name) {
-        this.name = name;
+      onShow: function(path) {
+        this.path = path;
+        this.name = basename(path);
         this.newName = false;
         this.text = '';
         var self = this;
-        return fetch('/user-notes/' + this.name).then(rejectIfNotOk).then(function(response) {
-          return response.text();
-        }).then(function(text) {
+        return fetch(notesPath + this.path).then(rejectIfNotOk).then(getResponseText).then(function(text) {
           self.text = text;
         });
       },
@@ -76,20 +85,22 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
         var self = this;
         this.onDelete().then(function() {
           self.name = self.newName + '.txt';
+          var dir = basename(self.path, true);
+          self.path = dir ? dir + '/' + self.name : self.name;
           return self.onSave();
         }).then(function() {
           self.newName = false;
         });
       },
       onDelete: function () {
-        return fetch('/user-notes/' + this.name, {
+        return fetch(notesPath + this.path, {
           method: 'DELETE' 
         }).then(assertIsOk).then(function() {
           toaster.toast('Note deleted');
         });
       },
       onSave: function () {
-        return fetch('/user-notes/' + this.name, {
+        return fetch(notesPath + this.path, {
           method: 'PUT',
           body: this.text
         }).then(assertIsOk).then(function() {
@@ -191,7 +202,7 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
     }
   });
 
-  addPageComponent(notesVue, 'fa-sticky-note');
+  addPageComponent(notesVue, 'sticky-note');
   addPageComponent(noteVue);
   addPageComponent(drawVue);
 

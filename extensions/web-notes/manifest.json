@@ -2,6 +2,6 @@
   "name": "Web Notes",
   "description": "Expose web notes add-on",
   "dependencies": ["web-base"],
-  "version": "1.0",
+  "version": "1.1",
   "script": "web-notes.lua"
 }
