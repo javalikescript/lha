@@ -2,28 +2,25 @@
  * Setup AMD
  ************************************************************/
  require(['_AMD'], function(_AMD) {
-  var extension = function(path) {
-    var slashIndex = path.lastIndexOf('/');
-    var index = path.lastIndexOf('.');
-    return index <= slashIndex ? '' : path.substring(index + 1);
-  };
   _AMD.setLogFunction(console.warn);
   _AMD.setLoadModuleFunction(function(pathname, callback, sync, prefix, suffix) {
-    var ext = extension(pathname);
+    var raw = pathname.charAt(pathname.length - 1) === '!';
+    if (raw) {
+      pathname = pathname.substring(0, pathname.length - 1)
+    }
+    var slashIndex = pathname.lastIndexOf('/');
+    var name = slashIndex < 0 ? pathname : pathname.substring(slashIndex + 1);
+    var dotIndex = name.lastIndexOf('.');
+    var ext = dotIndex < 0 ? '' : name.substring(dotIndex + 1);
     fetch(pathname).then(function(response) {
       //console.log('module "' + pathname + '" retrieved with extension "' + ext + '"');
-      if (ext === 'json') {
-        return response.json();
-      } else {
-        return response.text();
-      }
+      return ext === 'json' && !raw ? response.json() : response.text();
     }).then(function(content) {
-      if (ext !== 'js') {
+      if (raw || ext !== 'js') {
         callback(content);
       } else {
         var src = prefix + content + suffix;
         try {
-          //var m = window.eval(src);
           var m = Function('"use strict";return ' + src)();
           //console.log('module "' + pathname + '" evaluated', m, src);
           callback(m);
@@ -57,6 +54,13 @@ app.$on('page-selected', replaceLocationByNavigationPath);
 
 window.addEventListener('hashchange', function() {
   app.navigateTo(getLocationPath());
+});
+
+// avoid horizontal scroll which could happen on a tab-focused element out of the view
+window.addEventListener('scroll', function () {
+  if (window.scrollX !== 0) {
+    window.scroll(0, window.scrollY);
+  }
 });
 
 /************************************************************
