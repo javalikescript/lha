@@ -530,10 +530,10 @@ var homePage = new Vue({
       ]).then(apply(this, function(schemaData, configData) {
         this.schema = schemaData;
         this.config = configData.value;
-      })).catch(call(this, function() {
+      })).catch(function() {
         this.schema = false;
         this.config = {};
-      }));
+      }.bind(this));
     },
     backup: function() {
       var self = this;

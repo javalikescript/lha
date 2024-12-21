@@ -55,10 +55,10 @@ function onShowExtension(extensionId) {
       this.schema = false;
     }
     this.extension = extension;
-  })).catch(call(this, function() {
+  })).catch(function() {
     this.schema = false;
     this.extension = {config: {}, info: {}, manifest: {}};
-  }));
+  }.bind(this));
 }
 
 new Vue({

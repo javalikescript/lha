@@ -34,6 +34,7 @@ function apply(to, fn) {
 }
 
 function call(to, fn) {
+  console.warn('call is deprecated, please use bind', new Error());
   return function() {
     return fn.apply(to, arguments);
   };
@@ -197,13 +198,21 @@ function startsWith(value, search, position) {
   return value.substring(position, position + search.length) === search;
 }
 
-function extname(path, invert) {
+function basename(path, invert) {
   var slashIndex = path.lastIndexOf('/');
-  var dotIndex = path.lastIndexOf('.');
   if (invert) {
-    return dotIndex <= slashIndex ? path : path.substring(0, dotIndex);
+    return slashIndex < 0 ? '' : path.substring(0, slashIndex);
   }
-  return dotIndex <= slashIndex ? '' : path.substring(dotIndex + 1);
+  return slashIndex < 0 ? path : path.substring(slashIndex + 1);
+}
+
+function extname(path, invert) {
+  var name = basename(path);
+  var dotIndex = name.lastIndexOf('.');
+  if (invert) {
+    return dotIndex < 0 ? name : name.substring(0, dotIndex);
+  }
+  return dotIndex < 0 ? '' : name.substring(dotIndex + 1);
 }
 
 function getJson(response) {
