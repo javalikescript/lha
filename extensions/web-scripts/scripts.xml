@@ -5,7 +5,10 @@
   <article class="cards">
     <div class="card" v-for="script in scripts">
       <div class="bar">
-        <p>{{ script.name }}</p>
+        <p>
+          <i :class="['fas', script.hasBlocks ? 'fa-shapes' : (script.hasView ? 'fa-code' : 'fa-moon')]"></i>
+          {{ script.name }}
+        </p>
         <div>
           <button v-on:click="reloadScript(script)"><i class="fas fa-redo"></i>&nbsp;Reload</button>
           <button v-on:click="pollScript(script)"><i class="far fa-bell"></i>&nbsp;Poll</button>

@@ -437,16 +437,12 @@ define(['./scripts.xml', './scripts-add.xml',
     template: scriptsAddTemplate,
     methods: {
       newScript: function () {
-        fetch(scriptPath, {
-          method: 'PUT'
-        }).then(assertIsOk).then(function() {
+        fetch(scriptPath, {method: 'PUT'}).then(assertIsOk).then(function() {
           app.replacePage('scripts');
         });
       },
       newBlocks: function () {
-        fetch(scriptPath, {
-          method: 'PUT'
-        }).then(assertIsOk).then(getResponseText).then(function(scriptId) {
+        fetch(scriptPath, {method: 'PUT', body: 'New Blocks'}).then(assertIsOk).then(getResponseText).then(function(scriptId) {
           return fetch(scriptFilesPath + scriptId + '/blocks.xml', {
             method: 'PUT',
             body: '<xml xmlns="http://www.w3.org/1999/xhtml"></xml>'
@@ -456,9 +452,7 @@ define(['./scripts.xml', './scripts-add.xml',
         });
       },
       newView: function () {
-        fetch(scriptPath, {
-          method: 'PUT'
-        }).then(assertIsOk).then(getResponseText).then(function(scriptId) {
+        fetch(scriptPath, {method: 'PUT', body: 'New View'}).then(assertIsOk).then(getResponseText).then(function(scriptId) {
           return Promise.all([
             fetch(scriptFilesPath + scriptId + '/view.xml', {method: 'PUT', body: '<!-- View content -->'}),
             fetch(scriptFilesPath + scriptId + '/config.json', {method: 'PUT', body: '{"id": "view-' + scriptId + '", "title": "View ' + scriptId + '"}'}),

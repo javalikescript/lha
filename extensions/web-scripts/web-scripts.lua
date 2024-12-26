@@ -25,6 +25,10 @@ local REST_SCRIPTS = {
     return list
   end,
   ['(engine)?method=PUT'] = function(exchange, engine)
+    local name = exchange:getRequest():getBody()
+    if not name or name == '' then
+      name = 'New script'
+    end
     local dir = engine:getScriptsDirectory()
     local scriptName = 'script.lua'
     local extId = engine:generateId()
@@ -34,7 +38,7 @@ local REST_SCRIPTS = {
     scriptFile:write('local script = ...\n\n')
     local manifestFile = File:new(extDir, 'manifest.json')
     local manifest = {
-      name = 'New script',
+      name = name,
       version = '1.0',
       script = scriptName
     }
