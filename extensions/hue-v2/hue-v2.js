@@ -8,9 +8,7 @@ define(['./hue-v2.xml'], function(aPageTemplate) {
         fetch('/hue-api/config', {
           method: 'PUT',
           body: JSON.stringify({touchlink: true})
-        }).then(function(response) {
-          return response.text();
-        }).then(function(logLevel) {
+        }).then(assertIsOk).then(getResponseText).then(function(logLevel) {
           page.logLevel = logLevel.toLowerCase();
         });
       }

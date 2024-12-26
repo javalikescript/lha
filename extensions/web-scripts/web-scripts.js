@@ -305,12 +305,8 @@ define(['./scripts.xml', './scripts-add.xml',
           return Promise.reject('workspace not initialized');
         }
         return Promise.all([
-          fetch(scriptFilesPath + this.scriptId + '/blocks.xml').then(function(response) {
-            return response.text();
-          }),
-          fetch(scriptFilesPath + this.scriptId + '/manifest.json').then(function(response) {
-            return response.json();
-          })
+          fetch(scriptFilesPath + this.scriptId + '/blocks.xml').then(getResponseText),
+          fetch(scriptFilesPath + this.scriptId + '/manifest.json').then(getResponseJson)
         ]).then(apply(this, function(xmlText, manifest) {
           workspace.clear();
           var xml = Blockly.Xml.textToDom(xmlText);
@@ -340,14 +336,13 @@ define(['./scripts.xml', './scripts-add.xml',
       onRename: onRename,
       onApply: onApply,
       onSave: function() {
-        var scriptId = this.scriptId;
-        console.log('scriptsEditor.onSave(), scriptId is "' + scriptId + '"');
-        if (!scriptId) {
+        console.log('scriptsEditor.onSave(), scriptId is "' + this.scriptId + '"');
+        if (!this.scriptId) {
           return;
         }
         return Promise.all([
-          fetch(scriptFilesPath + scriptId + '/view.xml', {method: 'PUT', body: this.text}).then(assertIsOk),
-          fetch(scriptFilesPath + scriptId + '/init.js', {method: 'PUT', body: viewInitJs}).then(assertIsOk)
+          fetch(scriptFilesPath + this.scriptId + '/view.xml', {method: 'PUT', body: this.text}).then(assertIsOk),
+          fetch(scriptFilesPath + this.scriptId + '/init.js', {method: 'PUT', body: viewInitJs}).then(assertIsOk)
         ]).then(function() {
           toaster.toast('Saved');
         });
@@ -486,13 +481,7 @@ define(['./scripts.xml', './scripts-add.xml',
       onShow: function () {
         this.scripts = [];
         var self = this;
-        fetch(scriptPath, {
-          headers: {
-            "Accept": 'application/json'
-          }
-        }).then(function(response) {
-          return response.json();
-        }).then(function(scripts) {
+        fetch(scriptPath, {headers: {"Accept": 'application/json'}}).then(getResponseJson).then(function(scripts) {
           self.scripts = scripts;
         });
       },

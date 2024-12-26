@@ -198,9 +198,7 @@ define(['./web-chart.xml'], function(pageXml) {
         fetch('/engine/historicalData/', {
           method: 'GET',
           headers: headers
-        }).then(function(response) {
-          return response.json();
-        }).then(function(dataPointSets) {
+        }).then(getResponseJson).then(function(dataPointSets) {
           //console.log('fetch()', response);
           var dates = null;
           var datasets = [];
@@ -219,9 +217,7 @@ define(['./web-chart.xml'], function(pageXml) {
         fetch('/engine/historicalData/' + path, {
           method: 'GET',
           headers: this.getHistoricalDataHeaders()
-        }).then(function(response) {
-          return response.json();
-        }).then(function(dataPointSet) {
+        }).then(getResponseJson).then(function(dataPointSet) {
           //console.log('fetch()', response);
           self.createChart(listDates(dataPointSet), createChartDataSets(dataPointSet));
         });

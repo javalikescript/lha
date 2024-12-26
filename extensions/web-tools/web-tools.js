@@ -26,9 +26,7 @@ define(['./web-tools.xml'], function(toolsTemplate) {
     methods: {
       onShow: function() {
         var page = this;
-        fetch('/engine/admin/getLogLevel').then(function(response) {
-          return response.text();
-        }).then(function(logLevel) {
+        fetch('/engine/admin/getLogLevel').then(getResponseText).then(function(logLevel) {
           page.logLevel = logLevel.toLowerCase();
         });
       },
@@ -48,18 +46,14 @@ define(['./web-tools.xml'], function(toolsTemplate) {
       execute: function() {
         var page = this;
         page.cmdOut = '';
-        fetch('/engine/tools/execute', {method: 'POST', body: this.cmd}).then(assertIsOk).then(function(response) {
-          return response.text();
-        }).then(function(out) {
+        fetch('/engine/tools/execute', {method: 'POST', body: this.cmd}).then(assertIsOk).then(getResponseText).then(function(out) {
           page.cmdOut = out;
         });
       },
       run: function() {
         var page = this;
         page.luaOut = '';
-        fetch('/engine/tools/run', {method: 'POST', body: this.lua}).then(assertIsOk).then(function(response) {
-          return response.text();
-        }).then(function(out) {
+        fetch('/engine/tools/run', {method: 'POST', body: this.lua}).then(assertIsOk).then(getResponseText).then(function(out) {
           page.luaOut = out;
         });
       },

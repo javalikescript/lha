@@ -539,9 +539,7 @@ var homePage = new Vue({
       var self = this;
       self.working = true;
       toaster.toast('Backup in progress...');
-      fetch('/engine/admin/backup/create', {method: 'POST'}).then(assertIsOk).then(function(response) {
-        return response.text();
-      }).then(function(filename) {
+      fetch('/engine/admin/backup/create', {method: 'POST'}).then(assertIsOk).then(getResponseText).then(function(filename) {
         self.filename = filename;
         toaster.toast('Backup created');
       }).finally(function() {
