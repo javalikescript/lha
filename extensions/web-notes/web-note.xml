@@ -15,6 +15,7 @@
     <button v-on:click="app.back()" title="Close"><i class="fa fa-window-close"></i></button>
   </template>
   <article class="content">
-    <textarea v-model="text" v-on:keydown.ctrl.s.exact.prevent.stop="onSave()" spellcheck="false" wrap="off" class="full" style="font-size: 2rem" placeholder="Enter your note here"></textarea>
+    <textarea v-model="text" v-on:keydown.ctrl.s.exact.prevent.stop="onSave()" v-on:keydown.tab.prevent="insertTab"
+      spellcheck="false" wrap="off" class="full" style="font-size: 2rem" placeholder="Enter your note here"></textarea>
   </article>
 </app-page>

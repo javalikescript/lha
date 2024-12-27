@@ -15,7 +15,7 @@
     },
     "icon": {
       "title": "Icon",
-      "description": "The fontawesome icon to use for the view tile and menu entry, such as 'house'",
+      "description": "The fontawesome icon to use for the view tile and menu entry, such as 'home'",
       "type": "string"
     },
     "properties": {

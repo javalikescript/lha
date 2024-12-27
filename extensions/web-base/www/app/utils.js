@@ -234,6 +234,13 @@ function rejectIfNotOk(response) {
   return Promise.reject(response.statusText);
 }
 
+function insertTab(e) {
+  var t = e && e.target;
+  if (t && t.setRangeText) {
+    t.setRangeText('\t', t.selectionStart, t.selectionStart, 'end');
+  }
+}
+
 function findAncestor(el, selector) {
   if (el) {
     while (true) {

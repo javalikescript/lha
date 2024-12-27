@@ -27,12 +27,12 @@
     <button v-on:click="saveConfig"><i class="far fa-save"></i>&nbsp;Save Configuration</button>
     <button v-on:click="saveData"><i class="far fa-save"></i>&nbsp;Save Data</button>
     <p>Lua</p>
-    <textarea ref="lua" v-model="lua" spellcheck="false" rows="12" wrap="off" style="width: 100%; resize: none;" placeholder="Enter your Lua code here"></textarea>
+    <textarea ref="lua" v-model="lua" v-on:keydown.tab.prevent="insertTab" spellcheck="false" rows="12" wrap="off" style="width: 100%; resize: none;" placeholder="Enter your Lua code here"></textarea>
     <button v-on:click="run"><i class="fas fa-redo"></i>&nbsp;Run</button>
-    <textarea v-model="luaOut" spellcheck="false" rows="12" wrap="off" style="width: 100%; resize: none;" placeholder="Output" readonly></textarea>
+    <textarea v-model="luaOut" v-on:keydown.tab.prevent="insertTab" spellcheck="false" rows="12" wrap="off" style="width: 100%; resize: none;" placeholder="Output" readonly></textarea>
     <p>System</p>
-    <textarea ref="cmd" v-model="cmd" spellcheck="false" rows="12" wrap="off" style="width: 100%; resize: none;" placeholder="Enter your command here"></textarea>
+    <textarea ref="cmd" v-model="cmd" v-on:keydown.tab.prevent="insertTab" spellcheck="false" rows="12" wrap="off" style="width: 100%; resize: none;" placeholder="Enter your command here"></textarea>
     <button v-on:click="execute"><i class="fas fa-redo"></i>&nbsp;Execute</button>
-    <textarea v-model="cmdOut" spellcheck="false" rows="12" wrap="off" style="width: 100%; resize: none;" placeholder="Output" readonly></textarea>
+    <textarea v-model="cmdOut" v-on:keydown.tab.prevent="insertTab" spellcheck="false" rows="12" wrap="off" style="width: 100%; resize: none;" placeholder="Output" readonly></textarea>
   </page-article>
 </app-page>
