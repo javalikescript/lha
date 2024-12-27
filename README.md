@@ -7,6 +7,7 @@ The lha application allows to
 * record and display historical device values such as temperature
 * interact between incompatible protocols such as between _ZigBee_ and _Z-Wave_
 * compose advanced automations using [Blockly](https://developers.google.com/blockly/) scripts
+* design web views using [HTML](https://html.spec.whatwg.org/) and [Vue.js](https://v2.vuejs.org/)
 * create your own [Lua](https://www.lua.org/) extensions
 
 The lha engine manages the extensions including scripts, the things, the scheduler and a web server.
@@ -21,29 +22,9 @@ The application is small, around 5MB, and does not need any dependency.
 
 ## Extensions
 
-Available extensions are:
-* [ConBee II](https://phoscon.de/en/conbee), Dresden elektronik ConBee REST API  
-The recommended tool is [deCONZ](https://github.com/deconz-community/deconz-docker) using docker
-* [Philips Hue V2](https://www.philips-hue.com/), Hue Bridge REST API  
-The recommended tool is the Hue Bridge
-* [Z-Wave JS WS](https://github.com/zwave-js), Z-Wave JS API  
-The recommended tool is [Z-Wave JS UI](https://github.com/zwave-js/zwave-js-ui) using docker
-* [MQTT](https://mqtt.org/) Broker, provides a light message broker
-* Generic  
-Create virtual things, usefull for scripting
-* Web Chart  
-Display thing property values in a time chart
-* Web Dashboard  
-Setup tiles with relevant thing properties
-* Web Scripts  
-Automatically trigger thing modifications
-* Share server folders to download and upload files
-* Users Management, adds user and permissions
-* HTTPS server, provides lha on a secure server
-* Self monitoring, based on Lua and [libuv](https://github.com/luvit/luv)
-* Ping, Test the reachability of a host on the network
+lha comes with a bunch of core extensions and allows to add new ones.
 
-You need to include your devices using the dedicated tool such as deCONZ, Hue App or Z-Wave JS UI Control Panel.
+See details of [extensions](extensions.md)
 
 ## Devices
 
