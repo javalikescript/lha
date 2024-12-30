@@ -30,6 +30,66 @@ var unitAlias = {
   "watt": "W"
 };
 
+function callVueFromPage(page, name) {
+  var parent = page.$parent;
+  if (parent) {
+    var fn = parent[name];
+    if (typeof fn === 'function') {
+      var args = Array.prototype.slice.call(arguments, 2);
+      return fn.apply(parent, args);
+    }
+  }
+}
+
+function getPageFromVue(vue) {
+  if (vue && vue.$children && (vue.$children.length > 0)) {
+    var page = vue.$children[0];
+    if (page.id && page.title) {
+      return page;
+    }
+  }
+}
+
+/************************************************************
+ * Toaster
+ ************************************************************/
+var toaster = new Vue({
+  el: '#toaster',
+  data: {
+    message: '',
+    show: false
+  },
+  methods: {
+    toast: function(message, duration) {
+      console.log('toast("' + message + '", ' + duration + ')');
+      if (this.show) {
+        this.message += '\n' + message;
+      } else {
+        this.message = message;
+        this.show = true;
+        var self = this;
+        setTimeout(function () {
+          self.show = false;
+        }, duration || 3000)
+      }
+    }
+  }
+});
+
+function assertIsOk(response) {
+  if (response.ok) {
+    return response;
+  }
+  var message;
+  if (response.status === 403) {
+    message = 'Sorry you are not authorized';
+  } else {
+    message = 'Failed due to ' + response.statusText;
+  }
+  toaster.toast(message);
+  return Promise.reject(message);
+}
+
 /************************************************************
  * Main application
  ************************************************************/
@@ -89,25 +149,17 @@ var app = new Vue({
     getPage: function(id) {
       return this.pages[id];
     },
-    emitPage: function(id) {
-      var page = this.pages[id];
-      var emitArgs = Array.prototype.slice.call(arguments, 1);
-      if (page.$parent) {
-        page = page.$parent;
-      }
-      page.$emit.apply(page, emitArgs);
-      return this;
+    isActivePage: function(vue) {
+      return this.page && this.pages[this.page] === getPageFromVue(vue);
     },
     callPage: function(id, name) {
       var page = this.pages[id];
-      var callArgs = Array.prototype.slice.call(arguments, 2);
-      if (page.$parent) {
-        page = page.$parent;
+      if (page) {
+        return callVueFromPage(page, name);
       }
-      var fn = page[name];
-      if (typeof fn === 'function') {
-        fn.apply(page, callArgs);
-      }
+    },
+    emitPage: function(id) {
+      this.callPage(id, '$emit');
       return this;
     },
     showBack: function() {
@@ -146,6 +198,24 @@ var app = new Vue({
       case 'logs':
         if (Array.isArray(message.logs)) {
           this.callPage(this.page, 'onLogs', message.logs);
+        }
+        break;
+      case 'addon-change':
+        if (this.reloadTimeoutId) {
+          clearTimeout(this.reloadTimeoutId);
+          this.reloadTimeoutId = undefined;
+        }
+        this.reloadTimeoutId = setTimeout(function () {
+          toaster.toast('Reloading...');
+          setTimeout(function () {
+            window.location.reload();
+          }, 500);
+        }, 500);
+        break;
+      case 'shutdown':
+        if (this.reloadTimeoutId) {
+          clearTimeout(this.reloadTimeoutId);
+          this.reloadTimeoutId = undefined;
         }
         break;
       }
@@ -345,11 +415,10 @@ Vue.component('app-page', {
     this.app.pages[this.id] = this;
     var page = this;
     app.$on('page-selected', function(id, path, previousId) {
-      if ((page.id === previousId) && (page.$parent) && (typeof page.$parent.onHide === 'function')) {
-        page.$parent.onHide();
-      }
-      if ((page.id === id) && (page.$parent) && (typeof page.$parent.onShow === 'function')) {
-        page.$parent.onShow(path);
+      if (page.id === previousId) {
+        callVueFromPage(page, 'onHide');
+      } else if (page.id === id) {
+        callVueFromPage(page, 'onShow', path);
       }
     });
   }
@@ -375,46 +444,6 @@ var menu = new Vue({
     }
   }
 });
-
-/************************************************************
- * Toaster
- ************************************************************/
-var toaster = new Vue({
-  el: '#toaster',
-  data: {
-    message: '',
-    show: false
-  },
-  methods: {
-    toast: function(message, duration) {
-      console.log('toast("' + message + '", ' + duration + ')');
-      if (this.show) {
-        this.message += '\n' + message;
-      } else {
-        this.message = message;
-        this.show = true;
-        var self = this;
-        setTimeout(function () {
-          self.show = false;
-        }, duration || 3000)
-      }
-    }
-  }
-});
-
-function assertIsOk(response) {
-  if (response.ok) {
-    return response;
-  }
-  var message;
-  if (response.status === 403) {
-    message = 'Sorry you are not authorized';
-  } else {
-    message = 'Failed due to ' + response.statusText;
-  }
-  toaster.toast(message);
-  return Promise.reject(message);
-}
 
 /************************************************************
  * Confirmation
@@ -605,19 +634,17 @@ new Vue({
 });
 
 function registerPageVue(vue, icon) {
-  if (vue && vue.$children && (vue.$children.length > 0)) {
-    var page = vue.$children[0];
-    if (page.id && page.title) {
-      menu.pages.push({
-        id: page.id,
-        name: page.title
-      });
-      homePage.tiles.push({
-        id: page.id,
-        name: page.title,
-        icon: icon
-      });
-    }
+  var page = getPageFromVue(vue);
+  if (page) {
+    menu.pages.push({
+      id: page.id,
+      name: page.title
+    });
+    homePage.tiles.push({
+      id: page.id,
+      name: page.title,
+      icon: icon
+    });
   }
 }
 

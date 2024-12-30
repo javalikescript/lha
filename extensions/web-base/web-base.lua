@@ -71,6 +71,16 @@ local function onWebSocketClose(webSocket)
   List.removeFirst(websockets, webSocket)
 end
 
+local function webSocketBroadcast(data)
+  logger:fine('WebSocket broadcast')
+  local message = json.encode(data)
+  for _, websocket in ipairs(websockets) do
+    if not websocket.lhaEvent or websocket.lhaEvent == data.event then
+      websocket:sendTextMessage(message)
+    end
+  end
+end
+
 local batchDataChange = true
 local dataChangeEvent = nil
 
@@ -82,11 +92,8 @@ local function onDataChange(value, previousValue, path)
   if batchDataChange then
     if not dataChangeEvent then
       event:setTimeout(function()
-        local message = json.encode(dataChangeEvent)
+        webSocketBroadcast(dataChangeEvent)
         dataChangeEvent = nil
-        for _, websocket in ipairs(websockets) do
-          websocket:sendTextMessage(message)
-        end
       end)
       dataChangeEvent = {event = 'data-change'}
     end
@@ -94,7 +101,7 @@ local function onDataChange(value, previousValue, path)
   else
     local thingId, propertyName = string.match(path, '^data/([^/]+)/([^/]+)$')
     if thingId then
-      local message = json.encode({
+      webSocketBroadcast({
         event = 'data-change',
         data = {
           [thingId] = {
@@ -105,9 +112,6 @@ local function onDataChange(value, previousValue, path)
           }
         }
       })
-      for _, websocket in ipairs(websockets) do
-        websocket:sendTextMessage(message)
-      end
     end
   end
 end
@@ -117,11 +121,13 @@ local addons = {}
 function extension:registerAddon(id, addon)
   addons[id] = addon
   logger:info('Web base add-on "%s" registered', id)
+  webSocketBroadcast({event = 'addon-change'})
 end
 
 function extension:unregisterAddon(name)
   addons[name] = nil
   logger:info('Web base add-on "%s" unregistered', name)
+  webSocketBroadcast({event = 'addon-change'})
 end
 
 function extension:registerAddonExtension(ext, script)
@@ -172,11 +178,8 @@ extension:subscribeEvent('startup', function()
     else
       if not bufferMessages then
         event:setTimeout(function()
-          local content = json.encode(bufferMessages)
+          webSocketBroadcast(bufferMessages)
           bufferMessages = nil
-          for _, websocket in ipairs(websockets) do
-            websocket:sendTextMessage(content)
-          end
         end)
         bufferMessages = {event = 'logs', logs = {}}
       end
@@ -241,4 +244,7 @@ extension:subscribeEvent('startup', function()
   logger:info('WebSocket available on /ws/')
 end)
 
-extension:subscribeEvent('shutdown', cleanup)
+extension:subscribeEvent('shutdown', function()
+  webSocketBroadcast({event = 'shutdown'})
+  cleanup()
+end)
