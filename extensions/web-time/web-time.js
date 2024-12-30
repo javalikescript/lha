@@ -12,10 +12,14 @@ define(['./web-time.xml'], function(timeTemplate) {
         var self = this;
         var date = new Date();
         self.refresh(date);
+        this.clearTimer();
         var ms = 1000 - (date.getTime() % 1000);
-        setTimeout(function() {
-          self.refresh(new Date());
-          self.registerTimer(1000);
+        // TODO Interval refresh should be provided by the app.
+        this.timer = setTimeout(function() {
+          if (app.isActivePage(self)) {
+            self.refresh(new Date());
+            self.registerTimer(1000);
+          }
         }, ms);
       },
       onHide: function() {
