@@ -6,6 +6,7 @@ if hasLuv then
   luvLib.ref(signal)
   luvLib.signal_start(signal, 'sigint', function()
     luvLib.unref(signal)
+    signal:stop()
     engine:stop()
   end)
 end
