@@ -100,6 +100,7 @@ var app = new Vue({
     menu: '',
     hideMenu: window.innerWidth < 360,
     dialog: '',
+    watchers: [],
     page: '',
     path: '',
     pages: {},
@@ -174,6 +175,25 @@ var app = new Vue({
         this.toPage('home');
       }
     },
+    watchDataChange: function(path, fn) {
+      var parts = path.split('/', 2);
+      var thingId = parts[0];
+      var propName = parts[1];
+      var watcher = {thingId: thingId, propertyName: propName, fn: fn};
+      this.watchers.push(watcher);
+      return watcher;
+    },
+    unwatchDataChange: function(watcherOrFn) {
+      var i = 0;
+      while (i < this.watchers.length) {
+        var watcher = this.watchers[i];
+        if (watcher === watcherOrFn || watcher.fn === watcherOrFn) {
+          this.watchers.splice(i, 1);
+        } else {
+          i++;
+        }
+      }
+    },
     onMessage: function(message) {
       //console.log('onMessage', message);
       if (typeof message !== 'object') {
@@ -192,8 +212,27 @@ var app = new Vue({
               }
             }
           }
-          this.callPage(this.page, 'onDataChange', message.data);
         }
+        this.watchers.forEach(function(watcher) {
+          var thingId = watcher.thingId;
+          if (thingId) {
+            var props = message.data[thingId];
+            if (props) {
+              var name = watcher.propertyName;
+              if (name) {
+                var value = props[name];
+                if (value !== undefined) {
+                  watcher.fn(value);
+                }
+              } else {
+                watcher.fn(props);
+              }
+            }
+          } else {
+            watcher.fn(message.data);
+          }
+        });
+        this.callPage(this.page, 'onDataChange', message.data);
         break;
       case 'logs':
         if (Array.isArray(message.logs)) {

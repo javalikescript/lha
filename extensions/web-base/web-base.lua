@@ -75,9 +75,7 @@ local function webSocketBroadcast(data)
   logger:fine('WebSocket broadcast')
   local message = json.encode(data)
   for _, websocket in ipairs(websockets) do
-    if not websocket.lhaEvent or websocket.lhaEvent == data.event then
-      websocket:sendTextMessage(message)
-    end
+    websocket:sendTextMessage(message)
   end
 end
 
