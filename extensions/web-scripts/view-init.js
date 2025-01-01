@@ -1,5 +1,25 @@
 define(['./config.json', './view.xml'], function(config, viewXml) {
 
+  function chainInitFn(f1, f2) {
+    return function(a) { f1(a); f2(a); };
+  }
+
+  var initFn = function() {};
+  for(;;) {
+    var i = viewXml.indexOf('<script>');
+    if (i < 0) {
+      break;
+    }
+    var j = viewXml.indexOf('</script>', i);
+    if (j < 0) {
+      break;
+    }
+    var src = viewXml.substring(i + 8, j);
+    viewXml = viewXml.substring(0, i) + viewXml.substring(j + 9);
+    var fn = Function('view', '"use strict"; ' + src);
+    initFn = chainInitFn(initFn, fn);
+  }
+
   var viewTemplate = [
     '<app-page id="' + config.id + '" title="' + config.title + '">',
     viewXml,
@@ -90,5 +110,7 @@ define(['./config.json', './view.xml'], function(config, viewXml) {
   });
 
   addPageComponent(viewVue, config.icon);
+
+  initFn(viewVue);
 
 });
