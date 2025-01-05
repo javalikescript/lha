@@ -60,9 +60,11 @@ local RollingList = class.create(List, function(rollingList)
 end)
 
 local websockets = {}
+local addons = {}
 
 local function cleanup()
   websockets = {}
+  addons = {}
   Logger.setLogRecorder(recordLog)
 end
 
@@ -114,24 +116,13 @@ local function onDataChange(value, previousValue, path)
   end
 end
 
-local addons = {}
-
 function extension:registerAddon(id, addon)
   addons[id] = addon
-  logger:info('Web base add-on "%s" registered', id)
-  webSocketBroadcast({event = 'addon-change'})
-end
-
-function extension:unregisterAddon(name)
-  addons[name] = nil
-  logger:info('Web base add-on "%s" unregistered', name)
+  logger:info('Web base add-on "%s" %s', id, addon and 'registered' or 'unregistered')
   webSocketBroadcast({event = 'addon-change'})
 end
 
 function extension:registerAddonExtension(ext, script)
-  if script == true then
-    script = ext:getId()..'.js'
-  end
   self:registerAddon(ext:getId(), {
     handler = AddonFileHttpHandler:new(ext:getDir()),
     script = script or 'init.js'
@@ -139,7 +130,7 @@ function extension:registerAddonExtension(ext, script)
 end
 
 function extension:unregisterAddonExtension(ext)
-  self:unregisterAddon(ext:getId())
+  self:registerAddon(ext:getId())
 end
 
 extension:watchPattern('^data/.*', onDataChange)
@@ -240,6 +231,8 @@ extension:subscribeEvent('startup', function()
     HttpExchange.ok(exchange, json.stringify(l), 'application/json')
   end))
   logger:info('WebSocket available on /ws/')
+
+  extension:getEngine():publishEvent('web-base:startup', extension)
 end)
 
 extension:subscribeEvent('shutdown', function()

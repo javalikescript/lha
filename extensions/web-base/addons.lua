@@ -1,27 +1,36 @@
 
-local function onStartup(extension, script)
-  extension:getEngine():onExtension('web-base', function(webBaseExtension)
-    webBaseExtension:registerAddonExtension(extension, script or true)
-  end)
-end
-
-local function onShutdown(extension)
-  extension:getEngine():onExtension('web-base', function(webBaseExtension)
-    webBaseExtension:unregisterAddonExtension(extension)
-  end)
+local function onWebBase(extension, script)
+  local webBaseExt = extension:getEngine():getExtensionById('web-base')
+  if webBaseExt then
+    if script then
+      webBaseExt:registerAddonExtension(extension, script)
+    else
+      webBaseExt:unregisterAddonExtension(extension)
+    end
+  end
 end
 
 local function registerAddonExtension(extension, script)
+  local started = false
+  if script == nil then
+    script = extension:getId()..'.js'
+  end
   extension:subscribeEvent('startup', function()
-    onStartup(extension, script)
+    started = true
+    onWebBase(extension, script)
+  end)
+  extension:subscribeEvent('web-base:startup', function()
+    if started then
+      onWebBase(extension, script)
+    end
   end)
   extension:subscribeEvent('shutdown', function()
-    onShutdown(extension)
+    started = false
+    onWebBase(extension)
   end)
 end
 
 return {
-  onStartup = onStartup,
-  onShutdown = onShutdown,
-  registerAddonExtension = registerAddonExtension
+  registerAddonExtension = registerAddonExtension,
+  register = registerAddonExtension
 }

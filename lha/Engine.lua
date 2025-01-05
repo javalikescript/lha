@@ -245,16 +245,6 @@ return class.create(function(engine)
     List.removeFirst(self.extensions, extension)
   end
 
-  function engine:onExtension(id, fn)
-    -- TODO replay on extension reload
-    local extension = self:getExtensionById(id)
-    if extension then
-      fn(extension)
-      return true
-    end
-    return false
-  end
-
   function engine:getExtensionById(id)
     for _, extension in ipairs(self.extensions) do
       if extension:getId() == id then
