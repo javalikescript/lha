@@ -26,7 +26,8 @@ local function updateHourValue(thing, name, values, hour)
 end
 
 
--- 1 vert, 2 orange, 3 rouge
+-- dvalue + hvalue: 1 vert, 2 orange, 3 rouge
+-- hvalue uniquement: 0 vert + production décarbonée
 local SIGNAL_ENUM = {0, 1, 2, 3}
 
 local function createThing(targetName)

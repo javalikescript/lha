@@ -10,7 +10,7 @@ local utils = require('lha.utils')
 local adapter = extension:require('adapter')
 local webBaseAddons = extension:require('web-base.addons', true)
 
-webBaseAddons.registerAddonExtension(extension)
+webBaseAddons.register(extension)
 
 local function createWeatherThing(title, description)
   local thing = Thing:new(title or 'Weather', description or 'Weather Data', {

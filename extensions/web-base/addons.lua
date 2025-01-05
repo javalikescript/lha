@@ -10,7 +10,7 @@ local function onWebBase(extension, script)
   end
 end
 
-local function registerAddonExtension(extension, script)
+local function register(extension, script)
   local started = false
   if script == nil then
     script = extension:getId()..'.js'
@@ -31,6 +31,6 @@ local function registerAddonExtension(extension, script)
 end
 
 return {
-  registerAddonExtension = registerAddonExtension,
-  register = registerAddonExtension
+  registerAddonExtension = register, -- TODO Remove
+  register = register
 }

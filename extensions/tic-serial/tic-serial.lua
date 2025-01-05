@@ -46,6 +46,21 @@ local function closeSerial()
   updateConnected(false)
 end
 
+--[[
+Format d'un groupe contenant une donnée horodatée
+  LF(0x0A) Etiquette SP Horodate SP Donnée SP Checksum CR(0x0D)
+SP: séparateur tab (0x09) en standard et espace (0x20) en historique
+Le format utilisé pour les horodates est SAAMMJJhhmmss, c'est-à-dire Saison, Année, Mois, Jour, heure, minute, seconde.
+Checksum = (S1 & 0x3F) + 0x20
+
+OPTARIF - Option tarifaire choisie
+  "BASE" Option Base; "HC.." Option Heures Creuses; "EJP." Option EJP; "BBRx" Option Tempo
+PTEC - Période Tarifaire en cours
+  "TH.." Toutes les Heures; "HC.." Heures Creuses; "HP.." Heures Pleines; "HN.." Heures Normales; "PM.." Heures de Pointe Mobile
+DEMAIN - Couleur du lendemain
+  "----" "BLEU" "BLAN" "ROUG"
+]]
+
 local function openSerial()
   local configuration = extension:getConfiguration()
   local modeHistorique = configuration.mode == 'historique'
@@ -67,13 +82,12 @@ local function openSerial()
       closeSerial()
       return
     end
+    logger:fine('TiC data is %s', data)
     -- if string.sub(data, 1, 1) == '\x02' then data = string.sub(data, 2) end
     local alarm = false
     for line in string.gmatch(data, '\n([^\r]+)\r') do
       local fields = strings.split(line, fieldSeparator, true)
       local field, value
-      -- Le format utilisé pour les horodates est SAAMMJJhhmmss, c'est-à-dire Saison, Année, Mois, Jour, heure, minute, seconde.
-      -- Checksum = (S1 & 0x3F) + 0x20
       if #fields == 3 or #fields == 4 then
         field, value = table.unpack(fields)
       end

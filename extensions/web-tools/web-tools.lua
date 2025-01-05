@@ -10,7 +10,7 @@ local LogHttpFilter = require('jls.net.http.filter.LogHttpFilter')
 local hasPermission = extension:require('users.hasPermission', true)
 local webBaseAddons = extension:require('web-base.addons', true)
 
-webBaseAddons.registerAddonExtension(extension)
+webBaseAddons.register(extension)
 
 local logFilter
 

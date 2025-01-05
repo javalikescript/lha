@@ -11,7 +11,7 @@ local ZipFile = require('jls.util.zip.ZipFile')
 
 local webBaseAddons = extension:require('web-base.addons', true)
 
-webBaseAddons.registerAddonExtension(extension)
+webBaseAddons.register(extension)
 
 local function deployScript(exchange, engine, extId)
   local zipName = exchange:getRequest():getBody() or 'lha-ext.zip'

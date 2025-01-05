@@ -7,7 +7,7 @@ local Url = require('jls.net.Url')
 
 local webBaseAddons = extension:require('web-base.addons', true)
 
-webBaseAddons.registerAddonExtension(extension)
+webBaseAddons.register(extension)
 
 local function checkDir(dir)
   if not dir:isDirectory() then

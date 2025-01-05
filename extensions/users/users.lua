@@ -9,7 +9,7 @@ local MessageDigest = require('jls.util.MessageDigest')
 local Codec = require('jls.util.Codec')
 local webBaseAddons = extension:require('web-base.addons', true)
 
-webBaseAddons.registerAddonExtension(extension)
+webBaseAddons.register(extension)
 
 local User = class.create(function(user)
   function user:initialize(configuration)

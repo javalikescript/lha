@@ -10,7 +10,7 @@ local Date = require('jls.util.Date')
 
 local webBaseAddons = extension:require('web-base.addons', true)
 
-webBaseAddons.registerAddonExtension(extension)
+webBaseAddons.register(extension)
 
 local HistoricalDataHandler = class.create('jls.net.http.HttpHandler', function(tableHandler)
 
