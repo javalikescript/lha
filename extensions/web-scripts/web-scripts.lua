@@ -48,22 +48,20 @@ local REST_SCRIPTS = {
     end
     return list
   end,
-  ['(engine)?method=PUT'] = function(exchange, engine)
-    local name = exchange:getRequest():getBody()
-    if not name or name == '' then
-      name = 'New script'
-    end
-    local scriptName = 'script.lua'
+  ['(engine, name, script)?method=PUT&:LHA-Name+=name&:LHA-Script+=script'] = function(_, engine, name, script)
     local extId = engine:generateId()
     local extDir = File:new(engine:getScriptsDirectory(), extId)
     extDir:mkdir()
-    local scriptFile = File:new(extDir, scriptName)
-    scriptFile:write('local script = ...\n\n')
+    if not script then
+      script = 'script.lua'
+      local scriptFile = File:new(extDir, script)
+      scriptFile:write('local script = ...\n\n')
+    end
     local manifestFile = File:new(extDir, 'manifest.json')
     local manifest = {
-      name = name,
+      name = name or 'New script',
       version = '1.0',
-      script = scriptName
+      script = script
     }
     manifestFile:write(json.stringify(manifest, 2))
     logger:fine('Created script "%s"', extId)

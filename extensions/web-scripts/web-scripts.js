@@ -1,10 +1,10 @@
 define(['./scripts.xml', './scripts-add.xml',
   './script-blockly.xml', './toolbox.xml', './blocks.json', './blocks-lua',
-  './script-view.xml', './script-view-config.xml', './view-schema.json', './view-init.js!', './view-script.lua', 
+  './script-view.xml', './script-view-config.xml', './view-schema.json',
   './script-editor.xml'],
   function(scriptsTemplate, scriptsAddTemplate,
     scriptBlocklyTemplate, toolboxXml, blocks, blocksLua,
-    scriptViewTemplate, scriptViewConfigTemplate, scriptsViewConfigSchema, viewInitJs, viewScriptLua,
+    scriptViewTemplate, scriptViewConfigTemplate, scriptsViewConfigSchema,
     scriptEditorTemplate)
 {
 
@@ -340,10 +340,7 @@ define(['./scripts.xml', './scripts-add.xml',
         if (!this.scriptId) {
           return;
         }
-        return Promise.all([
-          fetch(scriptFilesPath + this.scriptId + '/view.xml', {method: 'PUT', body: this.text}).then(assertIsOk),
-          fetch(scriptFilesPath + this.scriptId + '/init.js', {method: 'PUT', body: viewInitJs}).then(assertIsOk)
-        ]).then(function() {
+        return fetch(scriptFilesPath + this.scriptId + '/view.xml', {method: 'PUT', body: this.text}).then(assertIsOk).then(function() {
           toaster.toast('Saved');
         });
       },
@@ -442,7 +439,7 @@ define(['./scripts.xml', './scripts-add.xml',
         });
       },
       newBlocks: function () {
-        fetch(scriptPath, {method: 'PUT', body: 'New Blocks'}).then(assertIsOk).then(getResponseText).then(function(scriptId) {
+        fetch(scriptPath, {method: 'PUT', headers: {'LHA-Name': 'New Blocks'}}).then(assertIsOk).then(getResponseText).then(function(scriptId) {
           return fetch(scriptFilesPath + scriptId + '/blocks.xml', {
             method: 'PUT',
             body: '<xml xmlns="http://www.w3.org/1999/xhtml"></xml>'
@@ -452,12 +449,23 @@ define(['./scripts.xml', './scripts-add.xml',
         });
       },
       newView: function () {
-        fetch(scriptPath, {method: 'PUT', body: 'New View'}).then(assertIsOk).then(getResponseText).then(function(scriptId) {
+        fetch(scriptPath, {method: 'PUT', headers: {
+          'LHA-Name': 'New View',
+          'LHA-Script': '//web-scripts/view-addon.lua'
+        }}).then(assertIsOk).then(getResponseText).then(function(scriptId) {
           return Promise.all([
             fetch(scriptFilesPath + scriptId + '/view.xml', {method: 'PUT', body: '<!-- View content -->'}),
-            fetch(scriptFilesPath + scriptId + '/config.json', {method: 'PUT', body: '{"id": "view-' + scriptId + '", "title": "View ' + scriptId + '"}'}),
-            fetch(scriptFilesPath + scriptId + '/init.js', {method: 'PUT', body: viewInitJs}),
-            fetch(scriptFilesPath + scriptId + '/script.lua', {method: 'PUT', body: viewScriptLua}),
+            fetch(scriptFilesPath + scriptId + '/config.json', {method: 'PUT', body: [
+              '{',
+              '  "id": "view-' + scriptId + '",',
+              '  "title": "View ' + scriptId + '"',
+              '}'
+            ].join('\n')}),
+            fetch(scriptFilesPath + scriptId + '/init.js', {method: 'PUT', body: [
+              "define(['addon/web-scripts/view-loader.js', './config.json', './view.xml'], function(viewLoader, config, viewXml) {",
+              "  viewLoader.load(config, viewXml);",
+              "});"
+            ].join('\n')})
           ]);
         }).then(function() {
           app.replacePage('scripts');
