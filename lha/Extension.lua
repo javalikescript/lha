@@ -174,14 +174,12 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     end
   end
 
-  function extension:require(name, base)
-    local n
-    if base then
-      n = name
-    else
-      n = string.format('%s.%s', self.dir:getName(), name)
+  function extension:require(name, isCore)
+    local dir = self.dir
+    if isCore then
+      dir = self.engine.lhaExtensionsDir
     end
-    return loader.load(n, self.dir:getParent())
+    return loader.load(name, dir:getPath())
   end
 
   function extension:subscribePollEvent(fn, minIntervalSec, lastPollSec)
@@ -477,7 +475,12 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
   end
 
   function extension:getScriptFile()
-    return File:new(self.dir, self.manifest and self.manifest.script or 'init.lua')
+    local script = self.manifest and self.manifest.script or 'init.lua'
+    local path = string.match(script, '^//(.+)$')
+    if path then
+      return File:new(self.engine.lhaExtensionsDir, path)
+    end
+    return File:new(self.dir, script)
   end
 
   function extension:loadManifest()
