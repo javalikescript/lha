@@ -1,0 +1,30 @@
+{
+  "name": "Calendrier Scolaire",
+  "description": "Retrieve french school calendar",
+  "version": "0.1",
+  "script": "calendrier-scolaire.lua",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "apiUrl": {
+        "title": "API URL",
+        "type": "string",
+        "pattern": "^https?://.+$",
+        "default": "https://data.opendatasoft.com/api/explore/v2.1/"
+      },
+      "datasetId": {
+        "title": "Dataset",
+        "type": "string",
+        "pattern": "^[%w%-@_]+$",
+        "required": true,
+        "default": "fr-en-calendrier-scolaire@dataeducation"
+      },
+      "location": {
+        "title": "Location",
+        "type": "string",
+        "required": true,
+        "default": "Normandie"
+      }
+    }
+  }
+}
