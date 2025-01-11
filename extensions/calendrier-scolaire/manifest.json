@@ -6,6 +6,24 @@
   "schema": {
     "type": "object",
     "properties": {
+      "publicHoliday": {
+        "type": "object",
+        "properties": {
+          "apiUrl": {
+            "title": "API URL",
+            "type": "string",
+            "pattern": "^https?://.+$",
+            "default": "https://calendrier.api.gouv.fr/jours-feries/"
+          },
+          "zone": {
+            "title": "Zone",
+            "type": "string",
+            "pattern": "^[%w%-@_]+$",
+            "required": true,
+            "default": "metropole"
+          }
+        }
+      },
       "apiUrl": {
         "title": "API URL",
         "type": "string",
