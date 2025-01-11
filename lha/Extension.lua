@@ -23,9 +23,10 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
   --  configuration: called when the configuration changes
   --  things: called when things change, added, removed, or extension loaded
   --  extensions: called when extensions change
-  --  poll: called depending on the configuration schedule, to collect things data and discover things
-  --  refresh: called depending on the configuration schedule
-  --  clean: called depending on the configuration
+  --  poll: called every 15 minutes(*), to collect things data and discover things
+  --  refresh: called every day at midnight(*)
+  --  clean: called the first day of the month(*)
+  -- (*) depending on the configuration schedule
   -- @function Extension:new
   -- @param engine the engine that holds this extension.
   -- @param dir the extension directory

@@ -21,7 +21,7 @@
                 },
                 "configuration": {
                   "default": "0 0 * * *",
-                  "title": "Schedule for archiving configuration",
+                  "title": "Schedule for archiving configuration and refreshing",
                   "type": "string"
                 },
                 "data": {
