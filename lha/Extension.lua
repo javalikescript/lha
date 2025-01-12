@@ -121,6 +121,10 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     return self.manifest.version or '1.0'
   end
 
+  function extension:readme()
+    return self.manifest.readme or 'readme.md'
+  end
+
   function extension:isActive()
     return self.loaded and self.configuration.active
   end

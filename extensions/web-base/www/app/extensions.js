@@ -119,6 +119,26 @@ new Vue({
 });
 
 new Vue({
+  el: '#extension-info',
+  data: {
+    info: {},
+    readme: ''
+  },
+  methods: {
+    onShow: function(extensionId) {
+      this.readme = '';
+      this.info = {};
+      fetch('/engine/extensions/' + extensionId + '/info').then(assertIsOk).then(getJson).then(function(info) {
+        this.info = info;
+        return fetch('/engine/extensions/' + extensionId + '/readme');
+      }.bind(this)).then(rejectIfNotOk).then(getResponseText).then(function(content) {
+        this.readme = content;
+      }.bind(this));
+    }
+  }
+});
+
+new Vue({
   el: '#addExtensions',
   data: {
     extensions: []

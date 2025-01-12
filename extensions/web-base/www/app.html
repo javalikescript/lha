@@ -205,6 +205,7 @@
       <button v-if="schema" v-on:click="onSave()" title="Save"><i class="fas fa-save"></i></button>
       <button v-on:click="onReload" title="Reload"><i class="fas fa-redo"></i></button>
       <button v-on:click="onRefreshThings" title="Refresh Things"><i class="fas fa-recycle"></i></button>
+      <button v-on:click="app.toPage('extension-info', extensionId)"><i class="fas fa-info"></i></button>
     </template>
     <article class="content">
       <section>
@@ -216,6 +217,21 @@
         <button v-on:click="onSave()"><i class="far fa-save"></i>&nbsp;Save</button>
       </section>
     </article>
+  </app-page>
+  <app-page id="extension-info" title="Extension Info">
+    <template slot="bar-right">
+      <button v-on:click="app.back()" title="Close"><i class="fa fa-window-close"></i></button>
+    </template>
+    <page-article>
+      <section>
+        <p>{{ info.name }}</p>
+        <p>{{ info.description }}</p>
+        <p>Version: {{ info.version }}</p>
+      </section>
+      <hr v-if="readme"/>
+      <div v-if="readme" v-html="readme">
+      </div>
+    </page-article>
   </app-page>
   <app-page id="addExtensions" title="Add Extensions">
     <article class="cards">
@@ -231,6 +247,9 @@
     </article>
   </app-page>
   <app-page id="addExtension" title="Add Extension">
+    <template slot="bar-right">
+      <button v-on:click="app.toPage('extension-info', extensionId)"><i class="fas fa-info"></i></button>
+    </template>
     <article class="content">
       <section>
         <p>{{ extension.info.name }}</p>

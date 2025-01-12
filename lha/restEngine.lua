@@ -3,6 +3,7 @@ local Logger = rootLogger:getClass()
 local logger = rootLogger:get(...)
 local system = require('jls.lang.system')
 local event = require('jls.lang.event')
+local loader = require('jls.lang.loader')
 local File = require('jls.io.File')
 local HTTP_CONST = require('jls.net.http.HttpMessage').CONST
 local RestHttpHandler = require('jls.net.http.handler.RestHttpHandler')
@@ -12,6 +13,8 @@ local Date = require('jls.util.Date')
 local Map = require('jls.util.Map')
 local ZipFile = require('jls.util.zip.ZipFile')
 local Promise = require('jls.lang.Promise')
+
+local md = loader.tryRequire('md')
 
 local utils = require('lha.utils')
 
@@ -123,6 +126,33 @@ local REST_EXTENSIONS = {
     end,
     manifest = function(exchange)
       return exchange.attributes.extension:getManifest()
+    end,
+    ['readme(extension)'] = function(exchange, extension)
+      local readme = File:new(extension:getDir(), extension:readme())
+      if not readme:isFile() then
+        HttpExchange.notFound(exchange)
+        return false
+      end
+      local readmeExt = string.lower(readme:getExtension())
+      local content = readme:readAll()
+      if readmeExt == 'md' then
+        if md then
+          content = md.render(content)
+        else
+          content = '<pre>'..content..'</pre>'
+        end
+      elseif readmeExt == 'txt' then
+        content = '<pre>'..content..'</pre>'
+      elseif not (readmeExt == 'html' or readmeExt == 'htm') then
+        HttpExchange.notFound(exchange)
+        return false
+      end
+      local response = exchange:getResponse()
+      response:setStatusCode(HTTP_CONST.HTTP_OK, 'OK')
+      response:setContentType('text/html')
+      response:setContentLength(#content)
+      response:setBody(content)
+      return false
     end,
     ['poll(extension)?method=POST'] = function(exchange, extension)
       if extension:isActive() then

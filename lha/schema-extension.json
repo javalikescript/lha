@@ -16,6 +16,10 @@
       "title": "The description of the extension",
       "type": "string"
     },
+    "readme": {
+      "title": "The file documenting the extension",
+      "type": "string"
+    },
     "name": {
       "title": "The name of the extension",
       "type": "string"
