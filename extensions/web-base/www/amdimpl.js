@@ -1,6 +1,7 @@
 /*
  * Asynchronous Module Definition (AMD) API implementation for JLS.
  * The following code creates a 'require' function to load modules.
+ * See https://github.com/amdjs/amdjs-api
  */
 (function() {
   /* Helper functions */
@@ -22,6 +23,12 @@
     var index = path.lastIndexOf('/');
     return index === -1 ? '' : path.substring(0, index);
   }
+  function endsWith(value, search) {
+    return value.substring(value.length - search.length) === search;
+  }
+  function startsWith(value, search) {
+    return value.substring(0, search.length) === search;
+  }
   function concatPath(a, b) {
     var pathItems = b.split('/');
     if ((a !== '.') && ((pathItems[0] === '.') || (pathItems[0] === '..'))) {
@@ -37,7 +44,14 @@
         i -= 2;
       }
     }
-    return pathItems.join('/');
+    var path = pathItems.join('/');
+    if (startsWith(b, '/')) {
+      path = '/' + path;
+    }
+    if (endsWith(b, '/')) {
+      path = path + '/';
+    }
+    return path;
   }
   function basemodule(path) {
     var index = path.indexOf('$');
@@ -171,7 +185,7 @@
     var self = this;
     var path = this.path;
     var ext = extension(path);
-    if (ext === '') {
+    if (ext === '' && !endsWith(path, '/')) {
       path += '.js';
     }
     this.loading = true;
