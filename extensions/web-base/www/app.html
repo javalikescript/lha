@@ -189,6 +189,7 @@
         <div class="bar">
           <p>{{ extension.name }}</p>
           <div>
+            <button v-on:click="app.toPage('extension-info', extension.id)"><i class="fas fa-info"></i>&nbsp;Infos</button>
             <button v-on:click="pollExtension(extension)"><i class="far fa-bell"></i>&nbsp;Poll</button>
             <button v-on:click="app.toPage('extension', extension.id)"><i class="fas fa-cog"></i>&nbsp;Settings</button>
           </div>
@@ -239,6 +240,7 @@
         <div class="bar">
           <p>{{ extension.name }}</p>
           <div>
+            <button v-on:click="app.toPage('extension-info', extension.id)"><i class="fas fa-info"></i>&nbsp;Infos</button>
             <button v-on:click="app.toPage('addExtension', extension.id)"><i class="fa fa-plus"></i>&nbsp;Add...</button>
           </div>
         </div>
@@ -410,7 +412,6 @@
       <div>
         <slot name="bar-left">
           <button v-on:click="app.menu = menu" v-if="menu"><i class="fa fa-bars"></i></button>
-          <button v-on:click="app.back()" v-if="!hideBack"><i class="fa fa-chevron-left"></i></button>
           <button v-on:click="app.toPage(homePage)" v-if="homePage"><i class="fas fa-home"></i></button>
         </slot>
       </div>

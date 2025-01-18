@@ -102,9 +102,7 @@ var app = new Vue({
     dialog: '',
     watchers: [],
     page: '',
-    path: '',
     pages: {},
-    pageHistory: [],
     cache: {},
     user: {}
   },
@@ -120,32 +118,25 @@ var app = new Vue({
       return this.theme;
     },
     toPage: function(id, path) {
-      this.navigateTo(formatNavigationPath(id, path));
+      window.location.assign('#' + formatNavigationPath(id, path));
     },
     replacePage: function(id, path) {
-      this.navigateTo(formatNavigationPath(id, path), true);
+      window.location.replace('#' + formatNavigationPath(id, path));
     },
-    navigateTo: function(path, noHistory) {
-      if (this.path === path) {
-        return true;
-      }
+    onHashchange: function(path) {
       var matches = parseNavigationPath(path);
       if (matches) {
         var id = matches[1];
         var pagePath = matches[2];
         if (id in this.pages) {
-          if (!noHistory) {
-            this.pageHistory.push(this.path);
-          }
-          this.path = path;
           this.menu = '';
           var previousId = this.page !== id ? this.page : '';
           this.page = id;
           this.$emit('page-selected', id, pagePath, previousId);
-          return true;
+          return;
         }
       }
-      return false;
+      this.replacePage('home');
     },
     getPage: function(id) {
       return this.pages[id];
@@ -163,17 +154,8 @@ var app = new Vue({
       this.callPage(id, '$emit');
       return this;
     },
-    showBack: function() {
-      var l = this.pageHistory.length
-      return l > 0;
-    },
     back: function() {
-      var path = this.pageHistory.pop();
-      if (path) {
-        this.navigateTo(path, true);
-      } else {
-        this.toPage('home');
-      }
+      window.history.back();
     },
     watchDataChange: function(path, fn) {
       var parts = path.split('/', 2);
@@ -438,7 +420,6 @@ Vue.component('app-page', {
   props: {
     id: String,
     title: String,
-    hideBack: Boolean,
     homePage: String,
     menu: {
       type: String,

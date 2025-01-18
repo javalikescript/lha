@@ -35,26 +35,12 @@
   });
 });
 
-/************************************************************
- * Route application using location hash
- ************************************************************/
-function getLocationPath() {
-  var matches = parseNavigationPath(window.location.hash.substring(1))
-  if (matches) {
-    return formatNavigationPath(matches[1], matches[2]);
-  }
-  return formatNavigationPath('home');
+// Route application using location hash
+function onHashchange() {
+  app.onHashchange(window.location.hash.substring(1));
 }
 
-function replaceLocationByNavigationPath(id, path) {
-  window.location.replace(window.location.pathname + '#' + formatNavigationPath(id, path));
-}
-
-app.$on('page-selected', replaceLocationByNavigationPath);
-
-window.addEventListener('hashchange', function() {
-  app.navigateTo(getLocationPath());
-});
+window.addEventListener('hashchange', onHashchange);
 
 // avoid horizontal scroll which could happen on a tab-focused element out of the view
 window.addEventListener('scroll', function () {
@@ -88,10 +74,7 @@ window.addEventListener('scroll', function () {
     }));
   }
 })).then(function() {
-  if (!app.navigateTo(getLocationPath(), true)) {
-    replaceLocationByNavigationPath('home');
-    app.navigateTo(getLocationPath(), true);
-  }
+  onHashchange();
   function setupWebSocket() {
     var protocol = location.protocol.replace('http', 'ws');
     var url = protocol + '//' + location.host + '/ws/';
