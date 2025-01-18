@@ -1,15 +1,5 @@
 define(['./web-tools.xml'], function(toolsTemplate) {
 
-  function insertTab(e) {
-    if (e.key == 'Tab') {
-      e.preventDefault();
-      var start = this.selectionStart;
-      var end = this.selectionEnd;
-      this.value = this.value.substring(0, start) + '\t' + this.value.substring(end);
-      this.selectionStart = this.selectionEnd = start + 1;
-    }
-  }
-
   var toolsVue = new Vue({
     template: toolsTemplate,
     data: {
@@ -19,9 +9,6 @@ define(['./web-tools.xml'], function(toolsTemplate) {
       luaOut: '',
       cmd: '',
       cmdOut: ''
-    },
-    mounted: function() {
-      this.$refs.lua.addEventListener('keydown', insertTab);
     },
     methods: {
       onShow: function() {
