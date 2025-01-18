@@ -4,31 +4,31 @@
  require(['_AMD'], function(_AMD) {
   _AMD.setLogFunction(console.warn);
   _AMD.setLoadModuleFunction(function(pathname, callback, sync, prefix, suffix) {
-    var raw = pathname.charAt(pathname.length - 1) === '!';
+    var lastIndex = pathname.length - 1;
+    var raw = pathname.charAt(lastIndex) === '!';
     if (raw) {
-      pathname = pathname.substring(0, pathname.length - 1)
+      pathname = pathname.substring(0, lastIndex)
     }
-    var slashIndex = pathname.lastIndexOf('/');
-    var name = slashIndex < 0 ? pathname : pathname.substring(slashIndex + 1);
-    var dotIndex = name.lastIndexOf('.');
-    var ext = dotIndex < 0 ? '' : name.substring(dotIndex + 1);
     fetch(pathname).then(function(response) {
-      //console.log('module "' + pathname + '" retrieved with extension "' + ext + '"');
-      return ext === 'json' && !raw ? response.json() : response.text();
-    }).then(function(content) {
-      if (raw || ext !== 'js') {
-        callback(content);
-      } else {
-        var src = prefix + content + suffix;
-        try {
-          var m = Function('"use strict";return ' + src)();
-          //console.log('module "' + pathname + '" evaluated', m, src);
-          callback(m);
-        } catch(e) {
-          console.warn('fail to eval module "' + pathname + '" due to:', e);
-          callback(null, e);
-        }
+      if (!response.ok) {
+        return Promise.reject(response.statusText);
       }
+      if (raw) {
+        return response.text();
+      }
+      var dotIndex = pathname.lastIndexOf('.');
+      var ext = dotIndex > pathname.lastIndexOf('/') ? pathname.substring(dotIndex + 1) : '';
+      var contentType = response.headers.get('Content-Type');
+      if (ext === 'js' || contentType === 'text/javascript') {
+        return response.text().then(function(content) {
+          return Function('"use strict";return ' + prefix + content + suffix)();
+        });
+      } else if (ext === 'json' || contentType === 'application/json') {
+        return response.json();
+      }
+      return response.text();
+    }).then(function(m) {
+      callback(m);
     }, function(reason) {
       callback(null, reason || ('fail to fetch "' + pathname + '"'));
     });
@@ -67,20 +67,18 @@ window.addEventListener('scroll', function () {
  * Load web base configuration and addons
  ************************************************************/
  Promise.all([
-  fetch('/engine/configuration/extensions/web-base').then(rejectIfNotOk).then(getJson),
+  fetch('/engine/configuration/extensions/web-base').then(rejectIfNotOk).then(getJson).then(function(response) {
+    return response.value;
+  }),
   fetch('addon/').then(rejectIfNotOk).then(getJson),
   fetch('/engine/user').then(rejectIfNotOk).then(getJson),
-]).then(function(results) {
-  var webBaseConfig = results[0].value || {};
+]).then(apply(this, function(webBaseConfig, addons, user) {
   if (webBaseConfig.title) {
     document.title = webBaseConfig.title;
     homePage.title = webBaseConfig.title;
   }
-  if (webBaseConfig.theme) {
-    app.setTheme(webBaseConfig.theme);
-  }
-  app.user = results[2];
-  var addons = results[1];
+  app.setTheme(webBaseConfig.theme || 'default');
+  app.user = user;
   if (Array.isArray(addons)) {
     return Promise.all(addons.map(function(addon) {
       console.log('loading addon ' + addon.id);
@@ -89,7 +87,7 @@ window.addEventListener('scroll', function () {
       })
     }));
   }
-}).then(function() {
+})).then(function() {
   if (!app.navigateTo(getLocationPath(), true)) {
     replaceLocationByNavigationPath('home');
     app.navigateTo(getLocationPath(), true);
