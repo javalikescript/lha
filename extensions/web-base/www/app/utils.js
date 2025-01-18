@@ -234,6 +234,9 @@ function rejectIfNotOk(response) {
   return Promise.reject(response.statusText);
 }
 
+function doNothing() {
+}
+
 function insertTab(e) {
   var t = e && e.target;
   if (t && t.setRangeText) {

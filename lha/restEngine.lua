@@ -121,6 +121,9 @@ local REST_EXTENSIONS = {
         manifest = extension:getManifest()
       }
     end,
+    config = function(exchange)
+      return exchange.attributes.extension:getConfiguration()
+    end,
     info = function(exchange)
       return exchange.attributes.extension:toJSON()
     end,
