@@ -119,7 +119,7 @@ extension:subscribeEvent('things', function()
       ['@type'] = Thing.PROPERTY_TYPES.ApparentPowerProperty,
       type = 'number',
       title = 'Apparent power',
-      description = 'The apparent power',
+      description = 'Puissance apparente',
       readOnly = true,
       unit = 'voltampere'
     })
