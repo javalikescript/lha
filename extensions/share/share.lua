@@ -2,9 +2,15 @@ local extension = ...
 
 local logger = extension:getLogger()
 local FileHttpHandler = require('jls.net.http.handler.FileHttpHandler')
+local HtmlFileHttpHandler = require('jls.net.http.handler.HtmlFileHttpHandler')
 local ProxyHttpHandler = require('jls.net.http.handler.ProxyHttpHandler')
 local WebDavHttpHandler = require('jls.net.http.handler.WebDavHttpHandler')
+
 local utils = require('lha.utils')
+
+local webBaseAddons = extension:require('web-base.addons', true)
+
+webBaseAddons.register(extension)
 
 local function isValidPath(name)
   if not name or name == '' or name == 'engine' or name == 'things' then
@@ -25,9 +31,11 @@ extension:subscribeEvent('startup', function()
         logger:warn('Invalid share directory "%s"', dir)
       end
       if isValidPath(share.name) then
-        logger:info('Share directory "%s" on "%s"', dir, share.name)
+        logger:info('Share directory "%s" on "/%s"', dir, share.name)
         local path = '/'..share.name..'/(.*)'
-        if share.useWebDAV then
+        if share.mode == 'HTML' then
+          extension:addContext(path, HtmlFileHttpHandler:new(dir, share.permissions))
+        elseif share.mode == 'WebDAV' then
           extension:addContext(path, WebDavHttpHandler:new(dir, share.permissions))
         else
           extension:addContext(path, FileHttpHandler:new(dir, share.permissions))

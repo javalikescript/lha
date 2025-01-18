@@ -27,10 +27,21 @@
               "type": "string",
               "default": "rwl"
             },
+            "mode": {
+              "title": "The mode",
+              "type": "string",
+              "enumValues": [
+                {"const": "HTML", "title": "HTML"},
+                {"const": "HTTP", "title": "HTTP"},
+                {"const": "WebDAV", "title": "WebDAV"}
+              ],
+              "default": "HTML"
+            },
             "useWebDAV": {
               "title": "Use WebDAV",
               "type": "boolean",
-              "default": false
+              "default": false,
+              "deprecated": true
             }
           }
         }

@@ -1,0 +1,16 @@
+<app-page id="share" title="Share">
+  <template slot="bar-right">
+    <button v-on:click="app.toPage('extension', 'share')" title="Configuration"><i class="fas fa-cog"></i></button>
+  </template>
+  <article>
+    <div class="tile-container">
+      <template v-for="share in shares">
+        <div class="tile">
+          <div class="bar">
+            <a :href="share.name + '/'">{{ share.name }}</span>
+          </div>
+        </div>
+      </template>
+    </div>
+  </article>
+</app-page>
