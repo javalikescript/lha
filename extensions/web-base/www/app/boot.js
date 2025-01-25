@@ -49,10 +49,30 @@ window.addEventListener('scroll', function () {
   }
 });
 
+function setupWebSocket() {
+  var protocol = location.protocol.replace('http', 'ws');
+  var url = protocol + '//' + location.host + '/ws/';
+  var webSocket = new WebSocket(url);
+  webSocket.onmessage = function(event) {
+    //console.log('webSocket.onmessage', event);
+    if (event.data) {
+      app.onMessage(JSON.parse(event.data));  
+    }
+  };
+  webSocket.onopen = function() {
+    console.log('WebSocket opened at ' + url);
+  };
+  webSocket.onclose = function() {
+    console.log('WebSocket closed');
+    webSocket = null;
+    setTimeout(setupWebSocket, 3000);
+  };
+}
+
 /************************************************************
  * Load web base configuration and addons
  ************************************************************/
- Promise.all([
+Promise.all([
   fetch('/engine/configuration/extensions/web-base').then(rejectIfNotOk).then(getJson).then(function(response) {
     return response.value;
   }),
@@ -65,6 +85,8 @@ window.addEventListener('scroll', function () {
   }
   app.setTheme(webBaseConfig.theme || 'default');
   app.user = user;
+  onHashchange();
+  setupWebSocket();
   if (Array.isArray(addons)) {
     return Promise.all(addons.map(function(addon) {
       console.log('loading addon ' + addon.id);
@@ -74,25 +96,5 @@ window.addEventListener('scroll', function () {
     }));
   }
 })).then(function() {
-  onHashchange();
-  function setupWebSocket() {
-    var protocol = location.protocol.replace('http', 'ws');
-    var url = protocol + '//' + location.host + '/ws/';
-    var webSocket = new WebSocket(url);
-    webSocket.onmessage = function(event) {
-      //console.log('webSocket.onmessage', event);
-      if (event.data) {
-        app.onMessage(JSON.parse(event.data));  
-      }
-    };
-    webSocket.onopen = function() {
-      console.log('WebSocket opened at ' + url);
-    };
-    webSocket.onclose = function() {
-      console.log('WebSocket closed');
-      webSocket = null;
-      setTimeout(setupWebSocket, 3000);
-    };
-  }
-  setupWebSocket();
+  console.info('addons loaded');
 });
