@@ -34,6 +34,10 @@ local function closeServer()
   end
 end
 
+function extension:getHTTPServer()
+  return httpSecureServer
+end
+
 extension:subscribeEvent('startup', function()
   local configuration = extension:getConfiguration()
   closeServer()

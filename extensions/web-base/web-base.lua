@@ -133,6 +133,13 @@ function extension:unregisterAddonExtension(ext)
   self:registerAddon(ext:getId())
 end
 
+function extension:getWebBaseInfo()
+  return {
+    addons = Map.size(addons),
+    websockets = #websockets
+  }
+end
+
 extension:watchPattern('^data/.*', onDataChange)
 
 extension:subscribeEvent('startup', function()

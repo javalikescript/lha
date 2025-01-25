@@ -254,6 +254,10 @@ local REST_ADMIN = {
     local engine = exchange:getAttribute('engine')
     local httpServer = engine:getHTTPServer()
     --local ip, port = httpServer:getAddress()
+    local httpsExt = engine:getExtensionById('https')
+    local httpsServer = httpsExt and httpsExt:getHTTPServer()
+    local webBaseExt = engine:getExtensionById('web-base')
+    local webBaseInfo = webBaseExt and webBaseExt:getWebBaseInfo()
     return {
       ['CPU Time'] = os.clock(),
       ['Server Time'] = os.time(),
@@ -262,6 +266,9 @@ local REST_ADMIN = {
       ['Lua Registry Entries'] = Map.size(debug.getregistry()),
       ['Loaded Packages'] = Map.size(package.loaded),
       ['HTTP Clients'] = Map.size(httpServer.pendings),
+      ['HTTPS Clients'] = httpsServer and Map.size(httpsServer.pendings) or 0,
+      ['Web Base Addons'] = webBaseInfo and webBaseInfo.addons or 0,
+      ['Web Base WebSockets'] = webBaseInfo and webBaseInfo.websockets or 0,
     }
   end,
   backup = {
