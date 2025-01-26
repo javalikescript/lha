@@ -79,22 +79,29 @@ Promise.all([
   fetch('addon/').then(rejectIfNotOk).then(getJson),
   fetch('/engine/user').then(rejectIfNotOk).then(getJson),
 ]).then(apply(this, function(webBaseConfig, addons, user) {
+  var theme = webBaseConfig.theme || 'default'
   if (webBaseConfig.title) {
     document.title = webBaseConfig.title;
     homePage.title = webBaseConfig.title;
   }
-  app.setTheme(webBaseConfig.theme || 'default');
   app.user = user;
-  onHashchange();
-  setupWebSocket();
   if (Array.isArray(addons)) {
     return Promise.all(addons.map(function(addon) {
       console.log('loading addon ' + addon.id);
       return new Promise(function(resolve) {
         require(['addon/' + addon.id + '/' + addon.script], resolve);
-      })
-    }));
+      });
+    })).then(function() {
+      console.info('addons loaded');
+    }, function() {
+      console.info('fail to load addons');
+    }).then(function() {
+      return theme;
+    });
   }
-})).then(function() {
-  console.info('addons loaded');
+  return theme;
+})).then(function(theme) {
+  app.setTheme(theme);
+  onHashchange();
+  setupWebSocket();
 });

@@ -224,7 +224,6 @@ var app = new Vue({
       case 'addon-change':
         if (this.reloadTimeoutId) {
           clearTimeout(this.reloadTimeoutId);
-          this.reloadTimeoutId = undefined;
         }
         this.reloadTimeoutId = setTimeout(function () {
           toaster.toast('Reloading...');
