@@ -48,7 +48,7 @@ local REST_SCRIPTS = {
     end
     return list
   end,
-  ['(engine, name, script)?method=PUT&:LHA-Name+=name&:LHA-Script+=script'] = function(_, engine, name, script)
+  ['(engine, name, script)?method=PUT&:LHA-Name-=name&:LHA-Script-=script'] = function(_, engine, name, script)
     local extId = engine:generateId()
     local extDir = File:new(engine:getScriptsDirectory(), extId)
     extDir:mkdir()
