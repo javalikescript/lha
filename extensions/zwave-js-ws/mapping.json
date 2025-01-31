@@ -54,6 +54,19 @@
         "$ref:/property/signal-order",
         "$ref:/property/air-temperature"
       ]
+    },
+    {
+      "manufacturerId": "$ref:/manufacturer/Shelly",
+      "productId": 142,
+      "capabilities": ["OnOffSwitch"],
+      "properties": [
+        {
+          "commandClass": "$ref:/commandClass/binary-switch",
+          "property": "currentValue",
+          "setProperty": "targetValue",
+          "name": "on"
+        }
+      ]
     }
   ],
   "adapters": {
@@ -87,9 +100,11 @@
     "Aeotec": 881,
     "FIBARO": 271,
     "Qubino": 345,
+    "Shelly": 1120,
     "Zooz": 634
   },
   "commandClass": {
+    "binary-switch": 37,
     "switch-multilevel": 38,
     "sensor-multilevel": 49,
     "alarm": 113,
