@@ -300,14 +300,15 @@ Vue.component('json-item', {
       return this.name || 'Value';
     },
     propertyNames: function() {
-      if (!isObject(this.schema.properties)) {
+      var properties = this.schema.properties;
+      if (!isObject(properties)) {
         return [];
       }
       var names = [];
       var objectNames = [];
       var arrayNames = [];
-      for (var name in this.schema.properties) {
-        var propertySchema = unrefSchema(this.rootSchema, this.schema.properties[name]);
+      for (var name in properties) {
+        var propertySchema = unrefSchema(this.rootSchema, properties[name]);
         if (propertySchema.format === 'hidden') {
           continue;
         }
@@ -330,6 +331,16 @@ Vue.component('json-item', {
       objectNames.sort(strcasecmp);
       names.sort(strcasecmp);
       return names.concat(objectNames).concat(arrayNames);
+    },
+    additionalPropertyNames: function() {
+      var names = [];
+      var properties = this.schema.properties;
+      for (var name in this.obj) {
+        if (!(properties && (name in properties))) {
+          names.push(name);
+        }
+      }
+      return names;
     },
     enumValues: function() {
       if (Array.isArray(this.schema.enumValues)) {
@@ -413,7 +424,10 @@ Vue.component('json-item', {
     },
     isProperties: function() {
       var schema = this.schema;
-      return (schema.type === 'object') && isObject(schema.properties);
+      return (schema.type === 'object') && (isObject(schema.properties) || isObject(schema.additionalProperties));
+    },
+    hasAdditionalProperties: function() {
+      return (this.schema.type === 'object') && isObject(this.schema.additionalProperties);
     },
     hasList: function() {
       return (this.schema.type === 'array') && isObject(this.schema.items) && Array.isArray(this.obj);
