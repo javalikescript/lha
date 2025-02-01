@@ -202,7 +202,7 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
     }
   });
 
-  addPageComponent(notesVue, 'sticky-note');
+  addPageComponent(notesVue, 'sticky-note', true, true);
   addPageComponent(noteVue);
   addPageComponent(drawVue);
 

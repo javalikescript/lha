@@ -111,7 +111,7 @@ define(['./web-tools.xml'], function(toolsTemplate) {
   });
   
   if (app.canAdminister) {
-    addPageComponent(toolsVue, 'tools');
+    addPageComponent(toolsVue, 'tools', true);
   }
 
 });

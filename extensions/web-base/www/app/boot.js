@@ -84,6 +84,9 @@ Promise.all([
     document.title = webBaseConfig.title;
     homePage.title = webBaseConfig.title;
   }
+  if (Array.isArray(webBaseConfig.links)) {
+    homePage.tiles = homePage.tiles.concat(webBaseConfig.links);
+  }
   app.user = user;
   if (Array.isArray(addons)) {
     return Promise.all(addons.map(function(addon) {

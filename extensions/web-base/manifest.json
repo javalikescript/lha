@@ -48,14 +48,19 @@
               "title": "URL",
               "type": "string"
             },
+            "open": {
+              "title": "Open in a new tab",
+              "type": "boolean",
+              "default": false
+            },
             "icon": {
               "title": "Tile icon",
               "type": "string",
               "enumValues": [
-                {"const": "fa-link", "title": "Link"},
-                {"const": "fa-bookmark", "title": "Bookmark"}
+                {"const": "link", "title": "Link"},
+                {"const": "bookmark", "title": "Bookmark"}
               ],
-              "default": "fa-link"
+              "default": "link"
             }
           }
         }

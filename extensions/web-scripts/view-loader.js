@@ -110,7 +110,7 @@ define(function() {
       fn.call(this, options, config);
     }
     var vue = new Vue(options);
-    addPageComponent(vue, config.icon);
+    addPageComponent(vue, config.icon || undefined, config.tile, config.menu);
   }
 
   return {

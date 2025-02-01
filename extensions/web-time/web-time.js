@@ -46,6 +46,6 @@ define(['./web-time.xml'], function(timeTemplate) {
     }
   });
 
-  addPageComponent(timeVue, 'clock');
+  addPageComponent(timeVue, 'clock', true);
 
 });

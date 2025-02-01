@@ -331,7 +331,7 @@
     <article class="tiles">
       <div class="tile" v-for="tile in sortedTiles" v-on:click="onTile(tile)">
         <span>{{ tile.name }}</span>
-        <p class="tile-value" v-if="tile.icon"><i :class="['fas', tile.icon]"></i></p>
+        <p class="tile-value" v-if="tile.icon"><i :class="['fas', 'fa-' + tile.icon]"></i></p>
       </div>
     </article>
   </app-page>

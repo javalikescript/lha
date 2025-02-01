@@ -513,7 +513,11 @@ var homePage = new Vue({
         if (tile.id) {
           app.toPage(tile.id);
         } else if (tile.url) {
-          window.open(tile.url, '_blank');
+          if (tile.open) {
+            window.open(tile.url);
+          } else {
+            window.location.assign(tile.url);
+          }
         }
       }
     },
@@ -527,9 +531,6 @@ var homePage = new Vue({
   computed: {
     sortedTiles: function() {
       var tiles = [].concat(this.tiles);
-      if ((typeof webBaseConfig === 'object') && Array.isArray(webBaseConfig.links)) {
-        tiles = tiles.concat(webBaseConfig.links);
-      }
       tiles.sort(compareByName);
       return tiles;
     }
@@ -652,25 +653,29 @@ new Vue({
   el: '#pages'
 });
 
-function registerPageVue(vue, icon) {
+function registerPageVue(vue, icon, showTile, showMenu) {
   var page = getPageFromVue(vue);
   if (page) {
-    menu.pages.push({
-      id: page.id,
-      name: page.title
-    });
-    homePage.tiles.push({
-      id: page.id,
-      name: page.title,
-      icon: icon
-    });
+    if (showTile) {
+      homePage.tiles.push({
+        id: page.id,
+        name: page.title,
+        icon: icon
+      });
+    }
+    if (showMenu) {
+      menu.pages.push({
+        id: page.id,
+        name: page.title
+      });
+    }
   }
 }
 
-function addPageComponent(vue, menuIcon) {
+function addPageComponent(vue, icon, showTile, showMenu) {
   var component = vue.$mount();
   document.getElementById('pages').appendChild(component.$el);
-  if (menuIcon) {
-    registerPageVue(vue, ((typeof menuIcon === 'string') && (menuIcon !== '')) ? 'fa-' + menuIcon : undefined);
+  if (icon !== undefined) {
+    registerPageVue(vue, icon, showTile, showMenu);
   }
 }

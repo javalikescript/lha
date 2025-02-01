@@ -7,6 +7,6 @@ define(['./share.xml', 'engine/configuration/extensions/share/'], function(share
     }
   });
 
-  addPageComponent(shareVue, 'share');
+  addPageComponent(shareVue, 'share', true);
 
 });

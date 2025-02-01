@@ -15,8 +15,19 @@
     },
     "icon": {
       "title": "Icon",
-      "description": "The fontawesome icon to use for the view tile and menu entry, such as 'home'",
+      "description": "The icon to use for the view tile, such as 'home'",
+      "default": "flask",
       "type": "string"
+    },
+    "tile": {
+      "title": "Show in the tiles",
+      "type": "boolean",
+      "default": false
+    },
+    "menu": {
+      "title": "Show in the menu",
+      "type": "boolean",
+      "default": false
     },
     "properties": {
       "title": "Properties",

@@ -54,4 +54,4 @@ registerPageVue(new Vue({
       }
     }
   }
-}), 'fa-list');
+}), 'list', true, true);

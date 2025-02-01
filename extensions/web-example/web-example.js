@@ -4,6 +4,6 @@ define(['./web-example.xml'], function(aPageTemplate) {
     template: aPageTemplate
   });
 
-  addPageComponent(aVue, true);
+  addPageComponent(aVue, 'flask', true);
 
 });

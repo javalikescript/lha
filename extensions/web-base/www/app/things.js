@@ -98,7 +98,7 @@ registerPageVue(new Vue({
       }
     }
   }
-}), 'fa-circle');
+}), 'circle', true, true);
 
 new Vue({
   el: '#thing',

@@ -15,6 +15,6 @@ define(['./hue-v2.xml'], function(aPageTemplate) {
     }
   });
 
-  addPageComponent(aVue, true);
+  addPageComponent(aVue);
 
 });

@@ -94,6 +94,6 @@ define(['./owm.xml'], function(owmTemplate) {
     }
   });
 
-  addPageComponent(owmVue, 'umbrella');
+  addPageComponent(owmVue, 'umbrella', true);
   
 });

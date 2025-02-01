@@ -524,6 +524,6 @@ define(['./scripts.xml', './scripts-add.xml',
   addPageComponent(scriptsViewVue);
   addPageComponent(scriptsViewConfigVue);
   addPageComponent(scriptsEditorVue);
-  addPageComponent(scriptsVue, 'scroll');
+  addPageComponent(scriptsVue, 'scroll', true, true);
 
 });

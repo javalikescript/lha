@@ -290,6 +290,6 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
     }
   });
 
-  addPageComponent(dashboardVue, 'columns');
+  addPageComponent(dashboardVue, 'columns', true);
   
 });

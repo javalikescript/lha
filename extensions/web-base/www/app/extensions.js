@@ -39,7 +39,7 @@ registerPageVue(new Vue({
       }
     }
   }
-}), 'fa-plus-circle');
+}), 'plus-circle', true, true);
 
 function buildExtensionSchema(manifest, enumsById) {
   if (manifest && manifest.schema) {
