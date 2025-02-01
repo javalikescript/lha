@@ -59,14 +59,18 @@ return require('jls.lang.class').create(function(hueBridge)
 
   function hueBridge:getHttpClient()
     if not self.client then
-      self.client = HttpClient:new({
-        url = self.url,
-        secureContext = {
-          alpnProtos = {'h2'}
-        },
-      })
+      self.client = self:createHttpClient()
     end
     return self.client
+  end
+
+  function hueBridge:createHttpClient()
+    return HttpClient:new({
+      url = self.url,
+      secureContext = {
+        alpnProtos = {'h2'}
+      },
+    })
   end
 
   local function formatBody(body)

@@ -171,9 +171,9 @@ local REST_EXTENSIONS = {
           local method = extension[action.method]
           if type(method) ~= 'function' then
             HttpExchange.internalServerError(exchange, 'The action method is not available')
-          elseif extension:isActive() ~= action.active then
+          elseif action.active ~= nil and action.active ~= extension:isActive() then
             HttpExchange.badRequest(exchange, 'The extension active state does not match')
-          elseif (action.arguments and #action.arguments or 0) == #arguments then
+          elseif (action.arguments and #action.arguments or 0) ~= (arguments and #arguments or 0) then
             HttpExchange.badRequest(exchange, 'The action arguments are invalid')
           else
             return method(extension, arguments)

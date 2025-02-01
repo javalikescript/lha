@@ -3,8 +3,12 @@ local extension = ...
 local logger = extension:getLogger()
 local Promise = require('jls.lang.Promise')
 local File = require('jls.io.File')
+local dns = require('jls.net.dns')
+local HttpClient = require('jls.net.http.HttpClient')
+local UdpSocket = require('jls.net.UdpSocket')
 local json = require('jls.util.json')
 local Map = require('jls.util.Map')
+local List = require('jls.util.List')
 
 local HueBridgeV2 = extension:require('HueBridgeV2')
 
@@ -155,3 +159,141 @@ extension:subscribeEvent('shutdown', function()
     hueBridge:close()
   end
 end)
+
+local function discover(name, dnsType)
+  local mdnsAddress, mdnsPort = '224.0.0.251', 5353
+  local id = math.random(0xfff)
+  local messages = {}
+  local onMessage
+  local function onReceived(err, data, addr)
+    if data then
+      logger:finer('received data: (%l) %x %t', #data, data, addr)
+      local _, message = pcall(dns.decodeMessage, data)
+      logger:finer('message: %t', message)
+      if message.id == id then
+        message.addr = addr
+        table.insert(messages, message)
+        if type(onMessage) == 'function' then
+          local status, e = pcall(onMessage, message)
+          if not status then
+            logger:warn('error on message %s', e)
+          end
+        end
+      end
+    elseif err then
+      logger:warn('receive error %s', err)
+    else
+      logger:fine('receive no data')
+    end
+  end
+  local data = dns.encodeMessage({
+    id = id,
+    questions = {{
+      name = name or '_services._dns-sd._udp.local',
+      type = dnsType or dns.TYPES.PTR,
+      class = dns.CLASSES.IN,
+      unicastResponse = true,
+    }}
+  })
+  local senders = {}
+  return {
+    messages = messages,
+    onMessage = function(fn)
+      onMessage = fn
+    end,
+    start = function()
+      local addresses = dns.getInterfaceAddresses()
+      logger:fine('Interface addresses: %t', addresses)
+      for _, address in ipairs(addresses) do
+        local sender = UdpSocket:new()
+        sender:bind(address, 0)
+        logger:fine('sender bound to %s', address)
+        sender:receiveStart(onReceived)
+        table.insert(senders, sender)
+      end
+    end,
+    send = function()
+      for _, sender in ipairs(senders) do
+        sender:send(data, mdnsAddress, mdnsPort):catch(function(reason)
+          logger:warn('Error while sending UDP, %s', reason)
+          sender:close()
+          List.removeAll(senders, sender)
+        end)
+      end
+    end,
+    close = function()
+      local sendersToClose = senders
+      senders = {}
+      for _, sender in ipairs(sendersToClose) do
+        sender:close()
+      end
+    end
+  }
+end
+
+function extension:discoverBridge()
+  logger:info('Looking for Hue Bridge...')
+  return Promise:new(function(resolve, reject)
+    local discovery = discover('_hue._tcp.local')
+    discovery.onMessage(function(message)
+      local ip = message.addr and message.addr.ip
+      logger:fine('on message %s', ip)
+      if ip then
+        resolve('Found '..ip)
+        configuration.url = 'https://'..ip..'/'
+        discovery.close()
+        extension:clearTimer('discovery')
+      end
+    end)
+    discovery.start()
+    discovery.send()
+    extension:setTimer(function()
+      reject('Discovery timeout')
+      discovery.close()
+    end, 5000, 'discovery')
+  end)
+end
+
+function extension:generateKey()
+  if not configuration.url then
+    return Promise.reject('Bridge URL not available')
+  end
+  local client = HttpClient:new({ url = configuration.url, secureContext = { alpnProtos = {'h2'} } })
+  return client:fetch('/api', {
+    method = 'POST',
+    headers = {
+      ['Content-Type'] = 'application/json'
+    },
+    body = '{"devicetype":"lha#default","generateclientkey":true}',
+  }):next(function(response)
+    return response:text()
+  end):next(function(text)
+    logger:fine('generateKey: %s', text)
+    -- [{"error":{"type":101,"address":"","description":"link button not pressed"}}]
+    -- configuration.user
+  end):catch(function(reason)
+    logger:warn('generateKey failed, %s', reason)
+  end):finally(function()
+    client:close()
+  end)
+end
+
+function extension:touchlink()
+  if not hueBridge then
+    return Promise.reject('Bridge not available')
+  end
+  local client = hueBridge:createHttpClient()
+  return client:fetch('/api/config', {
+    method = 'PUT',
+    headers = hueBridge.headers,
+    body = '{touchlink: true}',
+  }):next(function(response)
+    return response.text()
+  end):next(function(text)
+    logger:fine('touchlink: %s', text)
+  end):catch(function(reason)
+    logger:warn('touchlink failed, %s', reason)
+  end):finally(function()
+    client:close()
+  end)
+end

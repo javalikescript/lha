@@ -24,5 +24,23 @@
         "default": true
       }
     }
-  }
+  },
+  "actions": [
+    {
+      "name": "Discover Bridge",
+      "description": "Look for the Bridge URL on the network",
+      "method": "discoverBridge",
+      "active": false
+    }, {
+      "name": "Generate API key",
+      "description": "Generate an API application key, press touchlink first",
+      "method": "generateKey",
+      "active": false
+    }, {
+      "name": "Touchlink",
+      "description": "Pair a device with the Bridge",
+      "method": "touchlink",
+      "active": true
+    }
+  ]
 }

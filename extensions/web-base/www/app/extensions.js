@@ -82,12 +82,12 @@ function onShowExtension(extensionId) {
 function triggerAction(index) {
   return fetch('/engine/extensions/' + this.extensionId + '/action/' + index, {
     method: 'POST',
+    headers: { "Content-Type": 'application/json' },
     body: '[]' // TODO ask arguments
-  }).then(assertIsOk).then(function() {
-    toaster.toast('Action triggered');
+  }).then(assertIsOk).then(getResponseText).then(function(text) {
+    toaster.toast('Action triggered: ' + text);
   });
 }
-
 
 new Vue({
   el: '#extension',

@@ -126,7 +126,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
   end
 
   function extension:isActive()
-    return self.loaded and self.configuration.active
+    return self.loaded and self.configuration.active == true
   end
 
   function extension:setActive(value)
