@@ -1,6 +1,38 @@
 {
   "additionalProperties": false,
   "properties": {
+    "actions": {
+      "title": "The extension actions",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "title": "The name of the action",
+            "type": "string",
+            "required": true
+          },
+          "description": {
+            "title": "The description of the action",
+            "type": "string"
+          },
+          "method": {
+            "title": "The name of the extension method to trigger the action",
+            "type": "string",
+            "required": true
+          },
+          "arguments": {
+            "title": "The list of schema defining the arguments to pass to the method",
+            "type": "array"
+          },
+          "active": {
+            "default": true,
+            "title": "Indicates that the action is available when the extension is enabled",
+            "type": "boolean"
+          }
+        }
+      }
+    },
     "config": {
       "title": "The extension default configuration",
       "type": "object"

@@ -162,6 +162,28 @@ local REST_EXTENSIONS = {
         extension:publishEvent('poll')
       end
     end,
+    action = {
+      ['{index}(extension, index, requestJson)?method=POST'] = function(exchange, extension, index, arguments)
+        local actions = extension:getManifest('actions')
+        index = math.tointeger(index)
+        local action = index and actions and actions[index]
+        if action and action.method then
+          local method = extension[action.method]
+          if type(method) ~= 'function' then
+            HttpExchange.internalServerError(exchange, 'The action method is not available')
+          elseif extension:isActive() ~= action.active then
+            HttpExchange.badRequest(exchange, 'The extension active state does not match')
+          elseif (action.arguments and #action.arguments or 0) == #arguments then
+            HttpExchange.badRequest(exchange, 'The action arguments are invalid')
+          else
+            return method(extension, arguments)
+          end
+        else
+          HttpExchange.notFound(exchange)
+        end
+        return false
+      end
+    },
     ['test(extension)?method=POST'] = function(exchange, extension)
       extension:publishEvent('test')
     end,
@@ -366,7 +388,7 @@ local REST_THINGS = {
       return false
     end
   end,
-  ['{thingId}'] = {
+  ['{thingId}'] = { -- TODO review routing
     [''] = function(exchange)
       local engine = exchange:getAttribute('engine')
       local thingId = exchange:getAttribute('thingId')
