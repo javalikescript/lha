@@ -41,33 +41,57 @@ registerPageVue(new Vue({
   }
 }), 'fa-plus-circle');
 
+function buildExtensionSchema(manifest, enumsById) {
+  if (manifest && manifest.schema) {
+    return populateJsonSchema(manifest.schema, enumsById);
+  }
+  return false;
+}
+
+var EXTENSION_DATA = {
+  extensionId: '',
+  config: {},
+  info: {},
+  actions: [],
+  schema: false
+};
+
 function onShowExtension(extensionId) {
-  if (extensionId) {
-    this.extensionId = extensionId;
+  this.schema = false;
+  this.config = {};
+  this.info = {};
+  this.actions = [];
+  this.extensionId = '';
+  if (!extensionId) {
+    return Promise.reject();
   }
   return Promise.all([
-    fetch('/engine/extensions/' + this.extensionId).then(getJson),
+    fetch('/engine/extensions/' + extensionId).then(getJson),
     app.getEnumsById()
   ]).then(apply(this, function(extension, enumsById) {
-    if (extension && extension.manifest && extension.manifest.schema) {
-      this.schema = populateJsonSchema(extension.manifest.schema, enumsById);
-    } else {
-      this.schema = false;
+    this.extensionId = extensionId;
+    this.schema = buildExtensionSchema(extension.manifest, enumsById);
+    if (extension.manifest && extension.manifest.actions) {
+      this.actions = extension.manifest.actions;
     }
-    this.extension = extension;
-  })).catch(function() {
-    this.schema = false;
-    this.extension = {config: {}, info: {}, manifest: {}};
-  }.bind(this));
+    this.config = extension.config;
+    this.info = extension.info;
+  }));
 }
+
+function triggerAction(index) {
+  return fetch('/engine/extensions/' + this.extensionId + '/action/' + index, {
+    method: 'POST',
+    body: '[]' // TODO ask arguments
+  }).then(assertIsOk).then(function() {
+    toaster.toast('Action triggered');
+  });
+}
+
 
 new Vue({
   el: '#extension',
-  data: {
-    extensionId: '',
-    extension: {config: {}, info: {}, manifest: {}},
-    schema: false
-  },
+  data: Object.assign({}, EXTENSION_DATA),
   methods: {
     onDisable: function() {
       var extensionId = this.extensionId;
@@ -102,11 +126,11 @@ new Vue({
       }
     },
     onSave: function() {
-      if (this.extensionId && this.extension.config) {
+      if (this.extensionId && this.config) {
         fetch('/engine/configuration/extensions/' + this.extensionId, {
           method: 'PUT',
           body: JSON.stringify({
-            value: this.extension.config
+            value: this.config
           })
         }).then(assertIsOk).then(function() {
           app.clearCache();
@@ -114,6 +138,7 @@ new Vue({
         });
       }
     },
+    triggerAction: triggerAction,
     onShow: onShowExtension
   }
 });
@@ -155,22 +180,18 @@ new Vue({
 
 new Vue({
   el: '#addExtension',
-  data: {
-    extensionId: '',
-    extension: {config: {}, info: {}, manifest: {}},
-    schema: false
-  },
+  data: Object.assign({}, EXTENSION_DATA),
   methods: {
     onAdd: function() {
       console.log('onAdd()', this);
       var extensionId = this.extensionId;
-      if (!extensionId || !this.extension.config) {
+      if (!extensionId || !this.config) {
         return Promise.reject();
       }
       return fetch('/engine/configuration/extensions/' + extensionId, {
         method: 'PUT',
         body: JSON.stringify({
-          value: this.extension.config
+          value: this.config
         })
       }).then(assertIsOk).then(function() {
         return fetch('/engine/extensions/' + extensionId + '/enable', {method: 'POST'});
@@ -179,6 +200,7 @@ new Vue({
         toaster.toast('Extension added');
       });
     },
+    triggerAction: triggerAction,
     onShow: onShowExtension
   }
 });

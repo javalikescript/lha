@@ -42,7 +42,10 @@
   <app-menu id="menu" title="Menu" home-page="home">
     <article class="content">
       <ul>
-        <li v-for="page in sortedPages" v-on:click="app.toPage(page.id)" v-if="app.page !== page.id">{{ page.name }}</li>
+        <li v-for="page in sortedPages" v-on:click="app.toPage(page.id)">
+          <i class="fas fa-angle-right" v-if="app.page === page.id"></i>
+          <label>{{ page.name }}</label>
+        </li>
       </ul>
     </article>
   </app-menu>
@@ -84,9 +87,8 @@
       <input v-if="filter" v-model="query" type="text" placeholder="Type to filter">
       <button v-on:click="toggleFilter(event)"><i class="fas fa-search"></i></button>
       <button v-if="app.canConfigure" v-on:click="app.toPage('addThings')"><i class="fa fa-plus"></i></button>
-      <button v-if="app.canConfigure" v-if="edit" v-on:click="onSave" title="Save"><i class="far fa-save"></i></button>
-      <button v-on:click="onShow" title="Refresh"><i class="fas fa-sync"></i></button>
-      <button v-on:click="edit = !edit" title="Edit"><i :class="['fas', edit ? 'fa-eye' : 'fa-edit']"></i></button>
+      <button v-if="edit" v-on:click="onSave" title="Save"><i class="far fa-save"></i></button>
+      <button v-if="app.canConfigure" v-on:click="edit = !edit" title="Edit"><i :class="['fas', edit ? 'fa-eye' : 'fa-edit']"></i></button>
     </template>
     <article class="cards">
       <div class="card" v-for="thing in filteredThings">
@@ -113,6 +115,9 @@
         <button v-on:click="onArchiveAll()"><i class="fas fa-history"></i>&nbsp;Archive All</button>
         <button v-on:click="onRemoveAll()"><i class="fa fa-trash"></i>&nbsp;Disable All</button>
       </section>
+      <section v-else>
+        <button v-if="app.canConfigure" v-on:click="app.toPage('addThings')"><i class="fa fa-plus"></i>&nbsp;Add</button>
+      </section>
     </article>
   </app-page>
   <app-page id="thing" title="Thing">
@@ -123,13 +128,13 @@
       <button v-on:click="onEdit()" title="Edit"><i :class="['fas', edit ? 'fa-eye' : 'fa-edit']"></i></button>
     </template>
     <article class="cards">
-      <div class="card" v-if="!edit">
-        <p>{{ thing.title }}</p>
-        <p>{{ thing.description }}</p>
-      </div>
       <div class="card" v-if="edit">
         <p><span>Title</span> <input v-model="editThing.title" type="text" placeholder="Thing Title"></p>
         <p><span>Description</span> <input v-model="editThing.description" type="text" placeholder="Thing Description"></p>
+      </div>
+      <div class="card" v-else>
+        <p>{{ thing.title }}</p>
+        <p>{{ thing.description }}</p>
       </div>
       <div class="card" v-for="(property, name) in thing.properties">
         <div class="bar">
@@ -156,7 +161,7 @@
   </app-page>
   <app-page id="addThings" title="Add Things">
     <template slot="bar-right">
-      <button v-on:click="onSave().then(function(){ app.replacePage('things'); })" title="Enable Selected Things"><i class="far fa-save"></i></button>
+      <button v-on:click="onSave().then(function(){ app.back(); })" title="Enable Selected Things"><i class="far fa-save"></i></button>
       <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
     </template>
     <article class="cards">
@@ -168,8 +173,8 @@
         <p>{{ thing.description }}</p>
       </div>
       <section>
-        <button v-on:click="onSave().then(function(){ app.replacePage('things'); })"><i class="fa fa-plus"></i>&nbsp;Enable Selected</button>
-        <button v-on:click="onAddAll().then(function(){ app.replacePage('things'); })"><i class="far fa-plus-square"></i>&nbsp;Enable All</button>
+        <button v-on:click="onSave().then(function(){ app.back(); })"><i class="fa fa-plus"></i>&nbsp;Enable Selected</button>
+        <button v-on:click="onAddAll().then(function(){ app.back(); })"><i class="far fa-plus-square"></i>&nbsp;Enable All</button>
         <button v-on:click="app.back()">Cancel</button>
       </section>
     </article>
@@ -181,7 +186,6 @@
     <template slot="bar-right">
       <input v-if="filter" v-model="query" type="text" placeholder="Type to filter">
       <button v-on:click="toggleFilter(event)"><i class="fas fa-search"></i></button>
-      <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
       <button v-if="app.canConfigure" v-on:click="app.toPage('addExtensions')" title="Add"><i class="fa fa-plus"></i></button>
     </template>
     <article class="cards">
@@ -196,25 +200,29 @@
         </div>
         <p>{{ extension.description }}</p>
       </div>
+      <section>
+        <button v-if="app.canConfigure" v-on:click="app.toPage('addExtensions')"><i class="fa fa-plus"></i>&nbsp;Add</button>
+      </section>
     </article>
   </app-page>
   <app-page id="extension" title="Extension">
     <template slot="bar-right">
-      <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
-      <!-- fa fa-minus -->
-      <button v-on:click="onDisable().then(function(){ app.back(); })" title="Disable"><i class="fa fa-trash"></i></button>
-      <button v-if="schema" v-on:click="onSave()" title="Save"><i class="fas fa-save"></i></button>
-      <button v-on:click="onReload" title="Reload"><i class="fas fa-redo"></i></button>
-      <button v-on:click="onRefreshThings" title="Refresh Things"><i class="fas fa-recycle"></i></button>
       <button v-on:click="app.toPage('extension-info', extensionId)"><i class="fas fa-info"></i></button>
     </template>
     <article class="content">
       <section>
-        <p>{{ extension.info.name }}</p>
-        <p>{{ extension.info.description }}</p>
+        <p>{{ info.name }}</p>
+        <p>{{ info.description }}</p>
+        <button v-on:click="onReload"><i class="fas fa-redo"></i>&nbsp;Reload</button>
+        <button v-on:click="onRefreshThings"><i class="fas fa-recycle"></i>&nbsp;Refresh Things</button>
+        <button v-on:click="onDisable().then(function(){ app.back(); })"><i class="fa fa-trash"></i>&nbsp;Disable</button>
+      </section>
+      <section v-if="actions.length > 0">
+        <p>Action</p>
+        <button v-for="(action, index) in actions" v-if="action.active === true && !action.arguments" :title="action.description" v-on:click="triggerAction(index + 1)">{{ action.name }}</button>
       </section>
       <section v-if="schema">
-        <json :name="'Configuration'" :obj="extension.config" :schema="schema"></json>
+        <json :name="'Configuration'" :obj="config" :schema="schema"></json>
         <button v-on:click="onSave()"><i class="far fa-save"></i>&nbsp;Save</button>
       </section>
     </article>
@@ -246,6 +254,9 @@
         </div>
         <p>{{ extension.description }}</p>
       </div>
+      <section>
+        <button v-on:click="app.back()">Cancel</button>
+      </section>
     </article>
   </app-page>
   <app-page id="addExtension" title="Add Extension">
@@ -253,13 +264,17 @@
       <button v-on:click="app.toPage('extension-info', extensionId)"><i class="fas fa-info"></i></button>
     </template>
     <article class="content">
-      <section>
-        <p>{{ extension.info.name }}</p>
-        <p>{{ extension.info.description }}</p>
-        <json v-if="schema" :name="'Configuration'" :obj="extension.config" :schema="schema"></json>
+      <section v-if="actions.length > 0">
+        <p>Action</p>
+        <button v-for="(action, index) in actions" v-if="action.active === false && !action.arguments" :title="action.description" v-on:click="triggerAction(index + 1)">{{ action.name }}</button>
       </section>
       <section>
-        <button v-on:click="onAdd().then(function(){ app.replacePage('extensions'); })"><i class="fa fa-plus"></i>&nbsp;Add Extension</button>
+        <p>{{ info.name }}</p>
+        <p>{{ info.description }}</p>
+        <json v-if="schema" :name="'Configuration'" :obj="config" :schema="schema"></json>
+      </section>
+      <section>
+        <button v-on:click="onAdd().then(function(){ app.back(); })"><i class="fa fa-plus"></i>&nbsp;Add Extension</button>
         <button v-on:click="app.back()">Cancel</button>
       </section>
     </article>
@@ -288,18 +303,21 @@
     <template slot="bar-right">
       <button v-on:click="stopServer()" title="Stop the Server"><i class="fas fa-power-off"></i></button>
       <button v-on:click="app.toPage('engineInfo')" title="Server Information"><i class="fas fa-info"></i></button>
-      <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
     </template>
-    <page-article>
-      <json :name="'Configuration'" :obj="config" :schema="schema"></json>
-      <button v-on:click="onSave()"><i class="far fa-save"></i>&nbsp;Save</button>
-      <p>Backup and Restore</p>
-      <button v-on:click="backup" :disabled="working"><i class="fas fa-box"></i>&nbsp;Create Backup</button>
-      <a v-if="filename" :href="'/engine/tmp/' + filename" download>{{filename}}</a>
-      <button v-on:click="selectFile" :disabled="working"><i class="fas fa-box-open"></i>&nbsp;Deploy Backup</button>
-      <input v-on:change="uploadThenDeploy" type="file" accept=".zip" ref="uploadInput" style="display: none;" />
-      <button v-on:click="stopServer()" :disabled="working"><i class="fas fa-power-off"></i>&nbsp;Stop the Server</button>
-    </page-article>
+    <article class="content">
+      <section>
+        <p>Backup and Restore</p>
+        <button v-on:click="backup" :disabled="working"><i class="fas fa-box"></i>&nbsp;Create Backup</button>
+        <a v-if="filename" :href="'/engine/tmp/' + filename" download>{{filename}}</a>
+        <button v-on:click="selectFile" :disabled="working"><i class="fas fa-box-open"></i>&nbsp;Deploy Backup</button>
+        <input v-on:change="uploadThenDeploy" type="file" accept=".zip" ref="uploadInput" style="display: none;" />
+        <button v-on:click="stopServer()" :disabled="working"><i class="fas fa-power-off"></i>&nbsp;Stop the Server</button>
+      </section>
+      <section>
+        <json :name="'Configuration'" :obj="config" :schema="schema"></json>
+        <button v-on:click="onSave()"><i class="far fa-save"></i>&nbsp;Save</button>
+      </section>
+    </article>
   </app-page>
   <!--
     Main
@@ -366,6 +384,7 @@
     </label>
     <ul v-else-if="isProperties" class="json-properties" v-show="open">
       <li is="json-item" v-for="n in propertyNames" :key="n" :name="n" :pobj="obj" :obj="obj[n]" :schema="unrefSchema(rootSchema, schema.properties[n])" :rootSchema="rootSchema"></li>
+      <!-- TODO hasAdditionalProperties -->
     </ul>
     <ul v-else-if="isList" class="json-items" v-show="open">
       <li v-if="hasList" is="json-item" v-for="(so, i) in obj" :key="i" :name="String(i + 1)" :pobj="obj" :obj="so" :schema="unrefSchema(rootSchema, schema.items)" :rootSchema="rootSchema"></li>
