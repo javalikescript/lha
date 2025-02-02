@@ -37,6 +37,16 @@
       "method": "generateKey",
       "active": false
     }, {
+      "name": "Search New Lights",
+      "description": "Starts searching for new lights, the bridge will open the network for 40s",
+      "method": "searchNewLights",
+      "active": true
+    }, {
+      "name": "Search New Sensors",
+      "description": "Starts a search for new sensors",
+      "method": "searchNewSensors",
+      "active": true
+    }, {
       "name": "Touchlink",
       "description": "Adds the closest lamp (within range) to the ZigBee network",
       "method": "touchlink",

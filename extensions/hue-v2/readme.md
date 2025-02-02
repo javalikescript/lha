@@ -11,4 +11,6 @@ The link button on the bridge must be pressed and this action triggered within 3
 
 ## Usage
 
+Use the `Search New Lights` or `Search New Sensors` action to find new things.
+
 The JSON mapping defines the how the Hue devices are mapped to things.

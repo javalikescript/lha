@@ -278,10 +278,19 @@ function extension:generateKey()
 end
 
 function extension:touchlink()
-  if hueBridge then
-    return hueBridge:putConfig({touchlink = true}):next(function(response)
-      return 'OK'
-    end)
-  end
-  return Promise.reject('Bridge not available')
+  return hueBridge:putConfig({touchlink = true}):next(function(response)
+    return 'OK'
+  end)
+end
+
+function extension:searchNewLights()
+  return hueBridge:httpRequestV1('POST', '/lights'):next(function(response)
+    return 'OK'
+  end)
+end
+
+function extension:searchNewSensors()
+  return hueBridge:httpRequestV1('POST', '/sensors'):next(function(response)
+    return 'OK'
+  end)
 end
