@@ -219,7 +219,7 @@
       </section>
       <section v-if="actions.length > 0">
         <p>Action</p>
-        <button v-for="(action, index) in actions" v-if="action.active === true && !action.arguments" :title="action.description" v-on:click="triggerAction(index + 1)">{{ action.name }}</button>
+        <button v-for="(action, index) in actions" v-if="action.active === true && !action.arguments" :title="action.description" v-on:click="triggerAction(index)">{{ action.name }}</button>
       </section>
       <section v-if="schema">
         <json :name="'Configuration'" :obj="config" :schema="schema"></json>
@@ -266,7 +266,7 @@
     <article class="content">
       <section v-if="actions.length > 0">
         <p>Action</p>
-        <button v-for="(action, index) in actions" v-if="action.active === false && !action.arguments" :title="action.description" v-on:click="triggerAction(index + 1)">{{ action.name }}</button>
+        <button v-for="(action, index) in actions" v-if="action.active === false && !action.arguments" :title="action.description" v-on:click="triggerAction(index)">{{ action.name }}</button>
       </section>
       <section>
         <p>{{ info.name }}</p>

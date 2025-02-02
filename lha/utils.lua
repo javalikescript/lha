@@ -2,6 +2,7 @@ local logger = require('jls.lang.logger'):get(...)
 local event = require('jls.lang.event')
 local system = require('jls.lang.system')
 local Promise = require('jls.lang.Promise')
+local Exception = require('jls.lang.Exception')
 local File = require('jls.io.File')
 local Date = require('jls.util.Date')
 local json = require('jls.util.json')
@@ -75,12 +76,41 @@ function utils.rejectIfNotOk(response)
   end)
 end
 
+local function toResponse(success, message)
+  return {
+    success = success == true,
+    message = tostring(message)
+  }
+end
+
+function utils.toResponse(v, ...)
+  if type(v) == 'function' then
+    local status, message = Exception.pcall(v, ...)
+    if not status then
+      return toResponse(status, message)
+    end
+    v = message
+  end
+  if type(v) == 'boolean' then
+    return toResponse(v, (...))
+  elseif v == nil then
+    return toResponse(false, (...))
+  elseif Promise.isPromise(v) then
+    return v:next(function(message)
+      return toResponse(true, message)
+    end, function(message)
+      return toResponse(false, message)
+    end);
+  end
+  return toResponse(true, v)
+end
+
 function utils.timeout(promise, delayMs, reason)
   return Promise:new(function(resolve, reject)
     local timer = event:setTimeout(function()
       reject(reason or 'timeout')
     end, delayMs or 30000)
-    promise:finally(function(...)
+    promise:finally(function()
       event:clearTimeout(timer)
     end)
     promise:next(resolve, reject)

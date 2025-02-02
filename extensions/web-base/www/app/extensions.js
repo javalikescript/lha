@@ -79,14 +79,32 @@ function onShowExtension(extensionId) {
   }));
 }
 
+function refreshConfig() {
+  return fetch('/engine/extensions/' + this.extensionId + '/config').then(getJson).then(function(config) {
+    this.config = config;
+  }.bind(this));
+}
+
 function triggerAction(index) {
-  return fetch('/engine/extensions/' + this.extensionId + '/action/' + index, {
+  console.info('triggerAction(' + index + ')');
+  var action = this.actions[index];
+  if (!action) {
+    return Promise.reject('No action #' + index);
+  }
+  return fetch('/engine/extensions/' + this.extensionId + '/action/' + (index + 1), {
     method: 'POST',
     headers: { "Content-Type": 'application/json' },
     body: '[]' // TODO ask arguments
-  }).then(assertIsOk).then(getResponseText).then(function(text) {
-    toaster.toast('Action triggered: ' + text);
-  });
+  }).then(assertIsOk).then(getJson).then(function(response) {
+    if (response.success) {
+      toaster.toast('Action triggered, ' + response.message);
+      if (action.active === false) {
+        refreshConfig.call(this);
+      }
+    } else {
+      toaster.toast('Action failed, ' + response.message);
+    }
+  }.bind(this));
 }
 
 new Vue({
