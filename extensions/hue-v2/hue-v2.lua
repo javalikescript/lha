@@ -258,42 +258,30 @@ function extension:generateKey()
   if not configuration.url then
     return Promise.reject('Bridge URL not available')
   end
-  local client = HttpClient:new({ url = configuration.url, secureContext = { alpnProtos = {'h2'} } })
+  local client = HueBridgeV2.createHttpClient(configuration.url)
   return client:fetch('/api', {
     method = 'POST',
     headers = {
       ['Content-Type'] = 'application/json'
     },
-    body = '{"devicetype":"lha#default","generateclientkey":true}',
-  }):next(function(response)
-    return response:text()
-  end):next(function(text)
-    logger:fine('generateKey: %s', text)
-    -- [{"error":{"type":101,"address":"","description":"link button not pressed"}}]
-    -- configuration.user
-  end):catch(function(reason)
-    logger:warn('generateKey failed, %s', reason)
+    body = json.encode({
+      devicetype = 'lha#default', -- existing key will be replaced
+      generateclientkey = true
+    })
+  }):next(HueBridgeV2.processResponseV1):next(function(response)
+    configuration.user = response.username
+    --configuration.clientkey = response.clientkey
+    return 'OK'
   end):finally(function()
     client:close()
   end)
 end
 
 function extension:touchlink()
-  if not hueBridge then
-    return Promise.reject('Bridge not available')
+  if hueBridge then
+    return hueBridge:putConfig({touchlink = true}):next(function(response)
+      return 'OK'
+    end)
   end
-  local client = hueBridge:createHttpClient()
-  return client:fetch('/api/config', {
-    method = 'PUT',
-    headers = hueBridge.headers,
-    body = '{touchlink: true}',
-  }):next(function(response)
-    return response.text()
-  end):next(function(text)
-    logger:fine('touchlink: %s', text)
-  end):catch(function(reason)
-    logger:warn('touchlink failed, %s', reason)
-  end):finally(function()
-    client:close()
-  end)
+  return Promise.reject('Bridge not available')
 end

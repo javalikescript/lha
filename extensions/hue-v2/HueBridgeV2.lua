@@ -14,6 +14,101 @@ local strings = require('jls.util.strings')
 local Thing = require('lha.Thing')
 local utils = require('lha.utils')
 
+local function formatBody(body)
+  if type(body) == 'table' then
+    return json.encode(body)
+  elseif type(body) == 'string' then
+    return body
+  end
+end
+
+local function processResponse(response)
+  local status, reason = response:getStatusCode()
+  logger:finer('response status %d "%s"', status, reason)
+  local contentType = response:getHeader('content-type')
+  if not strings.equalsIgnoreCase(contentType, 'application/json') then
+    return response:text():next(function(text)
+      logger:fine('response body "%s"', text)
+      return Promise.reject('Invalid or missing content type')
+    end)
+  end
+  return response:json():next(function(content)
+    if not (type(content) == 'table' and type(content.data) == 'table' and type(content.errors) == 'table') then
+      logger:fine('response content %T', content)
+      return Promise.reject('Invalid or missing content')
+    end
+    if status == 200 then
+      return content.data
+    end
+    local descriptions = {}
+    for _, item in ipairs(content.errors) do
+      if type(item.description) == 'string' then
+        table.insert(descriptions, item.description)
+      end
+    end
+    local description = table.concat(descriptions, ', ')
+    if status == 207 then
+      if #description > 0 then
+        logger:info('Errors in response: %s', description)
+      end
+      return content.data
+    end
+    return Promise.reject(string.format('Bad status (%d) %s', status, description))
+  end)
+end
+
+local function processResponseV1(response)
+  local status, reason = response:getStatusCode()
+  logger:finer('response status %d "%s"', status, reason)
+  local contentType = response:getHeader('content-type')
+  if not strings.equalsIgnoreCase(contentType, 'application/json') then
+    return response:text():next(function(text)
+      logger:fine('response body "%s"', text)
+      return Promise.reject('Invalid or missing content type')
+    end)
+  end
+  return response:json():next(function(content)
+    logger:finer('response content %T', content)
+    if type(content) ~= 'table' then
+      return Promise.reject('Invalid or missing content')
+    end
+    if status ~= 200 then
+      return Promise.reject(string.format('Bad status (%d) %s', status, reason))
+    end
+    local descriptions = {}
+    for _, item in ipairs(content) do
+      if type(item.error) == 'table' and type(item.error.description) == 'string' then
+        table.insert(descriptions, item.error.description)
+      end
+    end
+    if #content == #descriptions then
+      return Promise.reject(table.concat(descriptions, ', '))
+    end
+    if #content == 1 and content[1].success then
+      return content[1].success
+    end
+    return content
+  end)
+end
+
+local function createHttpClient(url)
+  return HttpClient:new({
+    url = url,
+    secureContext = {
+      alpnProtos = {'h2'}
+    },
+  })
+end
+
+local function httpRequest(client, method, path, headers, body)
+  logger:fine('httpRequest(%s, %s, %T, %T)', method, path, headers, body)
+  return utils.timeout(client:fetch(path or '/', {
+    method = method or 'GET',
+    headers = headers,
+    body = formatBody(body),
+  }))
+end
+
 return require('jls.lang.class').create(function(hueBridge)
 
   function hueBridge:initialize(url, key, mapping)
@@ -59,70 +154,32 @@ return require('jls.lang.class').create(function(hueBridge)
 
   function hueBridge:getHttpClient()
     if not self.client then
-      self.client = self:createHttpClient()
+      self.client = createHttpClient(self.url)
     end
     return self.client
   end
 
-  function hueBridge:createHttpClient()
-    return HttpClient:new({
-      url = self.url,
-      secureContext = {
-        alpnProtos = {'h2'}
-      },
-    })
-  end
-
-  local function formatBody(body)
-    if type(body) == 'table' then
-      return json.encode(body)
-    elseif type(body) == 'string' then
-      return body
-    end
-  end
-
-  local function formatErrors(errors)
-    local descriptions = {}
-    for _, item in errors do
-      table.insert(descriptions, item.description)
-    end
-    return table.concat(descriptions, ', ')
-  end
-
   function hueBridge:httpRequest(method, path, body)
-    local client = self:getHttpClient()
-    logger:fine('httpRequest(%s, %s)', method, path)
-    return utils.timeout(client:fetch(path or '/', {
-      method = method or 'GET',
-      headers = self.headers,
-      body = formatBody(body),
-    })):next(function(response)
-      local status, reason = response:getStatusCode()
-      logger:finer('response status %d "%s"', status, reason)
-      local contentType = response:getHeader('content-type')
-      if not strings.equalsIgnoreCase(contentType, 'application/json') then
-        return response:text():next(function(text)
-          logger:fine('response body "%s"', text)
-          return Promise.reject('Invalid or missing content type')
-        end)
-      end
-      return response:json():next(function(content)
-        if not (type(content) == 'table' and type(content.data) == 'table' and type(content.errors) == 'table') then
-          return Promise.reject('Invalid or missing content')
-        end
-        if status == 200 then
-          return content.data
-        end
-        local description = formatErrors(content.errors)
-        if status == 207 then
-          if #description > 0 then
-            logger:info('%s on %s has errors: %s', method, path, description)
-          end
-          return content.data
-        end
-        return Promise.reject(string.format('Bad status (%d) %s', status, description))
-      end)
-    end)
+    return httpRequest(self:getHttpClient(), method, path, self.headers, body):next(processResponse)
+  end
+
+  function hueBridge:httpRequestV1(method, path, body)
+    local headers = Map.assign({
+      ['Content-Type'] = 'application/json'
+    })
+    return httpRequest(self:getHttpClient(), method, '/api/'..self.key..path, headers, body):next(processResponseV1)
+  end
+
+  function hueBridge:getConfig()
+    return self:httpRequestV1('GET', '/config')
+  end
+
+  function hueBridge:putConfig(config)
+    return self:httpRequestV1('PUT', '/config', config)
+  end
+
+  function hueBridge:deleteUser(id)
+    return self:httpRequestV1('DELETE', '/config/whitelist/'..tostring(id))
   end
 
   function hueBridge:getResourceMapById(name)
@@ -391,5 +448,11 @@ return require('jls.lang.class').create(function(hueBridge)
     end
     return Promise.reject(string.format('cannot set value "%s" for resource id "%s"', name, id))
   end
+
+end, function(HueBridge)
+
+  HueBridge.processResponse = processResponse
+  HueBridge.processResponseV1 = processResponseV1
+  HueBridge.createHttpClient = createHttpClient
 
 end)

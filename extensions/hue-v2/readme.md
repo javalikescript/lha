@@ -4,10 +4,11 @@ This extension allows to connect to the Hue bridge.
 
 ## Setup
 
-You will need to acquire an application key.
+Use the `Discover Bridge` action to find the Hue Bridge URL or retrieve the local IP from your account on [philips-hue.com](https://www.philips-hue.com/).
+
+After discovering the Bridge URL, you use the `Generate API key` action to create a new user.
+The link button on the bridge must be pressed and this action triggered within 30 seconds.
 
 ## Usage
-
-You need to add your device in the Hue bridge prior adding it through this extension.
 
 The JSON mapping defines the how the Hue devices are mapped to things.

@@ -38,7 +38,7 @@
       "active": false
     }, {
       "name": "Touchlink",
-      "description": "Pair a device with the Bridge",
+      "description": "Adds the closest lamp (within range) to the ZigBee network",
       "method": "touchlink",
       "active": true
     }
