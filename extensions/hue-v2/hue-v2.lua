@@ -4,7 +4,6 @@ local logger = extension:getLogger()
 local Promise = require('jls.lang.Promise')
 local File = require('jls.io.File')
 local dns = require('jls.net.dns')
-local HttpClient = require('jls.net.http.HttpClient')
 local UdpSocket = require('jls.net.UdpSocket')
 local json = require('jls.util.json')
 local Map = require('jls.util.Map')
@@ -283,14 +282,43 @@ function extension:touchlink()
   end)
 end
 
-function extension:searchNewLights()
-  return hueBridge:httpRequestV1('POST', '/lights'):next(function(response)
+local function getLastScan(path, callback)
+  logger:fine('Looking for last scan...')
+  hueBridge:httpRequestV1('GET', path):next(function(response)
+    if response.lastscan == 'active' then
+      callback(nil, 'Scan in progress...')
+      extension:setTimer(function()
+        getLastScan(path, callback)
+      end, 5000, 'scan')
+    else
+      logger:fine('Last scan: %T', response)
+      local count = Map.size(response) - 1
+      if count > 0 then
+        callback(nil, string.format('Found %s things (%s)', count, response.lastscan))
+      else
+        callback(nil, string.format('Nothing found (%s)', response.lastscan))
+      end
+    end
+  end):catch(function(reason)
+    callback('Cannot get last scan due to '..tostring(reason))
+  end)
+end
+
+function extension:searchNewDevices(exchange, path)
+  local session = exchange:getSession()
+  local sessionId = session and session:getId()
+  return hueBridge:httpRequestV1('POST', path):next(function(response)
+    getLastScan(path..'/new', function(err, message)
+      extension:notify(err or message, sessionId)
+    end)
     return 'OK'
   end)
 end
 
-function extension:searchNewSensors()
-  return hueBridge:httpRequestV1('POST', '/sensors'):next(function(response)
-    return 'OK'
-  end)
+function extension:searchNewLights(exchange)
+  return self:searchNewDevices(exchange, '/lights')
+end
+
+function extension:searchNewSensors(exchange)
+  return self:searchNewDevices(exchange, '/sensors')
 end

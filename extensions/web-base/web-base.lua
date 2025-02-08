@@ -81,6 +81,16 @@ local function webSocketBroadcast(data)
   end
 end
 
+local function webSocketSend(sessionId, data)
+  logger:fine('WebSocket send')
+  local message = json.encode(data)
+  for _, websocket in ipairs(websockets) do
+    if not sessionId or sessionId == websocket.sessionId then
+      websocket:sendTextMessage(message)
+    end
+  end
+end
+
 local batchDataChange = true
 local dataChangeEvent = nil
 
@@ -231,6 +241,10 @@ extension:subscribeEvent('startup', function()
       logger:fine('WebSocket openned %s', webSocket)
       table.insert(websockets, webSocket)
       webSocket.onClose = onWebSocketClose
+      local session = exchange:getSession()
+      if session then
+        webSocket.sessionId = session:getId()
+      end
     end
   }))
   extension:addContext('/logs/', HttpHandler:new(function(self, exchange)
@@ -245,4 +259,14 @@ end)
 extension:subscribeEvent('shutdown', function()
   webSocketBroadcast({event = 'shutdown'})
   cleanup()
+end)
+
+extension:subscribeEvent('notification', function(message, sessionId)
+  logger:fine('notification: %s', message)
+  if type(message) == 'string' then
+    webSocketSend(sessionId, {
+      event = 'notification',
+      message = message
+    })
+  end
 end)

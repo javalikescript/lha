@@ -221,6 +221,9 @@ var app = new Vue({
           this.callPage(this.page, 'onLogs', message.logs);
         }
         break;
+      case 'notification':
+        toaster.toast(message.message);
+        break;
       case 'addon-change':
         if (this.reloadTimeoutId) {
           clearTimeout(this.reloadTimeoutId);

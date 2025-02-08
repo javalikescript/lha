@@ -464,6 +464,11 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     return thing
   end
 
+  --- Notifies a message to the user.
+  function extension:notify(message, sessionId)
+    self:getEngine():publishEvent('notification', message, sessionId)
+  end
+
   function extension:refresh()
     local lastModified = self:getLastModified()
     if lastModified > self.lastModified then

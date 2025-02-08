@@ -75,17 +75,19 @@ local function processResponseV1(response)
     if status ~= 200 then
       return Promise.reject(string.format('Bad status (%d) %s', status, reason))
     end
-    local descriptions = {}
-    for _, item in ipairs(content) do
-      if type(item.error) == 'table' and type(item.error.description) == 'string' then
-        table.insert(descriptions, item.error.description)
+    if #content > 0 and type(content[1]) == 'table' and content[1].success then
+      local descriptions = {}
+      for _, item in ipairs(content) do
+        if type(item.error) == 'table' and type(item.error.description) == 'string' then
+          table.insert(descriptions, item.error.description)
+        end
       end
-    end
-    if #content == #descriptions then
-      return Promise.reject(table.concat(descriptions, ', '))
-    end
-    if #content == 1 and content[1].success then
-      return content[1].success
+      if #content == #descriptions then
+        return Promise.reject(table.concat(descriptions, ', '))
+      end
+      if #content == 1 then
+        return content[1].success
+      end
     end
     return content
   end)

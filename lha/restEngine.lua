@@ -176,7 +176,7 @@ local REST_EXTENSIONS = {
           elseif (action.arguments and #action.arguments or 0) ~= (arguments and #arguments or 0) then
             HttpExchange.badRequest(exchange, 'The action arguments are invalid')
           else
-            return utils.toResponse(method, extension, arguments)
+            return utils.toResponse(method, extension, exchange, table.unpack(arguments))
           end
         else
           HttpExchange.notFound(exchange)
