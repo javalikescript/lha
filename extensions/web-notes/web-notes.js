@@ -1,6 +1,6 @@
 define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTemplate, noteTemplate, drawTemplate) {
 
-  var notesPath = '/user-notes/';
+  var NOTES_PATH = '/user-notes/';
 
   var notesVue = new Vue({
     template: notesTemplate,
@@ -19,7 +19,7 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
           this.notes.push({name: 'me', type: 'dir'});
         }
         var self = this;
-        return fetch(notesPath + path, {
+        return fetch(NOTES_PATH + path, {
           headers: {
             "Accept": 'application/json'
           }
@@ -62,50 +62,71 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
     }
   });
 
+  var SHARED_DATA = {
+    path: '',
+    name: '',
+    extension: '',
+    newName: false
+  };
+
+  function onShow(path) {
+    this.path = path;
+    this.name = basename(path);
+    this.extension = extname(path);
+    this.newName = false;
+  }
+
+  function onDelete() {
+    return fetch(NOTES_PATH + this.path, {
+      method: 'DELETE' 
+    }).then(assertIsOk).then(function() {
+      toaster.toast('Note deleted');
+    });
+  }
+
+  function onRename() {
+    fetch(NOTES_PATH + this.path, {
+      method: 'DELETE' 
+    }).then(function() {
+      this.name = this.newName;
+      if (this.extension) {
+        this.name += '.' + this.extension;
+      }
+      var dir = basename(this.path, true);
+      this.path = dir ? dir + '/' + this.name : this.name;
+      return this.onSave();
+    }.bind(this)).then(function() {
+      this.newName = false;
+      app.replacePage(app.page, this.path);
+    }.bind(this));
+  }
+
+  function onSave(content) {
+    return fetch(NOTES_PATH + this.path, {
+      method: 'PUT',
+      body: content
+    }).then(assertIsOk).then(function() {
+      toaster.toast('Note saved');
+    });
+  }
+
   var noteVue = new Vue({
     template: noteTemplate,
-    data: {
-      path: '',
-      name: '',
-      newName: false,
+    data: Object.assign({
       text: ''
-    },
+    }, SHARED_DATA),
     methods: {
       onShow: function(path) {
-        this.path = path;
-        this.name = basename(path);
-        this.newName = false;
+        onShow.call(this, path);
         this.text = '';
-        var self = this;
-        return fetch(notesPath + this.path).then(rejectIfNotOk).then(getResponseText).then(function(text) {
-          self.text = text;
-        });
+        return fetch(NOTES_PATH + this.path).then(rejectIfNotOk).then(getResponseText).then(function(text) {
+          this.text = text;
+        }.bind(this));
       },
-      onRename: function () {
-        var self = this;
-        this.onDelete().then(function() {
-          self.name = self.newName + '.txt';
-          var dir = basename(self.path, true);
-          self.path = dir ? dir + '/' + self.name : self.name;
-          return self.onSave();
-        }).then(function() {
-          self.newName = false;
-        });
-      },
-      onDelete: function () {
-        return fetch(notesPath + this.path, {
-          method: 'DELETE' 
-        }).then(assertIsOk).then(function() {
-          toaster.toast('Note deleted');
-        });
-      },
+      onRename: onRename,
+      onDelete: onDelete,
       onSave: function () {
-        return fetch(notesPath + this.path, {
-          method: 'PUT',
-          body: this.text
-        }).then(assertIsOk).then(function() {
-          toaster.toast('Note saved');
-        });
+        onSave.call(this, this.text);
       }
     }
   });
@@ -163,41 +184,86 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
       }
     }
   }
-  function resizeCanvas() {
+  function getCanvasSize() {
     var draw = document.getElementById('draw');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight - draw.children[0].offsetHeight;
+    if (canvas && draw) {
+      return {
+        width: window.innerWidth,
+        height: window.innerHeight - draw.children[0].offsetHeight
+      };
+    }
+  }
+  function loadImage(src) {
+    return new Promise(function(resolve, reject) {
+      var img = new Image();
+      img.onload = function () {
+        resolve(img);
+      };
+      img.onerror = reject;
+      img.src = src;
+    });
+  }
+  function drawImage(src) {
+    var size = getCanvasSize();
+    return loadImage(src).then(function(img) {
+      context.drawImage(img, 0, 0, size.width, size.height);
+    });
+  }
+  function resizeCanvas() {
+    var size = getCanvasSize();
+    if (canvas && size) {
+      drawImage(canvas.toDataURL());
+      canvas.width = size.width;
+      canvas.height = size.height;
+    }
   }
 
   var drawVue = new Vue({
     template: drawTemplate,
+    data: Object.assign({}, SHARED_DATA),
     methods: {
-      onShow: function() {
+      onShow: function(path) {
+        onShow.call(this, path);
         canvas = document.getElementById('draw-canvas');
-        if (!canvas) {
-          return;
-        }
-        context = canvas.getContext && canvas.getContext('2d');
-        if (context) {
-          canvas.addEventListener('mousedown', onMouseDown, false);
-          canvas.addEventListener('mousemove', onMouseMove, false);
-          window.addEventListener('mouseup', onMouseUp, false);
+        context = canvas && canvas.getContext && canvas.getContext('2d');
+        var size = getCanvasSize();
+        if (canvas && context && size) {
           canvas.addEventListener('touchstart', onTouchStart, false);
           canvas.addEventListener('touchmove', onTouchMove, false);
+          canvas.addEventListener('mousemove', onMouseMove, false);
+          canvas.addEventListener('mousedown', onMouseDown, false);
+          window.addEventListener('mouseup', onMouseUp, false);
           window.addEventListener('resize', resizeCanvas, false);
-          resizeCanvas();
+          canvas.width = size.width;
+          canvas.height = size.height;
+          drawImage(NOTES_PATH + this.path);
         }
       },
       onHide: function() {
-        canvas.removeEventListener('mousedown', onMouseDown);
-        canvas.removeEventListener('mousemove', onMouseMove);
-        window.removeEventListener('mouseup', onMouseUp);
-        canvas.removeEventListener('touchstart', onTouchStart);
-        canvas.removeEventListener('touchmove', onTouchMove);
-        window.removeEventListener('resize', resizeCanvas);
+        if (canvas) {
+          canvas.removeEventListener('touchstart', onTouchStart);
+          canvas.removeEventListener('touchmove', onTouchMove);
+          canvas.removeEventListener('mousemove', onMouseMove);
+          canvas.removeEventListener('mousedown', onMouseDown);
+          window.removeEventListener('mouseup', onMouseUp);
+          window.removeEventListener('resize', resizeCanvas);
+        }
       },
       clear: function() {
         context.clearRect(0, 0, canvas.width, canvas.height);
+      },
+      onRename: onRename,
+      onDelete: onDelete,
+      onSave: function () {
+        var img = canvas.toDataURL('image/png');
+        var mark = 'base64,'
+        var index = img.indexOf(mark);
+        if (index > 0) {
+          var content = img.substring(index + mark.length);
+          content = window.atob(content);
+          content = Uint8Array.from(content, (m) => m.codePointAt(0));
+          onSave.call(this, content);
+        }
       }
     }
   });

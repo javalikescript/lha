@@ -8,8 +8,6 @@
     </div>
   </template>
   <template slot="bar-right">
-    <button v-on:click="toggleFullScreen()" title="Refresh"><i class="fas fa-expand-alt"></i></button>
-    <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
     <button v-on:click="onDelete().then(function(){ app.back(); })" title="Delete"><i class="fa fa-trash"></i></button>
     <button v-on:click="onSave()" title="Save"><i class="far fa-save"></i></button>
     <button v-on:click="app.back()" title="Close"><i class="fa fa-window-close"></i></button>

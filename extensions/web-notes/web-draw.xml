@@ -1,7 +1,16 @@
 <app-page id="draw" title="Draw">
+  <template slot="bar-middle">
+    <h1 v-if="newName === false" v-on:click="newName = extname(name, true)">{{ name }}</h1>
+    <div v-else>
+      <input v-model="newName" type="text" placeholder="Note name">
+      <button v-on:click="onRename()" title="Apply"><i class="fas fa-check"></i></button>
+      <button v-on:click="newName = false" title="Cancel"><i class="fa fa-window-close"></i></button>
+    </div>
+  </template>
   <template slot="bar-right">
-    <button v-on:click="toggleFullScreen()" title="Refresh"><i class="fas fa-expand-alt"></i></button>
-    <button v-on:click="clear()" title="Delete"><i class="fa fa-trash"></i></button>
+    <button v-on:click="clear()" title="Clear"><i class="fa fa-broom"></i></button>
+    <button v-on:click="onDelete().then(function(){ app.back(); })" title="Delete"><i class="fa fa-trash"></i></button>
+    <button v-on:click="onSave()" title="Save"><i class="far fa-save"></i></button>
     <button v-on:click="app.back()" title="Close"><i class="fa fa-window-close"></i></button>
   </template>
   <article class="content">
