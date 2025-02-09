@@ -36,9 +36,6 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
                 note.type = 'draw';
               } else if (endsWith(note.name, '.lnk')) {
                 note.type = 'link';
-                fetch(path + note.name).then(getResponseText).then(function(content) {
-                  note.url = content;
-                });
               }
               return note;
             });
@@ -55,8 +52,10 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
           app.toPage('note', path);
         } else if (note.type === 'draw') {
           app.toPage('draw', path);
-        } else if ((note.type === 'link') && note.url) {
-          open(note.url, '_blank');
+        } else if (note.type === 'link') {
+          fetch(NOTES_PATH + path).then(getResponseText).then(function(content) {
+            open(content, '_blank');
+          });
         }
       }
     }
