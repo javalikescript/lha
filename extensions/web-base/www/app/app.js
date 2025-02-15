@@ -144,10 +144,14 @@ var app = new Vue({
     isActivePage: function(vue) {
       return this.page && this.pages[this.page] === getPageFromVue(vue);
     },
-    callPage: function(id, name) {
+    callPage: function(id, name, arg) {
       var page = this.pages[id];
       if (page) {
-        return callVueFromPage(page, name);
+        if (arguments.length > 3) {
+          var args = Array.prototype.slice.call(arguments, 2);
+          return callVueFromPage.apply(null, [page, name].concat(args));
+        }
+        return callVueFromPage(page, name, arg);
       }
     },
     emitPage: function(id) {
