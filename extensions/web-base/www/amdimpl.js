@@ -72,7 +72,7 @@
   /* Miscellaneous functions */
   var warn, log, debug, loadModule;
   log = debug = warn = function(msg) {};
-  var deferredLoading = false, previousDefine = undefined;
+  var previousDefine = undefined;
   loadModule = function(path, callback, sync, prefix, suffix) {};
   var fullyQualifiedRequire, createRequire, fullyQualifiedDefine;
   /* The cache is a map containing the defined module by absolute path (module identifier) */
@@ -130,45 +130,35 @@
     // TODO Cleanup dependencies...
     this.waiters = [];
   };
-  /* Creates a define function suitable for this module */
-  CacheEntry.prototype.createDefine = function() {
-    debug('createDefine() "' + this.path + '"');
-    var self = this;
-    var def = function(id, dependencies, factory) {
-      // Parse arguments
-      switch (arguments.length) {
-      case 0:
-        return;
-      case 1:
-        factory = id;
-        dependencies = null;
-        id = undefined;
-        break;
-      case 2:
-        factory = dependencies;
-        dependencies = id;
-        id = undefined;
-        break;
-      case 3:
-      default:
-        break;
-      }
-      fullyQualifiedRequire(self.path, dependencies, factory, self.sync);
-    };
-    def.amd = amd;
-    return def;
-  };
   CacheEntry.prototype.onLoaded = function(fnOrContent, err) {
-    debug('onLoaded(..., "' + err + '") "' + this.path + '"');
+    var t = typeof fnOrContent;
+    debug('onLoaded(' + t + ', ' + err + ') "' + this.path + '"');
     var m = null;
     if (err) {
       warn('Exception raised while loading "' + this.path + '": ' + err);
     } else {
-      var t = typeof fnOrContent;
+      var self = this;
       if (t === 'function') {
         try {
-          fnOrContent(this.createDefine());
-          return;
+          /* Creates a define function suitable for this module */
+          var defined = false;
+          var defineFn = function(id, dependencies, factory) {
+            if (typeof id === 'function') {
+              factory = id;
+              dependencies = null;
+              id = undefined;
+            } else if (typeof dependencies === 'function') {
+              factory = dependencies;
+              dependencies = id;
+              id = undefined;
+            }
+            fullyQualifiedRequire(self.path, dependencies, factory, self.sync);
+            defined = true;
+          };
+          m = fnOrContent(defineFn);
+          if (defined) {
+            return;
+          }
         } catch (e) {
           warn('Exception raised while evaluating "' + this.path + '": ' + e);
         }
@@ -178,7 +168,16 @@
         warn('Invalid argument while loading "' + this.path + '" (' + t + ')');
       }
     }
-    this.onDefined(m);
+    if (typeof m === 'object' && typeof m.then === 'function') {
+      m.then(function(n) {
+        self.onDefined(n);
+      }, function(e) {
+        warn('Exception raised while loading "' + self.path + '": ' + e);
+        self.onDefined(null);
+      });
+    } else {
+      this.onDefined(m);
+    }
   };
   CacheEntry.prototype.load = function() {
     debug('load() "' + this.path + '"');
@@ -189,8 +188,8 @@
       path += '.js';
     }
     this.loading = true;
-    loadModule(path, function(fn, e) {
-      self.onLoaded.call(self, fn, e);
+    loadModule(path, function(fnOrContent, err) {
+      self.onLoaded.call(self, fnOrContent, err);
     }, this.sync, '(function() { return function(define) { ', ' }; })();');
   };
   CacheEntry.prototype.notify = function(entry) {
@@ -260,7 +259,7 @@
       throw 'Invalid arguments';
     }
     sync = (typeof sync === 'boolean') ? sync : false;
-    dl = (typeof dl === 'boolean') ? dl : deferredLoading;
+    dl = (typeof dl === 'boolean') ? dl : false;
     var basepath = dirname(moduleId || '');
     var name = basename(moduleId || '');
     var paths = [];
@@ -328,12 +327,14 @@
   };
   /* Returns a require function suitable for a specific path */
   createRequire = function(path) {
-    var req = function(ids, callback) {
+    return function(ids, callback) {
       var async = true;
       var rmod = null;
       if (typeof ids === 'string') {
-        async = false;
         ids = [ids];
+      }
+      if (typeof callback === 'undefined') {
+        async = false;
         callback = function(module) {
           if ((typeof module === 'undefined') || (module === null)) {
             warn('Fail to require "' + ids[0] + '"');
@@ -344,49 +345,22 @@
       fullyQualifiedRequire(path + '/?', ids, callback, !async);
       return async ? undefined : rmod;
     };
-    req.toUrl = function(s) {
-      log('toUrl["' + path + '"]("' + s + '")');
-      return concatPath(path, s);
-    };
-    return req;
   };
   /* Define function that use a fully qualified module id */
   fullyQualifiedDefine = function(id, dependencies, factory) {
-    if (arguments.length < 3) {
-      return;
-    }
     log('define(' + id + ')');
     fullyQualifiedRequire(id, dependencies, factory, true, true);
   };
   // Populate default cache values
   new CacheEntry('_AMD', true, {
     cache : cache,
-    setLogFunction: function(fn) {
-      warn = fn;
-      //log = debug = warn;
-    },
-    enableDeferredLoading: function() {
-      log('enableDeferredLoading()');
-      deferredLoading = true;
-    },
-    disableDeferredLoading: function() {
-      log('disableDeferredLoading()');
-      deferredLoading = false;
-      var missedCount = 0;
-      if (! deferredLoading) {
-        for (var path in cache) {
-          if (cache[path].module) {
-            continue;
-          }
-          missedCount++;
-          if (cache[path].defined) {
-            continue;
-          }
-          warn(' Module "' + path + '" not defined');
-        }
-      }
-      if (missedCount > 0) {
-        throw missedCount + ' Module(s) missing';
+    setLogFunction: function(fn, level) {
+      switch(level) {
+      default:
+      case 'warn': warn = fn; break;
+      case 'log': log = fn; break;
+      case 'debug': debug = fn; break;
+      case 'all': log = debug = warn = fn; break;
       }
     },
     enableDefine: function() {

@@ -1,7 +1,7 @@
 define(['./scripts.xml', './scripts-add.xml',
   './script-blockly.xml', './toolbox.xml', './blocks.json', './blocks-lua',
   './script-view.xml', './script-view-config.xml', './view-schema.json',
-  './script-editor.xml'],
+  './script-editor.xml', './dependencies.js'],
   function(scriptsTemplate, scriptsAddTemplate,
     scriptBlocklyTemplate, toolboxXml, blocks, blocksLua,
     scriptViewTemplate, scriptViewConfigTemplate, scriptsViewConfigSchema,

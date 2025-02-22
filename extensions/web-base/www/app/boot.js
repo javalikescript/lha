@@ -89,13 +89,14 @@ Promise.all([
   }
   app.user = user;
   if (Array.isArray(addons)) {
+    var time = Date.now();
     return Promise.all(addons.map(function(addon) {
       console.log('loading addon ' + addon.id);
       return new Promise(function(resolve) {
         require(['addon/' + addon.id + '/' + addon.script], resolve);
       });
     })).then(function() {
-      console.info('addons loaded');
+      console.info('addons loaded in ' + (Date.now() - time) + ' ms');
     }, function() {
       console.info('fail to load addons');
     }).then(function() {

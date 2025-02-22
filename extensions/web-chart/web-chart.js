@@ -1,4 +1,4 @@
-define(['./web-chart.xml'], function(pageXml) {
+define(['./web-chart.xml', './dependencies.js'], function(pageXml) {
 
   function isInteger(value) {
     return (typeof value === 'number') && isFinite(value) && (Math.floor(value) === value);

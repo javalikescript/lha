@@ -281,3 +281,76 @@ function tryFocus(el) {
     el.focus();
   }
 }
+
+function addElement(tagName, attributes, node) {
+  return new Promise(function(resolve, reject) {
+    if (node === undefined) {
+      node = 'head';
+    }
+    if (typeof node === 'string') {
+      node = document.getElementsByTagName(node)[0];
+    }
+    if (!node) {
+      reject();
+    }
+    var list = node.getElementsByTagName(tagName);
+    for (var i = 0; i < list.length; i++) {
+      var item = list[i];
+      var matches = true;
+      for (var name in attributes) {
+        if (item.getAttribute(name) !== attributes[name]) {
+          matches = false;
+          break;
+        }
+      }
+      if (matches) {
+        resolve();
+      }
+    }
+    var el = document.createElement(tagName);
+    el.onload = resolve;
+    el.onerror = reject;
+    for (var name in attributes) {
+      el.setAttribute(name, attributes[name])
+    }
+    node.appendChild(el);
+  });
+}
+
+function addHeadCss(url) {
+  return addElement('link', {
+    type: 'text/css',
+    rel: 'stylesheet',
+    href: url
+  });
+}
+
+function addHeadScript(url) {
+  return addElement('script', {
+    type: 'text/javascript',
+    charset: 'utf-8',
+    src: url
+  });
+}
+
+function loadScripts(urls) {
+  if (Array.isArray(urls)) {
+    return Promise.all(urls.map(function(url) {
+      return fetch(url).then(function(response) {
+        if (!response.ok) {
+          return Promise.reject(response.statusText);
+        }
+        return response.text();
+      });
+    })).then(function(sources) {
+      for (var i = 0; i < sources.length; i++) {
+        Function(sources[i])();
+      }
+    });
+  } else if (typeof urls === 'string') {
+    return loadScripts(Array.prototype.slice.call(arguments));
+  } else if (urls === undefined) {
+    return Promise.resolve();
+  }
+  return Promise.reject();
+}
