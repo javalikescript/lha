@@ -281,6 +281,13 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     return id
   end
 
+  function extension:putTimer(id, fn, delay)
+    if self.timers[id] then
+      return id
+    end
+    return self:setTimer(fn, delay, id)
+  end
+
   function extension:clearTimer(id)
     local timerId = self.timers[id]
     if timerId then

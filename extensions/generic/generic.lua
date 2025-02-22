@@ -1,8 +1,12 @@
 local extension = ...
 
 local logger = extension:getLogger()
+local File = require('jls.io.File')
+local json = require('jls.util.json')
+local List = require('jls.util.List')
 local Map = require('jls.util.Map')
 local strings = require('jls.util.strings')
+local tables = require('jls.util.tables')
 
 local Thing = require('lha.Thing')
 
@@ -95,6 +99,30 @@ local function createThing(thingConfig)
   return thing
 end
 
+local thingTable
+local valuesFile
+
+local function saveValues()
+  if thingTable and valuesFile then
+    local data = json.stringify(thingTable, 2)
+    valuesFile:write(data)
+  end
+end
+
+local function setThingPropertyValue(thing, name, value)
+  local property = thing:getProperty(name)
+  if property and value ~= nil then
+    if property:isWritable() then
+      local path = thing.thingId..'/'..name
+      local prev = tables.setPath(thingTable, path, value)
+      if value ~= prev then
+        extension:putTimer('save', saveValues, 1000)
+      end
+      thing:updatePropertyValue(name, value)
+    end
+  end
+end
+
 local function createThings(thingsByKey, things)
   if type(things) == 'table' then
     for _, thingConfig in ipairs(things) do
@@ -112,29 +140,52 @@ local function createThings(thingsByKey, things)
         end
         local thing = thingsByKey[thingConfig.id]
         if not thing then
-          local discoveredThing = createThing(thingConfig)
-          if discoveredThing then
+          thing = createThing(thingConfig)
+          if thing then
             if logger:isLoggable(logger.FINEST) then
-              logger:finest('discoveredThing "%s": %T', thingConfig.id, discoveredThing:asThingDescription())
+              logger:finest('discovered thing "%s": %T', thingConfig.id, thing:asThingDescription())
             end
-            extension:discoverThing(thingConfig.id, discoveredThing)
+            extension:discoverThing(thingConfig.id, thing)
           end
+        end
+        if thing and thingConfig.save then
+          local values = thingTable[thing.thingId]
+          if values then
+            for name, value in pairs(values) do
+              local property = thing:getProperty(name)
+              if property then
+                property:setValue(value)
+              end
+            end
+          end
+          thing.setPropertyValue = setThingPropertyValue
         end
       end
     end
   end
 end
 
-local function discoverThings(extension)
+local function getConfiguredThings()
   local configuration = extension:getConfiguration()
-  extension:cleanDiscoveredThings()
-  local thingsByKey = extension:getThingsByDiscoveryKey()
-  createThings(thingsByKey, configuration.basicThings)
-  createThings(thingsByKey, configuration.things)
-  -- we could add an option to save the thing value
+  return List.concat({}, configuration.basicThings, configuration.things)
 end
+
+extension:subscribeEvent('startup', function()
+  thingTable = {}
+  local engine = extension:getEngine()
+  valuesFile = File:new(engine:getWorkDirectory(), 'generic-things.json')
+  if valuesFile:isFile() then
+    local status, t = pcall(json.decode, valuesFile:readAll())
+    if status then
+      thingTable = t
+    else
+      logger:warn('Fail to load generic thing values, %s', t)
+    end
+  end
+end)
 
 extension:subscribeEvent('things', function()
   logger:info('Looking for generic things')
-  discoverThings(extension)
+  extension:cleanDiscoveredThings()
+  createThings(extension:getThingsByDiscoveryKey(), getConfiguredThings())
 end)
