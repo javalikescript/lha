@@ -1,14 +1,9 @@
 local logger = require('jls.lang.logger'):get(...)
 local class = require('jls.lang.class')
-local Promise = require('jls.lang.Promise')
 local tables = require('jls.util.tables')
 local Date = require('jls.util.Date')
 
 local Thing = require('lha.Thing')
-
-local function getUpdateTime()
-  return Date.now()
-end
 
 local function isValidValue(value)
   if value == nil then

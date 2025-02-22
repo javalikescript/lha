@@ -123,11 +123,11 @@ local function setThingPropertyValue(thing, name, value)
   end
 end
 
-local function createThings(thingsByKey, things)
+local function createThings(things, thingsByKey)
   if type(things) == 'table' then
     for _, thingConfig in ipairs(things) do
       if not isEmpty(thingConfig.properties) then
-        if isEmpty(thingConfig.id) then
+        if thingConfig.id == '' or type(thingConfig.id) ~= 'string' then
           local configuration = extension:getConfiguration()
           local lastId = configuration.lastId
           if math.type(lastId) == 'integer' then
@@ -139,35 +139,31 @@ local function createThings(thingsByKey, things)
           thingConfig.id = strings.formatInteger(lastId, 64)
         end
         local thing = thingsByKey[thingConfig.id]
-        if not thing then
-          thing = createThing(thingConfig)
-          if thing then
-            if logger:isLoggable(logger.FINEST) then
-              logger:finest('discovered thing "%s": %T', thingConfig.id, thing:asThingDescription())
-            end
-            extension:discoverThing(thingConfig.id, thing)
-          end
-        end
-        if thing and thingConfig.save then
-          local values = thingTable[thing.thingId]
-          if values then
-            for name, value in pairs(values) do
-              local property = thing:getProperty(name)
-              if property then
-                property:setValue(value)
+        if thing then
+          if thingConfig.save and thing.thingId then
+            local values = thingTable[thing.thingId]
+            if values then
+              for name, value in pairs(values) do
+                local property = thing:getProperty(name)
+                if property then
+                  property:setValue(value)
+                end
               end
             end
+            thing.setPropertyValue = setThingPropertyValue
           end
-          thing.setPropertyValue = setThingPropertyValue
+        else
+          local discoveredThing = createThing(thingConfig)
+          if discoveredThing then
+            if logger:isLoggable(logger.FINEST) then
+              logger:finest('discovered thing "%s": %T', thingConfig.id, discoveredThing:asThingDescription())
+            end
+            extension:discoverThing(thingConfig.id, discoveredThing)
+          end
         end
       end
     end
   end
-end
-
-local function getConfiguredThings()
-  local configuration = extension:getConfiguration()
-  return List.concat({}, configuration.basicThings, configuration.things)
 end
 
 extension:subscribeEvent('startup', function()
@@ -186,6 +182,10 @@ end)
 
 extension:subscribeEvent('things', function()
   logger:info('Looking for generic things')
+  local configuration = extension:getConfiguration()
   extension:cleanDiscoveredThings()
-  createThings(extension:getThingsByDiscoveryKey(), getConfiguredThings())
+  local thingsByKey = extension:getThingsByDiscoveryKey()
+  createThings(configuration.basicThings, thingsByKey)
+  createThings(configuration.things, thingsByKey)
+  createThings(configuration.list, thingsByKey)
 end)

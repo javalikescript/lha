@@ -1,20 +1,19 @@
 {
   "name": "Generic Things",
   "description": "Declare virtual things",
-  "version": "1.0",
+  "version": "1.1",
   "script": "generic.lua",
   "schema": {
     "type": "object",
     "properties": {
       "lastId": {
-        "title": "Last Thing Id",
         "type": "integer",
         "default": 1,
         "format": "hidden",
         "readOnly": true
       },
-      "basicThings": {
-        "title": "Basic Things",
+      "list": {
+        "title": "Things",
         "type": "array",
         "items": {
           "type": "object",
@@ -24,8 +23,273 @@
               "type": "string",
               "required": true
             },
+            "description": {
+              "title": "Thing Description",
+              "type": "string"
+            },
             "id": {
-              "title": "Thing Id",
+              "type": "string",
+              "format": "hidden"
+            },
+            "@type": {
+              "title": "Thing Types",
+              "type": "array",
+              "items": {
+                "title": "Thing Type",
+                "type": "string",
+                "default": "MultiLevelSwitch",
+                "enumValues": [
+                  {"const": "Alarm", "title": "Alarm"},
+                  {"const": "AirQualitySensor", "title": "Air Quality Sensor"},
+                  {"const": "BarometricPressureSensor", "title": "Barometric Pressure Sensor"},
+                  {"const": "BinarySensor", "title": "Binary Sensor"},
+                  {"const": "Camera", "title": "Camera"},
+                  {"const": "ColorControl", "title": "Color Control"},
+                  {"const": "ColorSensor", "title": "Color Sensor"},
+                  {"const": "DoorSensor", "title": "Door Sensor"},
+                  {"const": "EnergyMonitor", "title": "Energy Monitor"},
+                  {"const": "HumiditySensor", "title": "Humidity Sensor"},
+                  {"const": "LeakSensor", "title": "Leak Sensor"},
+                  {"const": "Light", "title": "Light"},
+                  {"const": "Lock", "title": "Lock"},
+                  {"const": "MotionSensor", "title": "Motion Sensor"},
+                  {"const": "MultiLevelSensor", "title": "Multi Level Sensor"},
+                  {"const": "MultiLevelSwitch", "title": "Multi Level Switch"},
+                  {"const": "OnOffSwitch", "title": "On/Off Switch"},
+                  {"const": "PushButton", "title": "Push Button"},
+                  {"const": "SmartPlug", "title": "Smart Plug"},
+                  {"const": "SmokeSensor", "title": "Smoke Sensor"},
+                  {"const": "TemperatureSensor", "title": "Temperature Sensor"},
+                  {"const": "Thermostat", "title": "Thermostat"},
+                  {"const": "VideoCamera", "title": "Video Camera"}
+                ]
+              }
+            },
+            "properties": {
+              "title": "Thing Properties",
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "oneOf": [{
+                  "title": "Boolean",
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "title": "Property Name",
+                      "type": "string",
+                      "pattern": "^[a-z][a-zA-Z0-9]+$",
+                      "default": "value",
+                      "required": true
+                    },
+                    "title": {
+                      "title": "Property Title",
+                      "type": "string"
+                    },
+                    "readOnly": {
+                      "title": "Non Writable Property",
+                      "type": "boolean",
+                      "default": false
+                    },
+                    "type": {
+                      "type": "string",
+                      "const": "number",
+                      "format": "hidden"
+                    }
+                  }
+                }, {
+                  "title": "Integer",
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "title": "Property Name",
+                      "type": "string",
+                      "pattern": "^[a-z][a-zA-Z0-9]+$",
+                      "default": "value",
+                      "required": true
+                    },
+                    "title": {
+                      "title": "Property Title",
+                      "type": "string"
+                    },
+                    "readOnly": {
+                      "title": "Non Writable Property",
+                      "type": "boolean",
+                      "default": false
+                    },
+                    "type": {
+                      "type": "string",
+                      "const": "integer",
+                      "format": "hidden"
+                    },
+                    "minimum": {
+                      "title": "Minimum value",
+                      "type": "integer",
+                      "default": 1
+                    },
+                    "maximum": {
+                      "title": "Maximum value",
+                      "type": "integer",
+                      "default": 100
+                    }
+                  }
+                }, {
+                  "title": "String",
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "title": "Property Name",
+                      "type": "string",
+                      "pattern": "^[a-z][a-zA-Z0-9]+$",
+                      "default": "value",
+                      "required": true
+                    },
+                    "title": {
+                      "title": "Property Title",
+                      "type": "string"
+                    },
+                    "readOnly": {
+                      "title": "Non Writable Property",
+                      "type": "boolean",
+                      "default": false
+                    },
+                    "type": {
+                      "type": "string",
+                      "const": "string",
+                      "format": "hidden"
+                    },
+                    "enum": {
+                      "title": "Values",
+                      "type": "array",
+                      "items": {
+                        "title": "Value",
+                        "type": "string"
+                      }
+                    }
+                  }
+                }, {
+                  "title": "Custom",
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "const": "custom",
+                      "format": "hidden"
+                    },
+                    "title": {
+                      "title": "Property Title",
+                      "type": "string"
+                    },
+                    "name": {
+                      "title": "Property Name",
+                      "type": "string",
+                      "default": "value",
+                      "pattern": "^[a-z][a-zA-Z0-9]+$",
+                      "required": true
+                    },
+                    "type": {
+                      "title": "Property Primitive Type",
+                      "type": "string",
+                      "enumValues": [
+                        {"const": "boolean", "title": "Boolean"},
+                        {"const": "integer", "title": "Integer"},
+                        {"const": "number", "title": "Number"},
+                        {"const": "string", "title": "String"}
+                      ],
+                      "default": "number"
+                    },
+                    "@type": {
+                      "title": "The property Semantic Type",
+                      "type": "string",
+                      "default": "",
+                      "enumValues": [
+                        {"const": "", "title": "Auto"},
+                        {"const": "AlarmProperty", "title": "Alarm"},
+                        {"const": "BarometricPressureProperty", "title": "Barometric Pressure"},
+                        {"const": "BooleanProperty", "title": "Boolean"},
+                        {"const": "BrightnessProperty", "title": "Brightness"},
+                        {"const": "ColorModeProperty", "title": "ColorMode"},
+                        {"const": "ColorProperty", "title": "Color"},
+                        {"const": "ColorTemperatureProperty", "title": "Color Temperature"},
+                        {"const": "ConcentrationProperty", "title": "Concentration"},
+                        {"const": "CurrentProperty", "title": "Current"},
+                        {"const": "DensityProperty", "title": "Density"},
+                        {"const": "FrequencyProperty", "title": "Frequency"},
+                        {"const": "HeatingCoolingProperty", "title": "Heating Cooling"},
+                        {"const": "HumidityProperty", "title": "Humidity"},
+                        {"const": "ImageProperty", "title": "Image"},
+                        {"const": "InstantaneousPowerFactorProperty", "title": "Instantaneous Power Factor"},
+                        {"const": "InstantaneousPowerProperty", "title": "Instantaneous Power"},
+                        {"const": "LeakProperty", "title": "Leak"},
+                        {"const": "LevelProperty", "title": "Level"},
+                        {"const": "LockedProperty", "title": "Locked"},
+                        {"const": "MotionProperty", "title": "Motion"},
+                        {"const": "OnOffProperty", "title": "On/Off"},
+                        {"const": "OpenProperty", "title": "Open"},
+                        {"const": "PushedProperty", "title": "Pushed"},
+                        {"const": "SmokeProperty", "title": "Smoke"},
+                        {"const": "TargetTemperatureProperty", "title": "Target Temperature"},
+                        {"const": "TemperatureProperty", "title": "Temperature"},
+                        {"const": "ThermostatModeProperty", "title": "ThermostatMode"},
+                        {"const": "VideoProperty", "title": "Video"},
+                        {"const": "VoltageProperty", "title": "Voltage"}
+                      ]
+                    },
+                    "unit": {
+                      "title": "Property Unit",
+                      "type": "string",
+                      "default": "",
+                      "enumValues": [
+                        {"const": "", "title": "None"},
+                        {"const": "percent", "title": "Percent"},
+                        {"const": "second", "title": "Second"},
+                        {"const": "degree celsius", "title": "Degree Celsius"},
+                        {"const": "hectopascal", "title": "Hecto Pascal"},
+                        {"const": "kelvin", "title": "Kelvin"},
+                        {"const": "lux", "title": "Lux"},
+                        {"const": "volt", "title": "Volt"},
+                        {"const": "watt", "title": "Watt"}
+                      ]
+                    },
+                    "readOnly": {
+                      "title": "Non Writable Property",
+                      "type": "boolean",
+                      "default": false
+                    },
+                    "writeOnly": {
+                      "title": "Non Readable Property",
+                      "type": "boolean",
+                      "default": false
+                    },
+                    "configuration": {
+                      "title": "Configuration Property",
+                      "type": "boolean",
+                      "default": false
+                    }
+                  }
+                }]
+              }
+            },
+            "save": {
+              "title": "Save the property values",
+              "type": "boolean",
+              "default": false
+            }
+          }
+        }
+      },
+      "basicThings": {
+        "title": "Basic Things",
+        "type": "array",
+        "deprecated": true,
+        "items": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "title": "Thing Title",
+              "type": "string",
+              "required": true
+            },
+            "id": {
               "type": "string",
               "format": "hidden"
             },
@@ -77,6 +341,7 @@
       "things": {
         "title": "Generic Things",
         "type": "array",
+        "deprecated": true,
         "items": {
           "type": "object",
           "properties": {
@@ -90,7 +355,6 @@
               "type": "string"
             },
             "id": {
-              "title": "Thing Id",
               "type": "string",
               "format": "hidden"
             },

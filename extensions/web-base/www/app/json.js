@@ -157,8 +157,18 @@ function matchSchema(rootSchema, schema, obj) {
       for (var name in sch.properties) {
         var property = sch.properties[name];
         var value = obj[name];
-        if ((value === undefined) || ((property.const !== undefined) && (property.const !== value))) {
+        if (property.required && (value === undefined)) {
           return false;
+        }
+        if ((property.const !== undefined) && (property.const !== value)) {
+          return false;
+        }
+      }
+      if (sch.additionalProperties === false) {
+        for (var name in obj) {
+          if (!(name in sch.properties)) {
+            return false;
+          }
         }
       }
     }
@@ -204,7 +214,7 @@ function populateJson(rootSchema, schema, obj) {
         for (var k in schema.properties) {
           po[k] = populateJson(rootSchema, schema.properties[k], po[k]);
         }
-        // keep additional properties (!schema.additionalProperties)
+        // keep additional properties (schema.additionalProperties !== false)
       } else if ((schema.type === 'array') && isObject(schema.items)) {
         var l = po.length;
         if ((typeof schema.minItems === 'number') && (schema.minItems > l)) {
@@ -424,10 +434,10 @@ Vue.component('json-item', {
     },
     isProperties: function() {
       var schema = this.schema;
-      return (schema.type === 'object') && (isObject(schema.properties) || isObject(schema.additionalProperties));
+      return (schema.type === 'object') && (isObject(schema.properties) || (schema.additionalProperties !== false));
     },
     hasAdditionalProperties: function() {
-      return (this.schema.type === 'object') && isObject(this.schema.additionalProperties);
+      return (this.schema.type === 'object') && (this.schema.additionalProperties !== false);
     },
     hasList: function() {
       return (this.schema.type === 'array') && isObject(this.schema.items) && Array.isArray(this.obj);
