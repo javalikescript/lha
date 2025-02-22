@@ -107,6 +107,15 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
     }
   }
 
+  function forEachPropertyPathWithType(things, paths, fn, type) {
+    var type;
+    forEachPropertyPath(things, paths, function(thing, thingId, property) {
+      type = property['@type'];
+      return true;
+    });
+    forEachPropertyPath(things, paths, fn, type);
+  }
+
   function forEachPropertyType(things, type, fn, thingIds) {
     if (!isArrayWithItems(thingIds)) {
       thingIds = Object.keys(things);
@@ -132,12 +141,9 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
     if (tileDef.type) {
       forEachPropertyType(things, tileDef.type, fn, tileDef.thingIds);
     } else if (tileDef.propertyPaths) {
-      var type;
-      forEachPropertyPath(things, tileDef.propertyPaths, function(thing, thingId, property, propertyName) {
-        type = property['@type'];
-        return true;
-      });
-      forEachPropertyPath(things, tileDef.propertyPaths, fn, type);
+      forEachPropertyPathWithType(things, tileDef.propertyPaths, fn);
+    } else if (tileDef.propertyPath) {
+      forEachPropertyPathWithType(things, [tileDef.propertyPath], fn);
     }
   }
 

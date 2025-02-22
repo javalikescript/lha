@@ -12,8 +12,39 @@
         "type": "array",
         "items": {
           "oneOf": [{
+            "title": "Property Tile",
+            "type": "object",
+            "properties": {
+              "title": {
+                "title": "Title",
+                "type": "string",
+                "required": true
+              },
+              "propertyPath": {
+                "title": "Thing Property Path",
+                "type": "string",
+                "enumVar": "propertyPaths",
+                "required": true
+              }
+            }
+          }, {
+            "title": "Separator",
+            "type": "object",
+            "properties": {
+              "title": {
+                "title": "Title",
+                "type": "string"
+              },
+              "separator": {
+                "const": true,
+                "format": "hidden"
+              }
+            }
+          },
+          {
             "title": "Things Tile",
             "type": "object",
+            "deprecated": true,
             "properties": {
               "title": {
                 "title": "Title",
@@ -40,29 +71,13 @@
                   {"const": "OpenProperty", "title": "Open"},
                   {"const": "SmokeProperty", "title": "Smoke"},
                   {"const": "TemperatureProperty", "title": "Temperature"}
-                ],
-                "enumValues-NotUsed": [
-                  {"const": "BrightnessProperty", "title": "Brightness"},
-                  {"const": "ColorModeProperty", "title": "Color Mode"},
-                  {"const": "ColorProperty", "title": "Color"},
-                  {"const": "ColorTemperatureProperty", "title": "Color Temperature"},
-                  {"const": "ConcentrationProperty", "title": "Concentration"},
-                  {"const": "DensityProperty", "title": "Density"},
-                  {"const": "FrequencyProperty", "title": "Frequency"},
-                  {"const": "HeatingCoolingProperty", "title": "Heating Cooling"},
-                  {"const": "ImageProperty", "title": "Image"},
-                  {"const": "InstantaneousPowerFactorProperty", "title": "Instantaneous Power Factor"},
-                  {"const": "InstantaneousPowerProperty", "title": "Instantaneous Power"},
-                  {"const": "PushedProperty", "title": "Pushed"},
-                  {"const": "TargetTemperatureProperty", "title": "Target Temperature"},
-                  {"const": "ThermostatModeProperty", "title": "Thermostat Mode"},
-                  {"const": "VideoProperty", "title": "Video"},
-                  {"const": "VoltageProperty", "title": "Voltage"}
                 ]
               },
               "thingIds": {
                 "title": "Things",
                 "type": "array",
+                "required": true,
+                "minItems": 1,
                 "items": {
                   "title": "Thing Id",
                   "type": "string",
@@ -73,6 +88,7 @@
           }, {
             "title": "Properties Tile",
             "type": "object",
+            "deprecated": true,
             "properties": {
               "title": {
                 "title": "Title",
@@ -82,24 +98,13 @@
               "propertyPaths": {
                 "title": "Properties",
                 "type": "array",
+                "required": true,
+                "minItems": 1,
                 "items": {
                   "title": "Thing Property Path",
                   "type": "string",
                   "enumVar": "propertyPaths"
                 }
-              }
-            }
-          }, {
-            "title": "Separator",
-            "type": "object",
-            "properties": {
-              "title": {
-                "title": "Title",
-                "type": "string"
-              },
-              "separator": {
-                "format": "hidden",
-                "const": true
               }
             }
           }]
