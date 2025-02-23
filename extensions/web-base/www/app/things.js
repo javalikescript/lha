@@ -190,16 +190,16 @@ new Vue({
         this.thingId = thingId;
       }
       this.thing = {};
-      var self = this;
-      return fetch('/things/' + self.thingId).then(getJson).then(function(thing) {
-        self.thing = thing;
-        return fetch('/things/' + self.thingId + '/properties');
-      }).then(getJson).then(function(properties) {
+      return Promise.all([
+        fetch('/things/' + this.thingId).then(assertIsOk).then(getJson),
+        fetch('/things/' + this.thingId + '/properties').then(getJson)
+      ]).then(apply(this, function(thing, properties) {
+        this.thing = thing;
         if (Array.isArray(properties)) {
           properties.sort(compareByTitle);
         }
-        self.properties = properties;
-      });
+        this.properties = properties;
+      }));
     }
   }
 });

@@ -145,7 +145,12 @@
               <p v-else><i>No value</i></p>
             </div>
             <div v-else>
-              <input v-if="property.type === 'string'" v-model="editProps[name]" type="text" placeholder="String Value">
+              <template v-if="property.type === 'string'">
+                <select v-if="isArrayWithItems(property.enum)" v-model="editProps[name]">
+                  <option v-for="ev in property.enum" :value="ev">{{ev}}</option>
+                </select>
+                <input v-else v-model="editProps[name]" type="text" placeholder="String Value">
+              </template>
               <input v-if="(property.type === 'number') || (property.type === 'integer')" v-model="editProps[name]" number type="number" placeholder="Number Value">
               <label v-if="property.type === 'boolean'" class="switch"><input type="checkbox" v-model="editProps[name]" /><span class="slider"></span></label>
             </div>
