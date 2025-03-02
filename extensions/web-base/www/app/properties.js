@@ -13,37 +13,34 @@ registerPageVue(new Vue({
       }
       var query = this.query;
       return this.properties.filter(function(property) {
-        // property.extension.description, property.thing.description
         return contains(query, property.name, property.title, property.description, property.extension.name, property.thing.title);
       });
     }
   },
   methods: {
     onShow: function() {
-      var self = this;
-      var extensionsById = {};
-      var things = [];
-      app.getThings().then(function(result) {
-        things = result;
-        return app.getExtensionsById();
-      }).then(function(result) {
-        extensionsById = result;
-        return fetch('/engine/properties');
-      }).then(getJson).then(function(properties) {
-        self.properties = [];
+      Promise.all([
+        app.getThings(),
+        app.getExtensionsById(),
+        app.getPropertiesByThingId()
+      ]).then(apply(this, function(things, extensionsById, propertiesByThingId) {
+        this.properties = [];
         for (var i = 0; i < things.length; i++) {
           var thing = things[i];
-          var props = properties[thing.thingId];
+          var props = propertiesByThingId[thing.thingId];
           for (var name in thing.properties) {
             var property = thing.properties[name];
             property.name = name;
             property.value = props[name];
             property.thing = thing;
             property.extension = extensionsById[thing.extensionId] || {};
-            self.properties.push(property);
+            this.properties.push(property);
           }
         }
-      });
+      }));
+    },
+    onDataChange: function() {
+      this.onShow();
     },
     toggleFilter: function(event) {
       this.filter = !this.filter;

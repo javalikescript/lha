@@ -56,7 +56,6 @@
     <template slot="bar-right">
       <input v-if="filter" v-model="query" type="text" placeholder="Type to filter">
       <button v-on:click="toggleFilter(event)"><i class="fas fa-search"></i></button>
-      <button v-on:click="onShow" title="Refresh"><i class="fas fa-sync"></i></button>
     </template>
     <page-article>
       <table style="border-spacing: 0.5rem 0; width: 100%;">
