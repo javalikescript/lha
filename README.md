@@ -5,7 +5,7 @@ lha is a light home automation application
 The lha application allows to
 * enrich your existing gateway such as the [Hue](https://www.philips-hue.com/) bridge
 * record and display historical device values such as temperature
-* interact between incompatible protocols such as between _ZigBee_ and _Z-Wave_
+* interact between incompatible protocols such as _ZigBee_ and _Z-Wave_
 * compose advanced automations using [Blockly](https://developers.google.com/blockly/) scripts
 * design web views using [HTML](https://html.spec.whatwg.org/) and [Vue.js](https://v2.vuejs.org/)
 * create your own [Lua](https://www.lua.org/) extensions

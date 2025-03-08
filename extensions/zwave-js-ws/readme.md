@@ -4,9 +4,9 @@ This extension exposes ZWave devices through ZWave-JS.
 
 ## Prerequisites
 
-ZWave-JS-UI must be available.
+ZWave-JS must be available.
 
-It is recommended to use Docker to run the ZWave-JS-UI server.
+It is recommended to use Docker to run the [Z-Wave JS UI](https://github.com/zwave-js/zwave-js-ui) server.
 
 ### Docker
 
