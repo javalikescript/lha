@@ -67,6 +67,21 @@
           "name": "on"
         }
       ]
+    },
+    {
+      "manufacturerId": "$ref:/manufacturer/Aeotec",
+      "productId": 12,
+      "capabilities": ["DoorSensor"],
+      "properties": [
+        "$ref:/property/battery",
+        {
+          "commandClass": "$ref:/commandClass/notification",
+          "property": "Access Control",
+          "propertyKey": "Door state (simple)",
+          "name": "open",
+          "adapter": "$lua:return value ~= 23"
+        }
+      ]
     }
   ],
   "adapters": {
@@ -108,6 +123,7 @@
     "switch-multilevel": 38,
     "sensor-multilevel": 49,
     "alarm": 113,
+    "notification": 113,
     "battery": 128
   },
   "metadata": {

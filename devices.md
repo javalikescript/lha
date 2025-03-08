@@ -6,6 +6,7 @@ The following devices are already availables.
   * Dimmer Switch
   * Motion sensor
   * Outdoor sensor
+  * Wall switch module
 * Ikea TRÅDFRI
   * Driver for Pax Led NORRFLY
   * Light panel FLOALT
@@ -17,13 +18,12 @@ The following devices are already availables.
   * Switch ZG9101SAC
 * Aeotec
   * aërQ Temperature and Humidity Sensor
+  * Door / Window Sensor 7
 * FIBARO
   * Smoke Sensor
 * Qubino
   * ZMNHUD1_DIN Pilot wire
 * ZOOZ
   * ZSE44 Temperature Humidity XS Sensor
-* LiXee
-  * ZLinky TIC, Historique HP-HC
 * GCE Electronics
   * Module USB TIC

@@ -120,6 +120,12 @@
     "title": "On/Off",
     "type": "boolean"
   },
+  "open": {
+    "@type": "OpenProperty",
+    "description": "Whether the thing is open",
+    "title": "Open",
+    "type": "boolean"
+  },
   "presence": {
     "@type": "MotionProperty",
     "description": "Whether a presence is detected",
