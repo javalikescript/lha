@@ -192,6 +192,11 @@ return require('jls.lang.class').create(function(zWaveJs)
     local title = utils.expand(self.mapping.title, node)
     local description = utils.expand(self.mapping.description, node)
     local thing = Thing:new(title, description)
+    if device.capabilities then
+      for _, capability in ipairs(device.capabilities) do
+        thing:addType(capability)
+      end
+    end
     for _, info in ipairs(device.properties) do
       utils.addThingPropertyFromInfo(thing, info.name, info, node)
     end
