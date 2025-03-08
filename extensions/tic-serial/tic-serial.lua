@@ -113,10 +113,10 @@ end
 
 extension:subscribeEvent('things', function()
   ticThing = extension:syncDiscoveredThingByKey('tic', function()
-    local thing = Thing:new('TIC', 'Téléinformation client', {Thing.CAPABILITIES.Alarm, Thing.CAPABILITIES.EnergyMonitor})
+    local thing = Thing:new('TIC', 'Téléinformation client', {'Alarm', 'EnergyMonitor'})
     thing:addPropertiesFromNames('alarm', 'current', 'connected', 'lastupdated')
     thing:addProperty('power', {
-      ['@type'] = Thing.PROPERTY_TYPES.ApparentPowerProperty,
+      ['@type'] = 'ApparentPowerProperty',
       type = 'number',
       title = 'Apparent power',
       description = 'Puissance apparente',
@@ -126,9 +126,9 @@ extension:subscribeEvent('things', function()
     return thing
   end)
   ticIndexThing = extension:syncDiscoveredThingByKey('ticIndex', function()
-    local thing = Thing:new('TIC Indexes', 'Téléinformation client index', {Thing.CAPABILITIES.MultiLevelSensor})
+    local thing = Thing:new('TIC Indexes', 'Téléinformation client index', {'MultiLevelSensor'})
     thing:addProperty('isousc', {
-      ['@type'] = Thing.PROPERTY_TYPES.CurrentProperty,
+      ['@type'] = 'CurrentProperty',
       type = 'number',
       title = 'Intensité souscrite',
       description = 'Intensité souscrite',
@@ -136,7 +136,7 @@ extension:subscribeEvent('things', function()
       unit = 'ampere'
     })
     thing:addProperty('hchc', {
-      ['@type'] = Thing.PROPERTY_TYPES.LevelProperty,
+      ['@type'] = 'LevelProperty',
       type = 'number',
       title = 'Index Heures Creuses',
       description = 'Index option Heures Creuses',
@@ -144,7 +144,7 @@ extension:subscribeEvent('things', function()
       unit = 'watthour'
     })
     thing:addProperty('hchp', {
-      ['@type'] = Thing.PROPERTY_TYPES.LevelProperty,
+      ['@type'] = 'LevelProperty',
       type = 'number',
       title = 'Index Heures Pleines',
       description = 'Index option Heures Pleines',

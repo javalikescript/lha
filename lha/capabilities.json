@@ -1,0 +1,100 @@
+{
+  "Alarm": [
+    "AlarmProperty"
+  ],
+  "AirQualitySensor": [
+    "ConcentrationProperty",
+    "DensityProperty"
+  ],
+  "BarometricPressureSensor": [
+    "BarometricPressureProperty"
+  ],
+  "BinarySensor": [
+    "BooleanProperty"
+  ],
+  "Camera": [
+    "ImageProperty"
+  ],
+  "ColorControl": [
+    "ColorModeProperty",
+    "ColorProperty",
+    "ColorTemperatureProperty"
+  ],
+  "ColorSensor": [
+    "ColorProperty"
+  ],
+  "DoorSensor": [
+    "OpenProperty"
+  ],
+  "EnergyMonitor": [
+    "InstantaneousPowerProperty",
+    "InstantaneousPowerFactorProperty",
+    "ApparentPowerProperty",
+    "VoltageProperty",
+    "CurrentProperty",
+    "FrequencyProperty"
+  ],
+  "HumiditySensor": [
+    "HumidityProperty"
+  ],
+  "IlluminanceSensor": [
+    "LevelProperty"
+  ],
+  "LeakSensor": [
+    "LeakProperty"
+  ],
+  "Light": [
+    "OnOffProperty",
+    "BrightnessProperty",
+    "ColorModeProperty",
+    "ColorProperty",
+    "ColorTemperatureProperty"
+  ],
+  "LightLevelSensor": [
+    "LevelProperty"
+  ],
+  "Lock": [
+    "LockedProperty"
+  ],
+  "MotionSensor": [
+    "MotionProperty"
+  ],
+  "MultiLevelSensor": [
+    "LevelProperty"
+  ],
+  "MultiLevelSwitch": [
+    "LevelProperty",
+    "OnOffProperty"
+  ],
+  "OnOffSwitch": [
+    "OnOffProperty"
+  ],
+  "PushButton": [
+    "PushedProperty"
+  ],
+  "SmartPlug": [
+    "OnOffProperty",
+    "LevelProperty",
+    "InstantaneousPowerProperty",
+    "InstantaneousPowerFactorProperty",
+    "VoltageProperty",
+    "CurrentProperty",
+    "FrequencyProperty"
+  ],
+  "SmokeSensor": [
+    "SmokeProperty"
+  ],
+  "TemperatureSensor": [
+    "TemperatureProperty"
+  ],
+  "Thermostat": [
+    "TemperatureProperty",
+    "TargetTemperatureProperty",
+    "HeatingCoolingProperty",
+    "ThermostatModeProperty"
+  ],
+  "VideoCamera": [
+    "VideoProperty",
+    "ImageProperty"
+  ]
+}

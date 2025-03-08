@@ -14,10 +14,10 @@ webBaseAddons.register(extension)
 
 local function createWeatherThing(title, description)
   local thing = Thing:new(title or 'Weather', description or 'Weather Data', {
-    Thing.CAPABILITIES.TemperatureSensor,
-    Thing.CAPABILITIES.HumiditySensor,
-    Thing.CAPABILITIES.BarometricPressureSensor,
-    Thing.CAPABILITIES.MultiLevelSensor
+    'TemperatureSensor',
+    'HumiditySensor',
+    'BarometricPressureSensor',
+    'MultiLevelSensor'
   })
   thing:addPropertiesFromNames('temperature', 'humidity', 'pressure')
   thing:addProperty('cloud', {

@@ -5,69 +5,10 @@ local ThingProperty = require('lha.ThingProperty')
 local utils = require('lha.utils')
 
 local PROPERTY_METADATA_BY_NAME = utils.requireJson('lha.properties')
+--local PROPERTY_BY_CAPABILITY = utils.requireJson('lha.capabilities')
 
--- Standard properties, see https://webthings.io/schemas/
-
--- See also https://www.w3.org/TR/wot-thing-description/
-
-local CAPABILITIES = {
-  Alarm = 'Alarm',
-  AirQualitySensor = 'AirQualitySensor',
-  BarometricPressureSensor = 'BarometricPressureSensor',
-  BinarySensor = 'BinarySensor',
-  Camera = 'Camera',
-  ColorControl = 'ColorControl',
-  ColorSensor = 'ColorSensor',
-  DoorSensor = 'DoorSensor',
-  EnergyMonitor = 'EnergyMonitor',
-  HumiditySensor = 'HumiditySensor',
-  IlluminanceSensor = 'MultiLevelSensor',
-  LeakSensor = 'LeakSensor',
-  Light = 'Light',
-  LightLevelSensor = 'MultiLevelSensor',
-  Lock = 'Lock',
-  MotionSensor = 'MotionSensor',
-  MultiLevelSensor = 'MultiLevelSensor',
-  MultiLevelSwitch = 'MultiLevelSwitch',
-  OnOffSwitch = 'OnOffSwitch',
-  PushButton = 'PushButton',
-  SmartPlug = 'SmartPlug',
-  SmokeSensor = 'SmokeSensor',
-  TemperatureSensor = 'TemperatureSensor',
-  Thermostat = 'Thermostat',
-  VideoCamera = 'VideoCamera',
-}
-
-local PROPERTY_TYPES = {
-  AlarmProperty = 'AlarmProperty',
-  BarometricPressureProperty = 'BarometricPressureProperty',
-  BooleanProperty = 'BooleanProperty',
-  DateTimeProperty = 'DateTimeProperty',
-  BrightnessProperty = 'BrightnessProperty',
-  ColorProperty = 'ColorProperty',
-  --ConcentrationProperty = 'ConcentrationProperty',
-  ColorModeProperty = 'ColorModeProperty',
-  ColorTemperatureProperty = 'ColorTemperatureProperty',
-  --DensityProperty = 'DensityProperty',
-  HumidityProperty = 'HumidityProperty',
-  IlluminanceProperty = 'LevelProperty',
-  --LeakProperty = 'LeakProperty',
-  LevelProperty = 'LevelProperty',
-  LightLevelProperty = 'LevelProperty',
-  --LockedProperty = 'LockedProperty',
-  MotionProperty = 'MotionProperty',
-  OnOffProperty = 'OnOffProperty',
-  --OpenProperty = 'OpenProperty',
-  PushedProperty = 'PushedProperty',
-  SmokeProperty = 'SmokeProperty',
-  TemperatureProperty = 'TemperatureProperty',
-  TargetTemperatureProperty = 'TargetTemperatureProperty',
-  ApparentPowerProperty = 'ApparentPowerProperty',
-  --InstantaneousPowerProperty = 'InstantaneousPowerProperty',
-  --VoltageProperty = 'VoltageProperty',
-  CurrentProperty = 'CurrentProperty',
-  --FrequencyProperty	 = 'FrequencyProperty',
-}
+-- see https://webthings.io/schemas/
+-- and https://www.w3.org/TR/wot-thing-description/
 
 
 --- The Thing class represents a device.
@@ -338,8 +279,5 @@ end, function(Thing)
       return (type(value) == 'string') and value or ''
     end
   end
-
-  Thing.CAPABILITIES = CAPABILITIES
-  Thing.PROPERTY_TYPES = PROPERTY_TYPES
 
 end)

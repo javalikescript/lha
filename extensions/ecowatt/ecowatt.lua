@@ -31,9 +31,9 @@ end
 local SIGNAL_ENUM = {0, 1, 2, 3}
 
 local function createThing(targetName)
-  local thing = Thing:new('Ecowatt', 'Ecowatt signals', {Thing.CAPABILITIES.MultiLevelSensor})
+  local thing = Thing:new('Ecowatt', 'Ecowatt signals', {'MultiLevelSensor'})
   thing:addProperty('dayValue', {
-    ['@type'] = Thing.PROPERTY_TYPES.LevelProperty,
+    ['@type'] = 'LevelProperty',
     title = 'Day Value',
     type = 'integer',
     description = 'Current day value',
@@ -41,7 +41,7 @@ local function createThing(targetName)
     readOnly = true
   })
   thing:addProperty('hourValue', {
-    ['@type'] = Thing.PROPERTY_TYPES.LevelProperty,
+    ['@type'] = 'LevelProperty',
     title = 'Hour Value',
     type = 'integer',
     description = 'Current hour value',
@@ -49,7 +49,7 @@ local function createThing(targetName)
     readOnly = true
   })
   thing:addProperty('nextDayValue', {
-    ['@type'] = Thing.PROPERTY_TYPES.LevelProperty,
+    ['@type'] = 'LevelProperty',
     title = 'Next Day Value',
     type = 'integer',
     description = 'Next day value',
@@ -57,7 +57,7 @@ local function createThing(targetName)
     readOnly = true
   })
   thing:addProperty('nextHourValue', {
-    ['@type'] = Thing.PROPERTY_TYPES.LevelProperty,
+    ['@type'] = 'LevelProperty',
     title = 'Next Hour Value',
     type = 'integer',
     description = 'Next hour value',
