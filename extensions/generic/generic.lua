@@ -3,42 +3,12 @@ local extension = ...
 local logger = extension:getLogger()
 local File = require('jls.io.File')
 local json = require('jls.util.json')
-local List = require('jls.util.List')
 local Map = require('jls.util.Map')
 local strings = require('jls.util.strings')
 local tables = require('jls.util.tables')
 
 local Thing = require('lha.Thing')
 
-logger:info('generic extension')
-
-local METADATA_BY_TYPE = {
-  boolean = {
-    ['@type'] = 'OnOffProperty',
-    type = 'boolean',
-    description = 'Boolean property'
-  },
-  boolean_readOnly = {
-    ['@type'] = 'BooleanProperty',
-    type = 'boolean',
-    description = 'Boolean property'
-  },
-  integer = {
-    ['@type'] = 'LevelProperty',
-    type = 'integer',
-    description = 'Integer property'
-  },
-  number = {
-    ['@type'] = 'LevelProperty',
-    type = 'number',
-    description = 'Number property'
-  },
-  string = {
-    ['@type'] = 'StringProperty',
-    type = 'string',
-    description = 'String property'
-  },
-}
 
 local function isEmpty(value)
   return value == nil or value == '' or (type(value) == 'table' and next(value) == nil)
@@ -57,7 +27,27 @@ local function firstOf(...)
   end
 end
 
-local mdKeys = {'type', '@type', 'unit', 'title', 'description', 'enum', 'minimum', 'maximum', 'readOnly', 'writeOnly', 'configuration'}
+local METADATA_KEYS = {'type', '@type', 'unit', 'title', 'description', 'enum', 'minimum', 'maximum', 'readOnly', 'writeOnly', 'configuration'}
+
+local METADATA_DEFAUT_VALUES = {
+  readOnly = false,
+  writeOnly = false,
+  configuration = false,
+}
+
+local PROPERTY_TYPE_BY_TYPE = {
+  boolean_RO = 'BooleanProperty',
+  boolean = 'OnOffProperty',
+  number = 'LevelProperty',
+  string = 'StringProperty',
+}
+
+local CAPABILITY_BY_TYPE = {
+  boolean_RO = 'BinarySensor',
+  boolean = 'OnOffSwitch',
+  number_RO = 'MultiLevelSensor',
+  number = 'MultiLevelSwitch',
+}
 
 local function createThing(thingConfig)
   local typeSet = Map:new()
@@ -65,30 +55,33 @@ local function createThing(thingConfig)
   local thing = Thing:new(firstOf(thingConfig.title, 'Generic Thing'), firstOf(thingConfig.description, 'Generic Thing'))
   for _, propertyConfig in ipairs(thingConfig.properties) do
     local name = firstOf(propertyConfig.name, 'value')
-    local sType = tostring(propertyConfig.type)
-    local fType = sType
-    if propertyConfig.readOnly then
-      fType = fType..'_readOnly'
+    local primitiveType = tostring(propertyConfig.type)
+    -- guess the semantic type
+    local adaptedType = primitiveType
+    if propertyConfig.type == 'integer' then
+      adaptedType = 'number'
     end
+    if propertyConfig.readOnly then
+      adaptedType = adaptedType..'_RO'
+    end
+    local semanticType = PROPERTY_TYPE_BY_TYPE[adaptedType] or PROPERTY_TYPE_BY_TYPE[primitiveType] or 'GenericProperty'
     -- filter property metadata values
     local metadata = {}
-    for _, key in ipairs(mdKeys) do
+    for _, key in ipairs(METADATA_KEYS) do
       local value = propertyConfig[key]
-      if not isEmpty(value) then
+      if not isEmpty(value) and value ~= METADATA_DEFAUT_VALUES[key] then
         metadata[key] = value
       end
     end
-    metadata = Map.assign({title = name}, METADATA_BY_TYPE[fType] or METADATA_BY_TYPE[sType], metadata)
-    thing:addProperty(name, metadata)
+    thing:addProperty(name, Map.assign({
+      title = name,
+      ['@type'] = semanticType,
+      description = semanticType
+    }, metadata))
     -- guess thing type based on property type
-    if propertyConfig.readOnly then
-      if propertyConfig.type == 'boolean' then
-        typeSet:add('BinarySensor')
-      else
-        typeSet:add('MultiLevelSensor')
-      end
-    else
-      typeSet:add('MultiLevelSwitch')
+    local capability = CAPABILITY_BY_TYPE[adaptedType] or CAPABILITY_BY_TYPE[primitiveType]
+    if capability then
+      typeSet:add(capability)
     end
   end
   local tType = thingConfig['@type']
