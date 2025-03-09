@@ -92,7 +92,7 @@
                     },
                     "type": {
                       "type": "string",
-                      "const": "number",
+                      "const": "boolean",
                       "format": "hidden"
                     }
                   }
