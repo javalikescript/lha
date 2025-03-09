@@ -229,11 +229,20 @@ new Vue({
         self.extensionsById = extensionsById;
       });
     },
-    onAddAll: function() {
-      for (var i = 0; i < this.things.length; i++) {
-        this.things[i].toAdd = true;
+    onSelectAll: function(toAdd) {
+      if (typeof toAdd !== 'boolean') {
+        var allToAdd = true;
+        for (var i = 0; i < this.things.length; i++) {
+          if (!this.things[i].toAdd) {
+            allToAdd = false;
+            break;
+          }
+        }
+        toAdd = !allToAdd;
       }
-      return this.onSave();
+      for (var i = 0; i < this.things.length; i++) {
+        this.things[i].toAdd = toAdd;
+      }
     },
     onSave: function() {
       var thingsToAdd = [];
