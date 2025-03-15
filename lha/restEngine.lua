@@ -8,7 +8,6 @@ local File = require('jls.io.File')
 local HTTP_CONST = require('jls.net.http.HttpMessage').CONST
 local RestHttpHandler = require('jls.net.http.handler.RestHttpHandler')
 local HttpExchange = require('jls.net.http.HttpExchange')
-local json = require('jls.util.json')
 local Date = require('jls.util.Date')
 local Map = require('jls.util.Map')
 local ZipFile = require('jls.util.zip.ZipFile')
@@ -98,8 +97,7 @@ local function refreshThingsDescription(engine, extension)
 end
 
 local REST_EXTENSIONS = {
-  [''] = function(exchange)
-    local engine = exchange:getAttribute('engine')
+  ['(engine)'] = function(_, engine)
     local list = {}
     for _, extension in ipairs(engine.extensions) do
       if extension:isLoaded() and extension:getType() ~= 'script' then
@@ -108,27 +106,25 @@ local REST_EXTENSIONS = {
     end
     return list
   end,
-  ['{+}'] = function(exchange, name)
-    local engine = exchange:getAttribute('engine')
-    exchange:setAttribute('extension', engine:getExtensionById(name))
+  ['{+extension}(engine)'] = function(exchange, extensionId, engine)
+    return engine:getExtensionById(extensionId)
   end,
   ['{extensionId}'] = {
-    [''] = function(exchange)
-      local extension = exchange.attributes.extension
+    ['(extension)'] = function(_, extension)
       return {
         config = extension:getConfiguration(),
         info = extension:toJSON(),
         manifest = extension:getManifest()
       }
     end,
-    config = function(exchange)
-      return exchange.attributes.extension:getConfiguration()
+    ['config(extension)'] = function(_, extension)
+      return extension:getConfiguration()
     end,
-    info = function(exchange)
-      return exchange.attributes.extension:toJSON()
+    ['info(extension)'] = function(_, extension)
+      return extension:toJSON()
     end,
-    manifest = function(exchange)
-      return exchange.attributes.extension:getManifest()
+    ['manifest(extension)'] = function(_, extension)
+      return extension:getManifest()
     end,
     ['readme(extension)'] = function(exchange, extension)
       local readme = File:new(extension:getDir(), extension:readme())
@@ -157,7 +153,7 @@ local REST_EXTENSIONS = {
       response:setBody(content)
       return false
     end,
-    ['poll(extension)?method=POST'] = function(exchange, extension)
+    ['poll(extension)?method=POST'] = function(_, extension)
       if extension:isActive() then
         extension:publishEvent('poll')
       end
@@ -184,20 +180,19 @@ local REST_EXTENSIONS = {
         return false
       end
     },
-    ['test(extension)?method=POST'] = function(exchange, extension)
+    ['test(extension)?method=POST'] = function(_, extension)
       extension:publishEvent('test')
     end,
-    ['refreshThingsDescription(extension)?method=POST'] = function(exchange, extension)
-      local engine = exchange:getAttribute('engine')
+    ['refreshThingsDescription(extension, engine)?method=POST'] = function(_, extension, engine)
       if extension:isActive() then
         return refreshThingsDescription(engine, extension)
       end
     end,
     -- curl -X POST http://localhost:8080/engine/extensions/web-base/reload
-    ['reload(extension)?method=POST'] = function(exchange, extension)
+    ['reload(extension)?method=POST'] = function(_, extension)
       extension:restartExtension()
     end,
-    ['enable(extension)?method=POST'] = function(exchange, extension)
+    ['enable(extension)?method=POST'] = function(_, extension)
       if not extension:isActive() then
         extension:setActive(true)
         if extension:isActive() then
@@ -206,7 +201,7 @@ local REST_EXTENSIONS = {
         end
       end
     end,
-    ['disable(extension)?method=POST'] = function(exchange, extension)
+    ['disable(extension)?method=POST'] = function(_, extension)
       if extension:isActive() then
         extension:publishEvent('shutdown')
         extension:setActive(false)
@@ -217,30 +212,29 @@ local REST_EXTENSIONS = {
 
 local REST_ADMIN = {
   configuration = {
-    ['save?method=POST'] = function(exchange)
-      exchange.attributes.engine.configHistory:saveJson()
+    ['save(engine)?method=POST'] = function(_, engine)
+      engine.configHistory:saveJson()
       return 'Done'
     end
   },
   data = {
-    ['save?method=POST'] = function(exchange)
-      exchange.attributes.engine.dataHistory:saveJson()
+    ['save(engine)?method=POST'] = function(_, engine)
+      engine.dataHistory:saveJson()
       return 'Done'
     end
   },
-  ['reloadExtensions?method=POST'] = function(exchange)
-    local mode = RestHttpHandler.shiftPath(exchange:getAttribute('path'))
-    exchange.attributes.engine:reloadExtensions(mode == 'full', true)
+  ['reloadExtensions(engine, path)?method=POST'] = function(_, engine, path)
+    local mode = RestHttpHandler.shiftPath(path)
+    engine:reloadExtensions(mode == 'full', true)
     return 'Done'
   end,
-  ['reloadScripts?method=POST'] = function(exchange)
-    local mode = RestHttpHandler.shiftPath(exchange:getAttribute('path'))
-    exchange.attributes.engine:reloadScripts(mode == 'full')
+  ['reloadScripts(engine)?method=POST'] = function(_, engine, path)
+    local mode = RestHttpHandler.shiftPath(path)
+    engine:reloadScripts(mode == 'full')
     return 'Done'
   end,
-  ['reboot?method=POST'] = function(exchange)
+  ['reboot(engine)?method=POST'] = function(_, engine)
     event:setTimeout(function()
-      local engine = exchange:getAttribute('engine')
       engine:stop()
       --local installName = 'lha_reboot_install.zip'
       --local installFile = File:new(engine.rootDir, installName)
@@ -252,28 +246,27 @@ local REST_ADMIN = {
     end, 100)
     return 'In progress'
   end,
-  ['restart?method=POST'] = function(exchange)
+  ['restart(engine)?method=POST'] = function(_, engine)
     event:setTimeout(function()
-      exchange.attributes.engine:stop()
+      engine:stop()
       system.gc()
-      exchange.attributes.engine:start()
+      engine:start()
     end, 100)
     return 'In progress'
   end,
   -- curl -X POST http://localhost:8080/engine/stop
-  ['stop?method=POST'] = function(exchange)
+  ['stop(engine)?method=POST'] = function(_, engine)
     event:setTimeout(function()
-      exchange.attributes.engine:stop()
+      engine:stop()
       event:stop()
     end, 100)
     return 'In progress'
   end,
-  ['gc?method=POST'] = function(exchange)
+  ['gc?method=POST'] = function()
     system.gc()
     return 'Done'
   end,
-  info = function(exchange)
-    local engine = exchange:getAttribute('engine')
+  ['info(engine)'] = function(_, engine)
     local httpServer = engine:getHTTPServer()
     --local ip, port = httpServer:getAddress()
     local httpsExt = engine:getExtensionById('https')
@@ -294,8 +287,7 @@ local REST_ADMIN = {
     }
   end,
   backup = {
-    ['create?method=POST'] = function(exchange)
-      local engine = exchange:getAttribute('engine')
+    ['create(engine)?method=POST'] = function(_, engine)
       local ts = Date.timestamp()
       -- TODO add host name in file name
       local backup = File:new(engine:getTemporaryDirectory(), 'lha_backup.'..ts..'.zip')
@@ -312,9 +304,8 @@ local REST_ADMIN = {
         return backup:getName()
       end)
     end,
-    ['deploy?method=POST'] = function(exchange)
+    ['deploy(engine)?method=POST'] = function(exchange, engine)
       local backupName = exchange:getRequest():getBody() or 'lha_backup.zip'
-      local engine = exchange:getAttribute('engine')
       local backup = File:new(engine:getTemporaryDirectory(), backupName)
       if not backup:isFile() then
         HttpExchange.notFound(exchange)
@@ -350,7 +341,7 @@ local REST_ADMIN = {
       return 'In progress'
     end
   },
-  getLogLevel = function(exchange)
+  getLogLevel = function()
     return Logger.levelToString(rootLogger:getLevel())
   end,
   ['setLogLevel?method=POST'] = function(exchange)
@@ -364,72 +355,55 @@ local REST_ADMIN = {
 }
 
 local REST_THINGS = {
-  [''] = function(exchange)
-    local engine = exchange:getAttribute('engine')
-    local request = exchange:getRequest()
-    local method = string.upper(request:getMethod())
-    if method == HTTP_CONST.METHOD_GET then
-      local list = {}
-      for thingId, thing in pairs(engine.things) do
-        table.insert(list, thing:asEngineThingDescription())
-      end
-      return list
-    elseif method == HTTP_CONST.METHOD_PUT then
-      -- curl -X PUT --data-binary "@work\tmp\discoveredThings2.json" http://localhost:8080/engine/things
-      local discoveredThings = json.decode(request:getBody())
-      for _, discoveredThing in ipairs(discoveredThings) do
-        if discoveredThing.extensionId and discoveredThing.discoveryKey then
-          engine:addDiscoveredThing(discoveredThing.extensionId, discoveredThing.discoveryKey)
-        end
-      end
-      engine:publishEvent('things')
-    else
-      HttpExchange.methodNotAllowed(exchange)
-      return false
+  ['(engine)?method=GET'] = function(_, engine)
+    local list = {}
+    for _, thing in pairs(engine.things) do
+      table.insert(list, thing:asEngineThingDescription())
     end
+    return list
   end,
-  ['{thingId}'] = { -- TODO review routing
-    [''] = function(exchange)
-      local engine = exchange:getAttribute('engine')
-      local thingId = exchange:getAttribute('thingId')
-      local thing = engine.things[thingId]
-      if not thing then
+  ['(engine, requestJson)?method=PUT'] = function(_, engine, discoveredThings)
+    -- curl -X PUT --data-binary "@work\tmp\discoveredThings2.json" http://localhost:8080/engine/things
+    for _, discoveredThing in ipairs(discoveredThings) do
+      if discoveredThing.extensionId and discoveredThing.discoveryKey then
+        engine:addDiscoveredThing(discoveredThing.extensionId, discoveredThing.discoveryKey)
+      end
+    end
+    engine:publishEvent('things')
+  end,
+  ['{+thing}(engine)'] = function(_, thingId, engine)
+    return engine.things[thingId]
+  end,
+  ['{thingId}'] = {
+    ['(thing)?method=GET'] = function(_, thing)
+      return thing:asEngineThingDescription()
+    end,
+    ['(engine, thingId, thing, requestJson)?method=POST'] = function(exchange, engine, thingId, thing, thingDesc)
+      local thingConfiguration = engine:getThingConfigurationById(thingId)
+      local thingDescription = thingConfiguration and thingConfiguration.description
+      if not thingDescription then
         HttpExchange.notFound(exchange)
         return false
       end
-      local request = exchange:getRequest()
-      local method = string.upper(request:getMethod())
-      if method == HTTP_CONST.METHOD_GET then
-        return thing:asEngineThingDescription()
-      elseif method == HTTP_CONST.METHOD_DELETE then
-        engine:disableThing(thingId)
-        engine:publishEvent('things')
-      elseif method == HTTP_CONST.METHOD_POST then
-        local thingConfiguration = engine:getThingConfigurationById(thingId)
-        local thingDescription = thingConfiguration and thingConfiguration.description
-        if thingDescription then
-          local thingDesc = json.decode(request:getBody())
-          -- TODO Allow properties modifications?
-          for _, key in pairs({'title', 'description'}) do
-            local value = thingDesc[key]
-            if value then
-              thing[key] = value
-              thingDescription[key] = value
-            end
-          end
+      -- TODO Allow properties modifications?
+      for _, key in pairs({'title', 'description'}) do
+        local value = thingDesc[key]
+        if value then
+          thing[key] = value
+          thingDescription[key] = value
         end
-      else
-        HttpExchange.methodNotAllowed(exchange)
-        return false
       end
+    end,
+    ['(engine, thingId)?method=DELETE'] = function(_, engine, thingId)
+      engine:disableThing(thingId)
+      engine:publishEvent('things')
     end,
   },
 }
 
 return {
-  discoveredThings = function(exchange)
+  ['discoveredThings(engine)'] = function(_, engine)
     -- curl http://localhost:8080/engine/discoveredThings
-    local engine = exchange:getAttribute('engine')
     local descriptions = {}
     for _, extension in ipairs(engine.extensions) do
       if extension:isLoaded() then
@@ -444,29 +418,27 @@ return {
     end
     return descriptions
   end,
-  ['refreshThingsDescription?method=POST'] = function(exchange)
-    local engine = exchange:getAttribute('engine')
+  ['refreshThingsDescription(engine)?method=POST'] = function(_, engine)
     return refreshThingsDescription(engine)
   end,
-  ['poll?method=POST'] = function(exchange)
-    exchange.attributes.engine:publishEvent('poll')
+  ['poll(engine)?method=POST'] = function(_, engine)
+    engine:publishEvent('poll')
     return 'Polled'
   end,
-  ['publishEvent?method=POST'] = function(exchange)
+  ['publishEvent(engine)?method=POST'] = function(exchange, engine)
     local eventName = exchange:getRequest():getBody()
-    exchange.attributes.engine:publishEvent(eventName)
+    engine:publishEvent(eventName)
     return 'Published'
   end,
-  ['saveData?method=POST'] = function(exchange)
-    exchange.attributes.engine.dataHistory:save(false)
+  ['saveData(engine)?method=POST'] = function(_, engine)
+    engine.dataHistory:save(false)
     return 'Saved'
   end,
-  ['saveHistory?method=POST'] = function(exchange)
-    exchange.attributes.engine.configHistory:save(false)
+  ['saveHistory(engine)?method=POST'] = function(_, engine)
+    engine.configHistory:save(false)
     return 'Saved'
   end,
-  properties = function(exchange)
-    local engine = exchange:getAttribute('engine')
+  ['properties(engine)'] = function(_, engine)
     local t = {}
     for thingId, thing in pairs(engine.things) do
       t[thingId] = thing:getPropertyValues()

@@ -1,54 +1,7 @@
-local HTTP_CONST = require('jls.net.http.HttpMessage').CONST
-local HttpExchange = require('jls.net.http.HttpExchange')
-local json = require('jls.util.json')
 local Map = require('jls.util.Map')
 
-local REST_THING = {
-  [''] = function(exchange)
-    return exchange.attributes.thing:asThingDescription()
-  end,
-  properties = {
-    [''] = function(exchange)
-      local request = exchange:getRequest()
-      local method = string.upper(request:getMethod())
-      if method == HTTP_CONST.METHOD_GET then
-        return exchange.attributes.thing:getPropertyValues()
-      elseif method == HTTP_CONST.METHOD_PUT then
-        local rt = json.decode(request:getBody())
-        for name, value in pairs(rt) do
-          exchange.attributes.thing:setPropertyValue(name, value)
-        end
-      else
-        HttpExchange.methodNotAllowed(exchange)
-        return false
-      end
-    end,
-    ['{propertyName}(propertyName)'] = function(exchange, propertyName)
-      local request = exchange:getRequest()
-      local method = string.upper(request:getMethod())
-      local property = exchange.attributes.thing:getProperty(propertyName)
-      if property then
-        if method == HTTP_CONST.METHOD_GET then
-          return {[propertyName] = property:getValue()}
-        elseif method == HTTP_CONST.METHOD_PUT then
-          local rt = json.decode(request:getBody())
-          local value = rt[propertyName]
-          exchange.attributes.thing:setPropertyValue(propertyName, value)
-        else
-          HttpExchange.methodNotAllowed(exchange)
-          return false
-        end
-      else
-        HttpExchange.notFound(exchange)
-        return false
-      end
-    end,
-  }
-}
-
 return {
-  [''] = function(exchange)
-    local engine = exchange:getAttribute('engine')
+  ['(engine)'] = function(_, engine)
     local descriptions = {}
     for _, thing in Map.spairs(engine.things) do
       local description = thing:asThingDescription()
@@ -56,14 +9,34 @@ return {
     end
     return descriptions
   end,
-  ['{+}'] = function(exchange, name)
-    local engine = exchange:getAttribute('engine')
-    local thing = engine.things[name]
-    if thing then
-      exchange:setAttribute('thing', thing)
-    else
-      error('Thing not found '..tostring(name))
-    end
+  ['{+thing}(engine)'] = function(_, name, engine)
+    return engine.things[name]
   end,
-  ['{thingId}'] = REST_THING,
+  ['{thingId}'] = {
+    [''] = function(exchange)
+      return exchange.attributes.thing:asThingDescription()
+    end,
+    properties = {
+      ['(thing)?method=GET'] = function(_, thing)
+        return thing:getPropertyValues()
+      end,
+      ['(thing, requestJson)?method|=POST|PUT'] = function(_, thing, rt)
+        for name, value in pairs(rt) do
+          thing:setPropertyValue(name, value)
+        end
+      end,
+      ['{+property}(thing)'] = function(_, propertyName, thing)
+        return thing:getProperty(propertyName)
+      end,
+      ['{propertyName}'] = {
+        ['(property, propertyName)?method=GET'] = function(_, property, propertyName)
+          return {[propertyName] = property:getValue()}
+        end,
+        ['(thing, propertyName, requestJson)?method=PUT'] = function(_, thing, propertyName, rt)
+          local value = rt[propertyName]
+          thing:setPropertyValue(propertyName, value)
+        end,
+      },
+    }
+  }
 }
