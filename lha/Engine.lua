@@ -496,6 +496,8 @@ return class.create(function(engine)
           if useDiscoveryKey then
             if thingConfiguration.discoveryKey then
               things[thingConfiguration.discoveryKey] = thing
+            else
+              logger:warn('missing discoveryKey for thing %s on extension %s', thing, extensionId)
             end
           else
             things[thingId] = thing

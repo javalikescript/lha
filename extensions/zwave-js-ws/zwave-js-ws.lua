@@ -93,6 +93,8 @@ extension:subscribeEvent('poll', function()
     }):next(function(result)
       logger:finer('Z-Wave nodeId %s state: %t', nodeId, result)
       onNode(result.state)
+    end, function(reason)
+      logger:warn('Z-Wave nodeId %s state in error: %s', nodeId, reason)
     end)
   end
 end)

@@ -1,7 +1,6 @@
 local logger = require('jls.lang.logger'):get(...)
 local class = require('jls.lang.class')
 local tables = require('jls.util.tables')
-local Date = require('jls.util.Date')
 
 local Thing = require('lha.Thing')
 
