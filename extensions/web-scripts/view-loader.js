@@ -88,10 +88,7 @@ define(function() {
             var propName = parts[1];
             var valueByName = {};
             valueByName[propName] = value;
-            return fetch('/things/' + thingId + '/properties', {
-              method: 'PUT',
-              body: JSON.stringify(valueByName)
-            }).then(rejectIfNotOk);
+            return putJson('/things/' + thingId + '/properties', valueByName).then(rejectIfNotOk);
           },
           setProperty: function(name, value) {
             for (var i = 0; i < config.properties.length; i++) {

@@ -145,12 +145,7 @@ new Vue({
     },
     onSave: function() {
       if (this.extensionId && this.config) {
-        fetch('/engine/configuration/extensions/' + this.extensionId, {
-          method: 'PUT',
-          body: JSON.stringify({
-            value: this.config
-          })
-        }).then(assertIsOk).then(function() {
+        putJson('/engine/configuration/extensions/' + this.extensionId, { value: this.config }).then(assertIsOk).then(function() {
           app.clearCache();
           toaster.toast('Extension configuration saved');
         });
@@ -206,12 +201,7 @@ new Vue({
       if (!extensionId || !this.config) {
         return Promise.reject();
       }
-      return fetch('/engine/configuration/extensions/' + extensionId, {
-        method: 'PUT',
-        body: JSON.stringify({
-          value: this.config
-        })
-      }).then(assertIsOk).then(function() {
+      return putJson('/engine/configuration/extensions/' + extensionId, { value: this.config }).then(assertIsOk).then(function() {
         return fetch('/engine/extensions/' + extensionId + '/enable', {method: 'POST'});
       }).then(assertIsOk).then(function() {
         app.clearCache();

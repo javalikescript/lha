@@ -78,12 +78,7 @@ registerPageVue(new Vue({
         };
       }
       console.log('config', config);
-      fetch('/engine/configuration/', {
-        method: 'POST',
-        body: JSON.stringify({
-          value: config
-        })
-      }).then(assertIsOk).then(function() {
+      postJson('/engine/configuration/', { value: config }).then(assertIsOk).then(function() {
         toaster.toast('Things saved');
         app.clearCache();
         self.edit = false;
@@ -156,10 +151,7 @@ new Vue({
       var p = resolved;
       if (Object.keys(modifiedProps).length > 0) {
         p = p.then(function() {
-          return fetch('/things/' + thingId + '/properties', {
-            method: 'PUT',
-            body: JSON.stringify(modifiedProps)
-          }).then(assertIsOk).then(function() {
+          return putJson('/things/' + thingId + '/properties', modifiedProps).then(assertIsOk).then(function() {
             toaster.toast('Properties updated');
             app.clearCache();
           });
@@ -167,10 +159,7 @@ new Vue({
       }
       if (Object.keys(modifiedThing).length > 0) {
         p = p.then(function() {
-          return fetch('/engine/things/' + thingId, {
-            method: 'POST',
-            body: JSON.stringify(modifiedThing)
-          }).then(assertIsOk).then(function() {
+          return postJson('/engine/things/' + thingId, modifiedThing).then(assertIsOk).then(function() {
             toaster.toast('Thing updated');
             app.clearCache();
           });
@@ -255,10 +244,7 @@ new Vue({
       if (thingsToAdd.length === 0) {
         return Promise.resolve();
       }
-      return fetch('/engine/things/', {
-        method: 'PUT',
-        body: JSON.stringify(thingsToAdd)
-      }).then(assertIsOk).then(function() {
+      return putJson('/engine/things/', thingsToAdd).then(assertIsOk).then(function() {
         toaster.toast('Things saved');
         app.clearCache();
       });

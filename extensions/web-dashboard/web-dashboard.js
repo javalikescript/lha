@@ -180,10 +180,7 @@ define(['./web-dashboard.xml'], function(dashboardTemplate) {
   function putThingPropertyValue(thingId, propertyName, newValue) {
     var valueByName = {};
     valueByName[propertyName] = newValue;
-    return fetch('/things/' + thingId + '/properties', {
-      method: 'PUT',
-      body: JSON.stringify(valueByName)
-    }).then(rejectIfNotOk);
+    return putJson('/things/' + thingId + '/properties', valueByName).then(rejectIfNotOk);
   }
 
   var extensionId = 'web-dashboard';

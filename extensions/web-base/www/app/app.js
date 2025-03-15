@@ -632,12 +632,7 @@ var homePage = new Vue({
       });
     },
     onSave: function() {
-      fetch('/engine/configuration/engine', {
-        method: 'POST',
-        body: JSON.stringify({
-          value: this.config
-        })
-      }).then(assertIsOk).then(function() {
+      postJson('/engine/configuration/engine', { value: this.config }).then(assertIsOk).then(function() {
         toaster.toast('Engine configuration saved');
         app.clearCache();
       });

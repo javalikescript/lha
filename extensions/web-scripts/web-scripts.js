@@ -376,10 +376,7 @@ define(['./scripts.xml', './scripts-add.xml',
         }));
       },
       onSave: function() {
-        return fetch(scriptFilesPath + this.scriptId + '/config.json', {
-          method: 'PUT',
-          body: JSON.stringify(this.config)
-        }).then(assertIsOk).then(function() {
+        return putJson(scriptFilesPath + this.scriptId + '/config.json', this.config).then(assertIsOk).then(function() {
           app.back();
           toaster.toast('Saved');
         });

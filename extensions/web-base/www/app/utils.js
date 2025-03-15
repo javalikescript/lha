@@ -63,8 +63,10 @@ function swapMap(m) {
 function assignMap(m) {
   for (var i = 1; i < arguments.length; i++) {
     var n = arguments[i];
-    for (var k in n) {
-      m[k] = n[k];
+    if (isObject(n)) {
+      for (var k in n) {
+        m[k] = n[k];
+      }
     }
   }
   return m;
@@ -213,6 +215,18 @@ function extname(path, invert) {
     return dotIndex < 0 ? name : name.substring(0, dotIndex);
   }
   return dotIndex < 0 ? '' : name.substring(dotIndex + 1);
+}
+
+function postJson(resource, obj, options, method) {
+  return fetch(resource, assignMap({
+    method: method || 'POST',
+    headers: { "Content-Type": 'application/json' },
+    body: JSON.stringify(obj)
+  }, options));
+}
+
+function putJson(resource, obj, options) {
+  return postJson(resource, obj, options, 'PUT');
 }
 
 function getJson(response) {
