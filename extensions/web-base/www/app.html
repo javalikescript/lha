@@ -167,6 +167,7 @@
     <template slot="bar-right">
       <button v-on:click="onSave().then(function(){ app.back(); })" title="Enable Selected Things"><i class="far fa-save"></i></button>
       <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
+      <button v-on:click="onSelectAll()" title="Select All"><i class="fas fa-check"></i></button>
     </template>
     <article class="cards">
       <div class="card" v-for="thing in things">
@@ -177,7 +178,6 @@
         <p>{{ thing.description }}</p>
       </div>
       <section>
-        <button v-on:click="onSelectAll()"><i class="fas fa-check"></i>&nbsp;Select All</button>
         <button v-on:click="onSave().then(function(){ app.back(); })"><i class="fa fa-plus"></i>&nbsp;Enable Selected</button>
         <button v-on:click="app.back()">Cancel</button>
       </section>
