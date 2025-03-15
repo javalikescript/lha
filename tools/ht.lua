@@ -16,6 +16,7 @@ end
 local HOUR_SEC = 3600
 local DAY_SEC = 24 * HOUR_SEC
 local WEEK_SEC = 7 * DAY_SEC
+local DAY_MS = DAY_SEC * 1000
 
 local options = tables.createArgumentTable(arg, {
   aliases = {
@@ -69,14 +70,14 @@ local options = tables.createArgumentTable(arg, {
         default = 'data'
       },
       from = {
-        title = 'Seconds from time',
-        type = 'integer',
-        default = DAY_SEC * 2
+        title = 'Days from now',
+        type = 'number',
+        default = 2
       },
       to = {
-        title = 'Seconds to time',
-        type = 'integer',
-        default = HOUR_SEC * 2
+        title = 'Days to now',
+        type = 'number',
+        default = 0.1
       },
       all = {
         title = 'All time',
@@ -126,14 +127,13 @@ local options = tables.createArgumentTable(arg, {
       ['log-level'] = {
         title = 'The log level',
         type = 'string',
-        default = 'warn',
-        enum = {'error', 'warn', 'info', 'config', 'fine', 'finer', 'finest', 'debug', 'all'}
+        default = 'warn'
       },
     }
   }
 })
 
-logger:setLevel(options['log-level'])
+logger:setConfig(options['log-level'])
 
 local sourceDir = options.source and File:new(options.source)
 local destDir = options.target and File:new(options.target)
@@ -153,8 +153,8 @@ if not sourceDir:isDirectory() then
   system.exit(22)
 end
 
-local toTime = time + options.to * 1000
-local fromTime = toTime - options.from * 1000
+local toTime = time + math.floor(options.to * DAY_MS)
+local fromTime = toTime - math.floor(options.from * DAY_MS)
 
 if options.all then
   toTime = time + WEEK_SEC * 1000
@@ -162,7 +162,7 @@ if options.all then
 end
 
 print('from '..Date:new(fromTime):toISOString()..' to '..Date:new(toTime):toISOString())
-print('fileMin:', fileMin)
+print('fileMin:', fileMin, 'name:', options.name)
 
 local htSource = HistoricalTable:new(sourceDir, options.name, {fileMin = fileMin})
 
