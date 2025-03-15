@@ -70,7 +70,7 @@
     },
     "disableScripts": {
       "default": false,
-      "title": "Disable the script extensions",
+      "title": "Disable the script extensions at startup",
       "type": "boolean"
     },
     "work": {

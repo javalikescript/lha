@@ -264,13 +264,17 @@ return class.create(function(engine)
     return list
   end
 
-  function engine:loadExtensionFromDirectory(dir, type)
+  function engine:loadExtensionFromDirectory(dir, typ, deactivate)
     logger:fine('Loading extension from directory "%s"', dir)
-    local extension = Extension.read(self, dir, type)
+    local extension = Extension.read(self, dir, typ)
     if extension then
       if self:getExtensionById(extension:getId()) then
         logger:warn('The extension %s already exists', extension)
         return nil
+      end
+      if deactivate == true then
+        local configuration = extension:getConfiguration()
+        configuration.active = false
       end
       if extension:loadExtension() then
         self:addExtension(extension)
@@ -283,22 +287,18 @@ return class.create(function(engine)
     end
   end
 
-  function engine:loadExtensionsFromDirectory(dir, type)
+  function engine:loadExtensionsFromDirectory(dir, typ, deactivate)
     logger:info('Loading extensions from directory "%s"', dir)
     for _, extensionDir in ipairs(dir:listFiles()) do
       if extensionDir:isDirectory() then
-        self:loadExtensionFromDirectory(extensionDir, type)
+        self:loadExtensionFromDirectory(extensionDir, typ, deactivate)
       end
     end
   end
 
-  function engine:loadScriptExtensions()
+  function engine:loadScriptExtensions(deactivate)
     if self.scriptsDir:isDirectory() then
-      if self.options.disableScripts then
-        logger:info('Script extensions disabled')
-      else
-        self:loadExtensionsFromDirectory(self.scriptsDir, 'script')
-      end
+      self:loadExtensionsFromDirectory(self.scriptsDir, 'script', deactivate)
     end
   end
 
@@ -309,12 +309,6 @@ return class.create(function(engine)
     if self.extensionsDir:isDirectory() then
       self:loadExtensionsFromDirectory(self.extensionsDir, 'extension')
     end
-  end
-
-  function engine:loadExtensions()
-    self.extensions = {}
-    self:loadOtherExtensions()
-    self:loadScriptExtensions()
   end
 
   function engine:reloadExtensions(full)
@@ -485,7 +479,6 @@ return class.create(function(engine)
 
   function engine:loadThings()
     -- Load the things available in the configuration
-    self.things = {}
     self:cleanThings(false)
     for thingId, thingConfiguration in pairs(self.root.configuration.things) do
       if thingConfiguration.active then
@@ -561,7 +554,10 @@ return class.create(function(engine)
     end
     self:createScheduler()
     self:startHTTPServer()
-    self:loadExtensions()
+    self.extensions = {}
+    self:loadOtherExtensions()
+    self:loadScriptExtensions(self.options.disableScripts)
+    self.things = {}
     self:loadThings()
     self:loadThingValues()
     logger:info('Engine started')
@@ -583,6 +579,11 @@ return class.create(function(engine)
     self.configHistory:saveJson()
     self.dataHistory:saveJson()
     self:saveThingValues()
+    for _, extension in ipairs(self.extensions) do
+      extension:cleanExtension()
+    end
+    self.extensions = {}
+    self.things = {}
   end
 
 end, function(Engine)
@@ -602,11 +603,12 @@ end, function(Engine)
       schema = utils.requireJson('lha.schema')
     })
     local defaultConfig = options.config
+    local customConfig = customOptions.config
     options.config = nil
     local rootLogger = require('jls.lang.logger')
     rootLogger:setConfig(options.loglevel)
     local engine = Engine:new(options)
-    engine:start(defaultConfig, customOptions.config)
+    engine:start(defaultConfig, customConfig)
     -- Poll before first heartbeat
     event:setTimeout(function()
       logger:info('Start polling')

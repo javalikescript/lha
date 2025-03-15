@@ -30,12 +30,13 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
   -- @function Extension:new
   -- @param engine the engine that holds this extension.
   -- @param dir the extension directory
+  -- @param typ the extension type, default to 'default'
   -- @tparam string type the extension type.
-  function extension:initialize(engine, dir, type)
+  function extension:initialize(engine, dir, typ)
     super.initialize(self)
     self.engine = engine
     self.dir = dir
-    self.type = type or 'default'
+    self.type = typ or 'default'
     self.id = dir:getName()
     self.loaded = false
     self.manifest = {}
@@ -133,7 +134,6 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
     local target = value == true
     if self.loaded and self.configuration.active ~= target then
       self.configuration.active = target
-      self:fireExtensionEvent('extensions')
     end
   end
 
@@ -563,9 +563,9 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
 
 end, function(Extension)
 
-  function Extension.read(engine, dir, type)
+  function Extension.read(engine, dir, typ)
     if Extension.isValid(engine, dir) then
-      return Extension:new(engine, dir, type)
+      return Extension:new(engine, dir, typ)
     end
     return nil
   end
