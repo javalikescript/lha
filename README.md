@@ -14,7 +14,7 @@ The lha engine manages the extensions including scripts, the things, the schedul
 The engine records thing property values in dedicated time based log files.
 
 It is a pure [Lua](https://www.lua.org/) application built around a scheduler and an HTTP server based on [luajls](https://github.com/javalikescript/luajls).
-It exposes a [Web of Things](https://iot.mozilla.org/wot/) API.
+It exposes a Thing Description JSON API, see [Web of Things](https://www.w3.org/WoT/).
 
 The lha application could be run on small computers such as the _Raspberry PI_ or the _WD MyCloud_.
 It could also be run on any _Linux_ distribution or _Windows_.
@@ -34,14 +34,21 @@ See list of already available [devices](devices.md)
 
 ## Screenshots
 
-An example of a dashboard setup with temperature and motion sensors.
-![dashboard](https://user-images.githubusercontent.com/9386420/170430755-c585a479-1277-4eac-a8a8-fc15bcec452d.png)
+The web base pages.  
+![tiles](https://github.com/user-attachments/assets/398653c6-2f51-4c8d-a72e-d73043a6b0d3)
+![extensions](https://github.com/user-attachments/assets/b879bb4e-8aeb-4d22-8a25-b1f36617f45a)
+![things](https://github.com/user-attachments/assets/26904e22-7801-43fc-a789-224a6f43497c)
 
-A chart of temperature sensors.
-![data-chart](https://user-images.githubusercontent.com/9386420/170430776-2f4277ba-039f-426c-8c2a-60c7d8bef64a.png)
+A chart of temperature sensor.  
+![chart](https://github.com/user-attachments/assets/946a697c-652a-4f3a-b86c-11e679955633)
 
-An example of script to send a SMS on an intrusion.
-![alarm-script](https://user-images.githubusercontent.com/9386420/170430789-86008c90-5a5a-4f2c-bd82-911addb9d373.png)
+An example of script to send a SMS on an intrusion.  
+![script](https://github.com/user-attachments/assets/5be2ba32-8c52-4132-acfb-b2f1f7d1c755)
+
+Custom views.  
+![kiosk](https://github.com/user-attachments/assets/69ee4525-a937-4e17-b8ed-56663eaaa8da)
+![power](https://github.com/user-attachments/assets/60834f38-34b7-4c7b-b535-d51146cf5c83)
+![temp](https://github.com/user-attachments/assets/287bc36a-87d9-4e67-afe7-52f9e017365e)
 
 ## Setup
 
