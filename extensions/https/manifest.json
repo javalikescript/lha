@@ -12,8 +12,9 @@
         "default": "::"
       },
       "port": {
+        "title": "Port number for HTTPS",
         "type": "integer",
-        "default": 8443,
+        "default": 443,
         "minimum": 0,
         "maximum": 65535
       },
@@ -41,6 +42,35 @@
         "title": "Enable HTTP/2",
         "type": "boolean",
         "default": false
+      },
+      "httpPort": {
+        "title": "Port number for the HTTP redirect, 80, empty to disable",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 65535
+      },
+      "acme": {
+        "title": "Automatic Certificate Management Environment",
+        "description": "Requires HTTP redirect to be enabled and available by the ACME server",
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "title": "Use ACME to generate and renew the certificate",
+            "type": "boolean",
+            "default": false
+          },
+          "accountKey": {
+            "title": "The ACME account key file",
+            "type": "string",
+            "default": "account-key.pem"
+          },
+          "url": {
+            "title": "The ACME v2 URL",
+            "type": "string",
+            "pattern": "^https?://.+$",
+            "default": "https://acme-v02.api.letsencrypt.org/directory"
+          }
+        }    
       }
     }
   }
