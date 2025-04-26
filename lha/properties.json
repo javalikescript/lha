@@ -123,6 +123,7 @@
   "open": {
     "@type": "OpenProperty",
     "description": "Whether the thing is open",
+    "readOnly": true,
     "title": "Open",
     "type": "boolean"
   },
