@@ -117,11 +117,38 @@ var app = new Vue({
     getTheme: function() {
       return this.theme;
     },
+    navigate: function(mode, id, path, force) {
+      var previousId = this.page !== id ? this.page : '';
+      if (previousId && !force) {
+        var page = this.pages[previousId];
+        if (page) {
+          var p = callVueFromPage(page, 'onBeforeHide');
+          if (p === false) {
+            return;
+          } else if (p instanceof Promise) {
+            p.then(function() {
+              this.navigate(mode, id, path, true);
+            }.bind(this));
+            return;
+          }
+        }
+      }
+      if (mode === 'back') {
+        window.history.back();
+      } else if (mode === 'assign') {
+        window.location.assign('#' + formatNavigationPath(id, path));
+      } else if (mode === 'replace') {
+        window.location.replace('#' + formatNavigationPath(id, path));
+      }
+    },
     toPage: function(id, path) {
-      window.location.assign('#' + formatNavigationPath(id, path));
+      this.navigate('assign', id, path);
     },
     replacePage: function(id, path) {
-      window.location.replace('#' + formatNavigationPath(id, path));
+      this.navigate('replace', id, path);
+    },
+    back: function() {
+      this.navigate('back');
     },
     onHashchange: function(path) {
       var matches = parseNavigationPath(path);
@@ -129,8 +156,8 @@ var app = new Vue({
         var id = matches[1];
         var pagePath = matches[2];
         if (id in this.pages) {
-          this.menu = '';
           var previousId = this.page !== id ? this.page : '';
+          this.menu = '';
           this.page = id;
           this.$emit('page-selected', id, pagePath, previousId);
           return;
@@ -157,9 +184,6 @@ var app = new Vue({
     emitPage: function(id) {
       this.callPage(id, '$emit');
       return this;
-    },
-    back: function() {
-      window.history.back();
     },
     watchDataChange: function(path, fn) {
       var parts = path.split('/', 2);

@@ -258,9 +258,10 @@ function insertTab(e) {
   }
 }
 
-function findAncestor(el, selector) {
+function findAncestor(el, selector, deep) {
   if (el) {
-    while (true) {
+    var d = typeof deep === 'number' ? deep : 10;
+    while (--d > 0) {
       el = el.parentElement;
       if (el) {
         if (el.matches(selector)) {
@@ -279,6 +280,26 @@ function findChild(el, selector) {
       let c = el.children[i];
       if (c.matches(selector)) {
         return c;
+      }
+    }
+  }
+}
+
+function findDescendant(el, selector, deep) {
+  if (el) {
+    var m = findChild(el, selector);
+    if (m) {
+      return m;
+    }
+    var d = typeof deep === 'number' ? deep : 10;
+    if (d > 0) {
+      d--;
+      for (let i = 0; i < el.children.length; i++) {
+        let c = el.children[i];
+        m = findDescendant(c, selector, d);
+        if (m) {
+          return m;
+        }
       }
     }
   }

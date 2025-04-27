@@ -112,7 +112,8 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
   var noteVue = new Vue({
     template: noteTemplate,
     data: Object.assign({
-      text: ''
+      text: '',
+      saved: true
     }, SHARED_DATA),
     methods: {
       onShow: function(path) {
@@ -120,12 +121,33 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
         this.text = '';
         return fetch(NOTES_PATH + this.path).then(rejectIfNotOk).then(getResponseText).then(function(text) {
           this.text = text;
+          this.saved = true;
+          tryFocus(findDescendant(this.$el, 'textarea'));
         }.bind(this));
       },
+      onBeforeHide: function() {
+        if (!this.saved) {
+          toaster.toast('Unsaved modifications');
+          return false;
+        }
+      },
+      onChange: function() {
+        this.saved = false;
+      },
       onRename: onRename,
-      onDelete: onDelete,
+      onDelete: function () {
+        return onDelete.call(this).then(function() {
+          this.saved = true;
+        }.bind(this));
+      },
       onSave: function () {
-        onSave.call(this, this.text);
+        if (this.saved) {
+          toaster.toast('Note already saved');
+        } else {
+          onSave.call(this, this.text).then(function() {
+            this.saved = true;
+          }.bind(this));
+        }
       }
     }
   });

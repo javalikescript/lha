@@ -14,6 +14,7 @@
   </template>
   <article class="content">
     <textarea v-model="text" v-on:keydown.ctrl.s.exact.prevent.stop="onSave()" v-on:keydown.tab.prevent="insertTab"
+      v-on:input="onChange" v-on:keydown.esc.prevent="app.back()"
       spellcheck="false" wrap="off" class="full" style="font-size: 2rem" placeholder="Enter your note here"></textarea>
   </article>
 </app-page>
