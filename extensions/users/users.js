@@ -34,7 +34,10 @@ define(['./users.xml'], function(loginTemplate) {
           },
           body: body
         }).then(assertIsOk).then(function() {
-          window.location.reload();
+          window.history.back();
+          setTimeout(function() {
+            window.location.reload();
+          }, 100);
         });
       },
       logout: function() {
