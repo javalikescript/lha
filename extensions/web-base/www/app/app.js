@@ -450,7 +450,10 @@ Vue.component('app-page', {
   props: {
     id: String,
     title: String,
-    homePage: String,
+    homePage: {
+      type: String,
+      default: 'home'
+    },
     menu: {
       type: String,
       default: 'menu'

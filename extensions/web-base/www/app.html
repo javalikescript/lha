@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>App</title>
   <link rel="stylesheet" href="app.css">
   <link rel="stylesheet" href="static/fa/css/all.min.css">
@@ -102,7 +102,7 @@
         <p>{{ thing.description }}</p>
         <div class="bar">
           <div><p v-if="edit">
-            <label class="switch"><input type="checkbox" v-model="thing.archiveData" /><span class="slider"></span></label>&nbsp;Archive Data
+            <label class="switch"><input type="checkbox" v-model="thing.archiveData"/><span class="slider"></span></label>&nbsp;Archive Data
           </p></div>
           <div>
             <p>{{ (thing.thingId in propertiesById ? (propertiesById[thing.thingId].value + ' ' + propertiesById[thing.thingId].unit) : '') }}</p>
@@ -151,7 +151,7 @@
                 <input v-else v-model="editProps[name]" type="text" placeholder="String Value">
               </template>
               <input v-if="(property.type === 'number') || (property.type === 'integer')" v-model="editProps[name]" number type="number" placeholder="Number Value">
-              <label v-if="property.type === 'boolean'" class="switch"><input type="checkbox" v-model="editProps[name]" /><span class="slider"></span></label>
+              <label v-if="property.type === 'boolean'" class="switch"><input type="checkbox" v-model="editProps[name]"/><span class="slider"></span></label>
             </div>
           </div>
           <div>
@@ -173,7 +173,7 @@
       <div class="card" v-for="thing in things">
         <div class="bar">
           <p>{{ thing.title + (thing.extensionId in extensionsById ? (' (' + extensionsById[thing.extensionId].name + ')') : '') }}</p>
-          <label class="switch" title="Enable"><input type="checkbox" v-model="thing.toAdd" /><span class="slider"></span></label>
+          <label class="switch" title="Enable"><input type="checkbox" v-model="thing.toAdd"/><span class="slider"></span></label>
         </div>
         <p>{{ thing.description }}</p>
       </div>
@@ -315,7 +315,7 @@
         <button v-on:click="backup" :disabled="working"><i class="fas fa-box"></i>&nbsp;Create Backup</button>
         <a v-if="filename" :href="'/engine/tmp/' + filename" download>{{filename}}</a>
         <button v-on:click="selectFile" :disabled="working"><i class="fas fa-box-open"></i>&nbsp;Deploy Backup</button>
-        <input v-on:change="uploadThenDeploy" type="file" accept=".zip" ref="uploadInput" style="display: none;" />
+        <input v-on:change="uploadThenDeploy" type="file" accept=".zip" ref="uploadInput" style="display: none;"/>
         <button v-on:click="stopServer()" :disabled="working"><i class="fas fa-power-off"></i>&nbsp;Stop the Server</button>
       </section>
       <section>
@@ -385,7 +385,7 @@
     </template>
     <input v-else-if="schema.type === 'number' || schema.type === 'integer'" v-model="value" :readonly="schema.readOnly" type="number" placeholder="Number Value">
     <label v-else-if="schema.type === 'boolean'" class="switch big">
-      <input type="checkbox" v-model="value" />
+      <input type="checkbox" v-model="value"/>
       <span class="slider"></span>
     </label>
     <ul v-else-if="isProperties" class="json-properties" v-show="open">
@@ -408,7 +408,7 @@
 <script type="text/x-template" id="dialog-template" tabindex="-1">
   <section v-bind:id="id" class="page dialog" v-bind:class="{ hide: app.dialog !== id }">
     <header>
-      <div />
+      <div/>
       <h1>{{ title }}</h1>
       <div>
         <slot name="bar-right">
@@ -426,7 +426,7 @@
         <button v-on:click="app.menu = ''"><i class="fa fa-window-close"></i></button>
         <button v-on:click="app.toPage(homePage)" v-if="homePage && (app.page !== homePage)"><i class="fas fa-home"></i></button>
       </div>
-      <h1>{{ title }}</h1><div />
+      <h1>{{ title }}</h1><div/>
     </header>
     <slot>Article</slot>
   </section>
@@ -437,7 +437,7 @@
       <div>
         <slot name="bar-left">
           <button v-on:click="app.menu = menu" v-if="menu"><i class="fa fa-bars"></i></button>
-          <button v-on:click="app.toPage(homePage)" v-if="homePage"><i class="fas fa-home"></i></button>
+          <button v-on:click="app.toPage(homePage)" v-if="homePage && (app.page !== homePage)"><i class="fas fa-home"></i></button>
         </slot>
       </div>
       <slot name="bar-middle">  
@@ -446,7 +446,7 @@
       <div>
         <slot name="bar-right"></slot>
         <template v-if="app.getPage('user')">
-          <button v-on:click="app.toPage('user')" v-if="app.user && app.user.logged" :title="app.user.name"><i class="fa fa-user"></i></button>
+          <button v-on:click="app.toPage('user', true)" v-if="app.user && app.user.logged" :title="app.user.name"><i class="fa fa-user"></i></button>
           <button v-on:click="app.toPage('user')" v-else title="Not logged"><i class="fa fa-user-alt-slash"></i></button>
         </template>
       </div>
