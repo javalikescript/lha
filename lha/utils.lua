@@ -230,14 +230,17 @@ function utils.replaceRefs(t, env)
   end)
   replaceRef(t, function(kind, value, tt)
     if kind == 'merge' then
-      local pa, pb = string.match(expand(value, tt), '^([^:]+):(.+)$')
-      if pa then
-        local a = tables.getPath(t, pa)
-        local b = tables.getPath(t, pb)
-        if type(a) == 'table' and type(b) == 'table' then
-          local c = tables.deepCopy(a)
-          tables.merge(c, b)
-          return true, c
+      local v = expand(value, tt)
+      if v then
+        local pa, pb = string.match(v, '^([^:]+):(.+)$')
+        if pa then
+          local a = tables.getPath(t, pa)
+          local b = tables.getPath(t, pb)
+          if type(a) == 'table' and type(b) == 'table' then
+            local c = tables.deepCopy(a)
+            tables.merge(c, b)
+            return true, c
+          end
         end
       end
     end
@@ -265,31 +268,13 @@ function utils.mirekToColorTemperature(value)
 end
 
 -- see https://github.com/Shnoo/js-CIE-1931-rgb-color-converter/blob/master/ColorConverter.js
+-- see https://github.com/usolved/cie-rgb-converter/blob/master/cie_rgb_converter.js
 
 local function getGammaCorrectedValue(value)
   if value > 0.04045 then
     return ((value + 0.055) / (1.0 + 0.055)) ^ 2.4
   end
   return value / 12.92
-end
-
-function utils.rgbToXy(red, green, blue)
-  red = getGammaCorrectedValue(red)
-  green = getGammaCorrectedValue(green)
-  blue = getGammaCorrectedValue(blue)
-
-  local X = red * 0.649926 + green * 0.103455 + blue * 0.197109
-  local Y = red * 0.234327 + green * 0.743075 + blue * 0.022598
-  local Z = red * 0.0000000 + green * 0.053077 + blue * 1.035763
-
-  local S = X + Y + Z
-  if S == 0 then
-    return 0, 0
-  end
-
-  local x, y = X / S, Y / S
-  -- TODO check value is in gamut range, depending on the model, or find closest value
-  return x, y
 end
 
 local function getReversedGammaCorrectedValue(value)
@@ -299,7 +284,53 @@ local function getReversedGammaCorrectedValue(value)
   return (1.0 + 0.055) * (value ^ (1.0 / 2.4)) - 0.055
 end
 
-function utils.xyBriToRgb(x, y, Y)
+function utils.rgbToXyz(r, g, b)
+  local X = r * 0.664511 + g * 0.154324 + b * 0.162028
+  local Y = r * 0.283881 + g * 0.668433 + b * 0.047685
+  local Z = r * 0.000088 + g * 0.072310 + b * 0.986039
+  return X, Y, Z
+end
+
+function utils.xyzToRgb(X, Y, Z)
+  local r = X * 1.656492 - Y * 0.354851 - Z * 0.255038
+  local g = -X * 0.707196 + Y * 1.655397 + Z * 0.036152
+  local b =  X * 0.051713 - Y * 0.121364 + Z * 1.011530
+  return r, g, b
+end
+
+-- from https://github.com/johnciech/PhilipsHueSDK/blob/master/ApplicationDesignNotes/RGB%20to%20xy%20Color%20conversion.md
+--[[
+function utils.rgbToXyz(red, green, blue)
+  local X = red * 0.649926 + green * 0.103455 + blue * 0.197109
+  local Y = red * 0.234327 + green * 0.743075 + blue * 0.022598
+  local Z = red * 0.000000 + green * 0.053077 + blue * 1.035763
+  return X, Y, Z
+end
+
+function utils.xyzToRgb(X, Y, Z)
+  local r = X * 1.612 - Y * 0.203 - Z * 0.302
+  local g = -X * 0.509 + Y * 1.412 + Z * 0.066
+  local b =  X * 0.026 - Y * 0.072 + Z * 0.962
+  return r, g, b
+end
+]]
+
+function utils.rgbToXyY(r, g, b)
+  local rr = getGammaCorrectedValue(r)
+  local gg = getGammaCorrectedValue(g)
+  local bb = getGammaCorrectedValue(b)
+  local X, Y, Z = utils.rgbToXyz(rr, gg, bb)
+  local S = X + Y + Z
+  if S == 0 then
+    return 0, 0, 0
+  end
+  local x, y = X / S, Y / S
+  -- TODO check value is in gamut range, depending on the model, or find closest value
+  logger:fine('rgbToXyY(%s, %s, %s) => %s, %s, %s', r, g, b, x, y, Y)
+  return x, y, Y
+end
+
+function utils.xyYToRgb(x, y, Y)
   if y == 0 then
     return 0, 0, 0
   end
@@ -307,9 +338,8 @@ function utils.xyBriToRgb(x, y, Y)
   local z = 1.0 - x - y
   local X = (Y / y) * x
   local Z = (Y / y) * z
-  local r = X * 1.656492 - Y * 0.354851 - Z * 0.255038
-  local g = -X * 0.707196 + Y * 1.655397 + Z * 0.036152
-  local b =  X * 0.051713 - Y * 0.121364 + Z * 1.011530
+
+  local r, g, b = utils.xyzToRgb(X, Y, Z)
 
   r = getReversedGammaCorrectedValue(r)
   g = getReversedGammaCorrectedValue(g)
@@ -327,6 +357,7 @@ function utils.xyBriToRgb(x, y, Y)
       g = g / max
       b = b / max
   end
+  logger:fine('xyYToRgb(%s, %s, %s) => %s, %s, %s', x, y, Y, r, g, b)
 
   return r, g, b
 end

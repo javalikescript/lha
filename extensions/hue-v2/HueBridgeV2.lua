@@ -127,6 +127,7 @@ return require('jls.lang.class').create(function(hueBridge)
     self.mapping = utils.replaceRefs(mapping or {}, {
       Thing = Thing, -- TODO remove
       color = utils, -- TODO remove
+      logger = logger, -- TODO remove
       utils = utils,
       math = math,
       -- one of initial_press, repeat, short_release, long_release, double_short_release, long_press
@@ -378,7 +379,12 @@ return require('jls.lang.class').create(function(hueBridge)
           end
           for _, info in ipairs(type.properties) do
             local value = info.path and tables.getPath(resource, info.path)
-            if utils.isValue(value) or info.mandatory then
+            local isValue = utils.isValue(value)
+            if isValue and info.adapter then
+              value = info.adapter(value)
+              isValue = utils.isValue(value)
+            end
+            if isValue or info.mandatory then
               local name = buildName(info, resource)
               utils.addThingPropertyFromInfo(thing, name, info, resource)
             end
@@ -398,12 +404,12 @@ return require('jls.lang.class').create(function(hueBridge)
         local value = info.path and tables.getPath(data, info.path)
         local isValue = utils.isValue(value)
         if isValue then
-          local name = buildName(info, resource)
           if info.adapter then
             value = info.adapter(value)
             isValue = utils.isValue(value)
           end
           if isValue then
+            local name = buildName(info, resource)
             local publish = false
             if isEvent and value == 'hold' and info.path == 'button/button_report/event' then
               publish = true
@@ -440,8 +446,14 @@ return require('jls.lang.class').create(function(hueBridge)
               if info.setAdapter then
                 value = info.setAdapter(value)
               end
-              local body = {}
-              tables.setPath(body, info.path, value)
+              local body
+              local path = info.path
+              if not path or path == '/' or path == '' then
+                body = value
+              else
+                body = {}
+                tables.setPath(body, info.path, value)
+              end
               return self:httpRequest('PUT', '/clip/v2/resource/'..service.rtype..'/'..service.rid, body)
             end
           end

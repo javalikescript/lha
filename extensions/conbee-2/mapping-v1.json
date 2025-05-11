@@ -88,8 +88,8 @@
       {
         "path": "state/xy",
         "name": "color",
-        "adapter": "$lua:return utils.formatRgbHex(utils.xyBriToRgb(value[1], value[2], 1.0))",
-        "setAdapter": "$lua:return {utils.rgbToXy(utils.parseRgbHex(value))}"
+        "adapter": "$lua:return utils.formatRgbHex(utils.xyYToRgb(value[1], value[2], 1.0))",
+        "setAdapter": "$lua:local x, y, Y = utils.rgbToXyY(utils.parseRgbHex(value)); return {x, y}"
       }
     ],
     "TemperatureSensor": [
