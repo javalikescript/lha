@@ -40,11 +40,15 @@ end
 
 local httpSecureServer, httpRedirectServer
 
-local function closeServer()
+local function closeSecureServer()
   if httpSecureServer then
     httpSecureServer:close(false)
     httpSecureServer = nil
   end
+end
+
+local function closeServers()
+  closeSecureServer()
   if httpRedirectServer then
     httpRedirectServer:close(false)
     httpRedirectServer = nil
@@ -76,53 +80,48 @@ local function startSecureServer(certFile, pkeyFile)
   httpSecureServer:setParentContextHolder(extension:getEngine():getHTTPServer())
 end
 
-extension:subscribeEvent('startup', function()
+local function getCertificateAndPrivateKey()
   local configuration = extension:getConfiguration()
   local workDir = extension:getEngine():getWorkDirectory()
   local certFile = utils.getAbsoluteFile(configuration.certificate, workDir)
   local pkeyFile = utils.getAbsoluteFile(configuration.key, workDir)
-  local acmeDir
+  return certFile, pkeyFile
+end
 
-  closeServer()
-
-  if configuration.httpPort and configuration.httpPort > 0 then
-    acmeDir = File:new(workDir, 'acme-challenge')
-    if not acmeDir:isDirectory() then
-      acmeDir:mkdir()
-      logger:info('ACME challenge directory created "%s"', acmeDir)
-    end
-    httpRedirectServer = HttpServer:new()
-    httpRedirectServer:bind(configuration.address, configuration.httpPort):next(function()
-      logger:info('Server redirect bound to "%s" on port %s', configuration.address, configuration.httpPort)
-    end, function(err)
-      logger:warn('Cannot bind HTTP redirect server to "%s" on port %s due to %s', configuration.address, configuration.httpPort, err)
-    end)
-    httpRedirectServer:createContext('/%.well%-known/acme%-challenge/(.*)', FileHttpHandler:new(acmeDir))
-    httpRedirectServer:createContext('/?.*', function(exchange)
-      HttpExchange.redirect(exchange, 'https://'..configuration.commonName..'/') -- TODO Support port redirection
-    end)
-  end
-
-  local needCreateOrRenew = false
+local function isCertificateValid(certFile, pkeyFile)
   if not certFile:exists() or not pkeyFile:exists() then
-    needCreateOrRenew = true
-  else
-    -- check and log certificate expiration
-    local cert = readCertificate(certFile)
-    local isValid, notbefore, notafter = cert:validat()
-    local notafterDate = Date:new(notafter:get() * 1000)
-    local notafterText = notafterDate:toISOString(true)
-    logger:info('Using certificate %s valid until %s', certFile, notafterText)
-    if not isValid then
-      logger:warn('The certificate is no more valid since %s', notafterText)
-      needCreateOrRenew = true
-    end
+    return false
   end
-  if needCreateOrRenew then
-    if configuration.acme and configuration.acme.enabled and acmeDir then
+  -- check and log certificate expiration
+  local cert = readCertificate(certFile)
+  local isValid, notBefore, notAfter = cert:validat()
+  local notBeforeText = Date:new(notBefore:get() * 1000):toISOString(true)
+  local notafterText = Date:new(notAfter:get() * 1000):toISOString(true)
+  if isValid then
+    logger:info('Using certificate %s valid from %s to %s', certFile, notBeforeText, notafterText)
+    return true
+  end
+  logger:warn('The certificate is no more valid since %s', notafterText)
+  return false
+end
+
+local function createCertificate(certFile, pkeyFile)
+  local configuration = extension:getConfiguration()
+  local acmeConf = configuration.acme
+  if acmeConf and acmeConf.enabled then
+    if httpRedirectServer then
+      local workDir = extension:getEngine():getWorkDirectory()
+      local acmeDir = File:new(workDir, 'acme-challenge')
+      local acmePath = '/%.well%-known/acme%-challenge/(.*)'
+      httpRedirectServer:removeContext(acmePath)
+      httpRedirectServer:createContext(acmePath, FileHttpHandler:new(acmeDir))
+      if not acmeDir:isDirectory() then
+        acmeDir:mkdir()
+        logger:info('ACME challenge directory created "%s"', acmeDir)
+      end
       local Acme = require('jls.net.Acme')
-      local accountKeyFile = utils.getAbsoluteFile(configuration.acme.accountKey, workDir)
-      local acme = Acme:new(configuration.acme.url, {
+      local accountKeyFile = utils.getAbsoluteFile(acmeConf.accountKey, workDir)
+      local acme = Acme:new(acmeConf.url, {
         acmeDir = acmeDir,
         domains = configuration.commonName,
         accountKeyFile = accountKeyFile,
@@ -132,15 +131,54 @@ extension:subscribeEvent('startup', function()
         local cacert = secure.readCertificate(rawCertificate)
         certFile:write(cacert:export('pem'))
         logger:info('Generated certificate %s and associated private key %s', certFile, pkeyFile)
-        startSecureServer(certFile, pkeyFile)
       end):finally(function()
         acme:close()
       end)
+    else
+      logger:warn('ACME not available as HTTP redirect is disabled')
     end
-    writeCertificateAndPrivateKey(certFile, pkeyFile, configuration.commonName)
-    logger:info('Generated self-signed certificate %s and associated private key %s', certFile, pkeyFile)
+  end
+  writeCertificateAndPrivateKey(certFile, pkeyFile, configuration.commonName)
+  logger:info('Generated self-signed certificate %s and associated private key %s', certFile, pkeyFile)
+  return Promise.resolve()
+end
+
+extension:subscribeEvent('startup', function()
+  closeServers()
+  local configuration = extension:getConfiguration()
+  if configuration.httpPort and configuration.httpPort > 0 then
+    httpRedirectServer = HttpServer:new()
+    httpRedirectServer:bind(configuration.address, configuration.httpPort):next(function()
+      logger:info('Server redirect bound to "%s" on port %s', configuration.address, configuration.httpPort)
+    end, function(err)
+      logger:warn('Cannot bind HTTP redirect server to "%s" on port %s due to %s', configuration.address, configuration.httpPort, err)
+    end)
+    httpRedirectServer:createContext('/?.*', function(exchange)
+      HttpExchange.redirect(exchange, 'https://'..configuration.commonName..'/') -- TODO Support port redirection
+    end)
+  end
+  local certFile, pkeyFile = getCertificateAndPrivateKey()
+  if not isCertificateValid(certFile, pkeyFile) then
+    return createCertificate(certFile, pkeyFile):next(function()
+      startSecureServer(certFile, pkeyFile)
+    end, function(err)
+      logger:warn('Cannot create certificate due to %s', err)
+    end)
   end
   startSecureServer(certFile, pkeyFile)
+end)
+
+extension:subscribeEvent('clean', function()
+  local certFile, pkeyFile = getCertificateAndPrivateKey()
+  if not isCertificateValid(certFile, pkeyFile) then
+    return createCertificate(certFile, pkeyFile):next(function()
+      logger:info('Restarting secure server')
+      closeSecureServer()
+      startSecureServer(certFile, pkeyFile)
+    end, function(err)
+      logger:warn('Cannot create certificate due to %s', err)
+    end)
+  end
 end)
 
 extension:subscribeEvent('poll', function()
@@ -153,5 +191,5 @@ extension:subscribeEvent('poll', function()
 end)
 
 extension:subscribeEvent('shutdown', function()
-  closeServer()
+  closeServers()
 end)
