@@ -121,10 +121,10 @@
   </app-page>
   <app-page id="thing" title="Thing">
     <template slot="bar-right">
-      <button v-if="edit" v-on:click="onSave().then(function(){ edit = false; })" title="Save"><i class="far fa-save"></i></button>
-      <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
+      <button v-if="edit" v-on:click="onSave()" title="Apply"><i class="far fa-save"></i></button>
+      <button v-on:click="refresh()" title="Refresh"><i class="fas fa-sync"></i></button>
       <button v-on:click="disableThing().then(function(){ app.back(); })" title="Disable"><i class="fa fa-trash"></i></button>
-      <button v-on:click="onEdit()" title="Edit"><i :class="['fas', edit ? 'fa-eye' : 'fa-edit']"></i></button>
+      <button v-on:click="toggleEdit()" title="Edit"><i :class="['fas', edit ? 'fa-eye' : 'fa-edit']"></i></button>
     </template>
     <article class="cards">
       <div class="card" v-if="edit">
@@ -161,6 +161,10 @@
         </div>
         <p>{{ property.description }}</p>
       </div>
+      <section v-if="edit">
+        <button v-on:click="onSave()"><i class="far fa-save"></i>&nbsp;Apply</button>
+        <button v-on:click="toggleEdit()">Cancel</button>
+      </section>
     </article>
   </app-page>
   <app-page id="addThings" title="Add Things">

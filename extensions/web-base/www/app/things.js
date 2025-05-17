@@ -118,8 +118,11 @@ new Vue({
         });
       });
     },
-    onEdit: function() {
+    toggleEdit: function() {
       this.edit = !this.edit;
+      this.applyEdit();
+    },
+    applyEdit: function() {
       if (this.edit) {
         this.editProps = assignMap({}, this.properties);
         this.editThing = assignMap({}, this.thing);
@@ -134,7 +137,6 @@ new Vue({
         var tp = this.thing.properties[key];
         var value = parseJsonItemValue(tp.type, this.editProps[key]);
         //console.info(key, tp.type, value, this.editProps[key]);
-        //if ((value !== null) && (value !== undefined) && (value !== this.properties[key])) {
         if (value !== this.properties[key]) {
           modifiedProps[key] = value;
         }
@@ -165,30 +167,26 @@ new Vue({
           });
         });
       }
-      if (p !== resolved) {
-        var self = this;
-        p = p.then(function() {
-          return self.onShow();
-        });
-      }
       return p;
     },
+    refresh: function() {
+      return Promise.all([
+        fetch('/things/' + this.thingId).then(assertIsOk).then(getJson),
+        fetch('/things/' + this.thingId + '/properties').then(assertIsOk).then(getJson)
+      ]).then(apply(this, function(thing, properties) {
+        this.thing = thing;
+        this.properties = properties;
+        this.applyEdit();
+      }));
+    },
     onShow: function(thingId) {
-      this.edit = false;
       if (thingId) {
         this.thingId = thingId;
       }
+      this.edit = false;
       this.thing = {};
-      return Promise.all([
-        fetch('/things/' + this.thingId).then(assertIsOk).then(getJson),
-        fetch('/things/' + this.thingId + '/properties').then(getJson)
-      ]).then(apply(this, function(thing, properties) {
-        this.thing = thing;
-        if (Array.isArray(properties)) {
-          properties.sort(compareByTitle);
-        }
-        this.properties = properties;
-      }));
+      this.properties = {};
+      return this.refresh();
     }
   }
 });
