@@ -460,13 +460,15 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
       end
     elseif not thing and create then
       local createdThing = create()
-      self:discoverThing(key, createdThing)
-      if previousThing then
-        for name, value in pairs(previousThing:getPropertyValues()) do
-          createdThing:updatePropertyValue(name, value)
+      if createdThing then
+        self:discoverThing(key, createdThing)
+        if previousThing then
+          for name, value in pairs(previousThing:getPropertyValues()) do
+            createdThing:updatePropertyValue(name, value)
+          end
         end
+        return createdThing
       end
-      return createdThing
     end
     return thing
   end

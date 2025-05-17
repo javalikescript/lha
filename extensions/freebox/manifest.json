@@ -1,0 +1,35 @@
+{
+  "name": "Freebox",
+  "description": "Freebox API",
+  "version": "0.1",
+  "script": "freebox.lua",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "apiUrl": {
+        "title": "API URL",
+        "type": "string",
+        "pattern": "^https?://.+$"
+      },
+      "appToken": {
+        "title": "Token",
+        "type": "string",
+        "writeOnly": true,
+        "required": true
+      }
+    }
+  },
+  "actions": [
+    {
+      "name": "Discover Freebox",
+      "description": "Look for the Freebox API on the network",
+      "method": "discoverFreebox",
+      "active": false
+    }, {
+      "name": "Generate Token",
+      "description": "Generate an application token",
+      "method": "generateToken",
+      "active": false
+    }
+  ]
+}
