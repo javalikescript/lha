@@ -10,10 +10,10 @@
           "name": "on"
         },
         {
-          "path": "/",
+          "path": "color/xy",
           "name": "color",
-          "adapter": "$lua:local xy, d = value.color and value.color.xy, value.dimming; return xy and d and utils.formatRgbHex(utils.xyYToRgb(xy.x, xy.y, d.brightness / 100)) or nil",
-          "setAdapter": "$lua:local x, y, Y = utils.rgbToXyY(utils.parseRgbHex(value)); return {color = {xy = {x = x, y = y}}, dimming = {brightness = Y * 100}}"
+          "adapter": "$lua:return utils.formatRgbHex(utils.xyYToRgb(value.x, value.y, 1.0))",
+          "setAdapter": "$lua:local x, y = utils.rgbToXyY(utils.parseRgbHex(value)); return {x = x, y = y}"
         },
         {
           "path": "dimming/brightness",
