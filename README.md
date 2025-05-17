@@ -13,7 +13,7 @@ The lha application allows to
 The lha engine manages the extensions including scripts, the things, the scheduler and a web server.
 The engine records thing property values in dedicated time based log files.
 
-It is a pure [Lua](https://www.lua.org/) application built around a scheduler and an HTTP server based on [luajls](https://github.com/javalikescript/luajls).
+It is a pure [Lua](https://www.lua.org/) single process application built around a scheduler and an HTTP server based on [luajls](https://github.com/javalikescript/luajls).
 It exposes a Thing Description JSON API, see [Web of Things](https://www.w3.org/WoT/).
 
 The lha application could be run on small computers such as the _Raspberry PI_ or the _WD MyCloud_.

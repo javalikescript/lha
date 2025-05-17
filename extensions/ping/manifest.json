@@ -19,7 +19,7 @@
               "required": true
             },
             "bluetooth": {
-              "title": "Use Bluetooth",
+              "title": "Use Bluetooth (beta)",
               "type": "boolean",
               "default": false
             },

@@ -267,22 +267,24 @@ function utils.mirekToColorTemperature(value)
   return math.floor(1000000 / value)
 end
 
--- see https://github.com/Shnoo/js-CIE-1931-rgb-color-converter/blob/master/ColorConverter.js
--- see https://github.com/usolved/cie-rgb-converter/blob/master/cie_rgb_converter.js
+-- see https://developers.meethue.com/develop/application-design-guidance/color-conversion-formulas-rgb-to-xy-and-back/
 
-local function getGammaCorrectedValue(value)
+local function gammaEncode(value)
   if value > 0.04045 then
     return ((value + 0.055) / (1.0 + 0.055)) ^ 2.4
   end
   return value / 12.92
 end
 
-local function getReversedGammaCorrectedValue(value)
+local function gammaDecode(value)
   if value <= 0.0031308 then
     return 12.92 * value
   end
   return (1.0 + 0.055) * (value ^ (1.0 / 2.4)) - 0.055
 end
+
+utils.gammaEncode = gammaEncode
+utils.gammaDecode = gammaDecode
 
 function utils.rgbToXyz(r, g, b)
   local X = r * 0.664511 + g * 0.154324 + b * 0.162028
@@ -298,27 +300,10 @@ function utils.xyzToRgb(X, Y, Z)
   return r, g, b
 end
 
--- from https://github.com/johnciech/PhilipsHueSDK/blob/master/ApplicationDesignNotes/RGB%20to%20xy%20Color%20conversion.md
---[[
-function utils.rgbToXyz(red, green, blue)
-  local X = red * 0.649926 + green * 0.103455 + blue * 0.197109
-  local Y = red * 0.234327 + green * 0.743075 + blue * 0.022598
-  local Z = red * 0.000000 + green * 0.053077 + blue * 1.035763
-  return X, Y, Z
-end
-
-function utils.xyzToRgb(X, Y, Z)
-  local r = X * 1.612 - Y * 0.203 - Z * 0.302
-  local g = -X * 0.509 + Y * 1.412 + Z * 0.066
-  local b =  X * 0.026 - Y * 0.072 + Z * 0.962
-  return r, g, b
-end
-]]
-
 function utils.rgbToXyY(r, g, b)
-  local rr = getGammaCorrectedValue(r)
-  local gg = getGammaCorrectedValue(g)
-  local bb = getGammaCorrectedValue(b)
+  local rr = gammaEncode(r)
+  local gg = gammaEncode(g)
+  local bb = gammaEncode(b)
   local X, Y, Z = utils.rgbToXyz(rr, gg, bb)
   local S = X + Y + Z
   if S == 0 then
@@ -341,9 +326,9 @@ function utils.xyYToRgb(x, y, Y)
 
   local r, g, b = utils.xyzToRgb(X, Y, Z)
 
-  r = getReversedGammaCorrectedValue(r)
-  g = getReversedGammaCorrectedValue(g)
-  b = getReversedGammaCorrectedValue(b)
+  r = gammaDecode(r)
+  g = gammaDecode(g)
+  b = gammaDecode(b)
 
   -- Bring all negative components to zero
   r = math.max(r, 0)
