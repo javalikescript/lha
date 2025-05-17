@@ -2,10 +2,11 @@ local extension = ...
 
 local logger = extension:getLogger()
 local system = require('jls.lang.system')
+local hasBt = pcall(require, 'bt')
 local Thing = require('lha.Thing')
 
-local function createThing(targetName)
-  return Thing:new('Host '..targetName, 'Host Reachability', {'BinarySensor'}):addProperty('reachable', {
+local function createThing(name)
+  return Thing:new(name or 'Host', 'Host Reachability', {'BinarySensor'}):addProperty('reachable', {
     ['@type'] = 'BooleanProperty',
     title = 'Host Reachability',
     type = 'boolean',
@@ -13,6 +14,7 @@ local function createThing(targetName)
     readOnly = true
   }, false)
 end
+
 
 local isWindows = system.isWindows()
 local PING_COUNT = 1
@@ -24,22 +26,42 @@ extension:subscribeEvent('things', function()
   extension:cleanDiscoveredThings()
   thingsByTarget = {}
   local things = extension:getThingsByDiscoveryKey()
-  local targetNames = configuration.targetNames or {}
-  for _, targetName in ipairs(targetNames) do
-    local thing = things[targetName]
-    if thing then
-      thingsByTarget[targetName] = thing
-    else
-      extension:discoverThing(targetName, createThing(targetName))
+  local targets = configuration.targets or {}
+  for _, target in ipairs(targets) do
+    local key
+    local address = target.address
+    if type(address) == 'string' and #address > 0 then
+      if target.bluetooth then
+        if hasBt then
+          key = 'BT-'..address
+        end
+      else
+        key = 'IP-'..address
+      end
+    end
+    if key and target.name then
+      local thing = things[key]
+      if thing then
+        thingsByTarget[key] = thing
+      else
+        extension:discoverThing(key, createThing(target.name))
+      end
     end
   end
 end)
 
+-- arp -a
 local function getPingCommand(targetName)
   if isWindows then
-    return 'ping -n '..tostring(PING_COUNT)..' '..targetName..' >nul 2>nul'
+    return 'ping -n '..PING_COUNT..' '..targetName..' >nul 2>nul'
   end
-  return 'ping -c '..tostring(PING_COUNT)..' '..targetName..' 2>&1 >/dev/null'
+  return 'ping -c '..PING_COUNT..' '..targetName..' 2>&1 >/dev/null'
+end
+
+local function pingBluetooth(macAddress)
+  local bt = require('bt')
+  local info, err = bt.getDeviceInfo(macAddress)
+  return info ~= nil and info ~= false
 end
 
 extension:subscribeEvent('poll', function()
@@ -50,13 +72,22 @@ extension:subscribeEvent('poll', function()
     logger:info('execute extension not available')
     return
   end
-  for targetName, thing in pairs(thingsByTarget) do
-    local command = getPingCommand(targetName)
-    executor:execute(command, true):next(function(code)
-      thing:updatePropertyValue('reachable', code == 0)
-      logger:info('executed "%s" => %s', command, code)
-    end, function(reason)
-      logger:info('execution failed %s', reason)
-    end)
+  for key, thing in pairs(thingsByTarget) do
+    local kind, address = string.match(key, '^(%w+)%-(.+)$')
+    if kind == 'IP' then
+      local command = getPingCommand(address)
+      executor:execute(command, true):next(function(code)
+        thing:updatePropertyValue('reachable', code == 0)
+        logger:info('executed "%s" => %s', command, code)
+      end, function(reason)
+        logger:info('execution failed %s', reason)
+      end)
+    elseif kind == 'BT' and hasBt then
+      executor:call(pingBluetooth, address):next(function(status)
+        thing:updatePropertyValue('reachable', status)
+      end, function(reason)
+        logger:info('execution failed %s', reason)
+      end)
+    end
   end
 end)

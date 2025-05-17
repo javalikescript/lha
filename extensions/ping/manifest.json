@@ -7,11 +7,28 @@
   "schema": {
     "type": "object",
     "properties": {
-      "targetNames": {
-        "title": "Target IP address or host name",
+      "targets": {
+        "title": "Target devices",
         "type": "array",
         "items": {
-          "type": "string"
+          "type": "object",
+          "properties": {
+            "address": {
+              "title": "IP address, host name or MAC address",
+              "type": "string",
+              "required": true
+            },
+            "bluetooth": {
+              "title": "Use Bluetooth",
+              "type": "boolean",
+              "default": false
+            },
+            "name": {
+              "title": "A name",
+              "type": "string",
+              "required": true
+            }
+          }
         }
       }
     }

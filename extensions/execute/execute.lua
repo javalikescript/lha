@@ -18,12 +18,16 @@ local function os_execute(cmd)
   return tostring(status)..' '..kind..' '..tostring(code)
 end
 
-function extension:execute(command, anyCode)
+function extension:call(fn, data)
   if not serialWorker then
     return Promise.reject('Execute serialWorker not available')
   end
+  return serialWorker:call(fn, data)
+end
+
+function extension:execute(command, anyCode)
   logger:finer('executing "%s"', command)
-  return serialWorker:call(os_execute, command):next(function(result)
+  return self:call(os_execute, command):next(function(result)
     local status, kind, code = string.match(result, '^(%a+) (%a+) %-?(%d+)$')
     if status == 'true' or anyCode then
       if kind == 'exit' then
