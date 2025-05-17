@@ -11,6 +11,17 @@ local webBaseAddons = extension:require('web-base.addons', true)
 
 webBaseAddons.register(extension)
 
+local function getRemoteName(exchange)
+  local client = exchange:getClient()
+  if client then
+    local ip, port = client:getRemoteName()
+    if ip then
+      return ip, port
+    end
+  end
+  return 'n/a'
+end
+
 local User = class.create(function(user)
   function user:initialize(configuration)
     self.name = configuration.name
@@ -80,6 +91,7 @@ extension:subscribeEvent('startup', function()
     end
     local info = Url.queryToMap(exchange:getRequest():getBody())
     if info and info.name and info.password then
+      local remoteName = getRemoteName(exchange)
       local user = userMap[info.name]
       if user and user:checkPassword(encrypt(info.password)) then
         local session = exchange:getSession()
@@ -88,9 +100,11 @@ extension:subscribeEvent('startup', function()
           session.attributes.permission = user.permission
         end
         HttpExchange.redirect(exchange, '/')
+        logger:info('user "%s" from %s is authenticated', info.name, remoteName)
+        -- TODO keep a list of authenticated clients
         return
       else
-        logger:warn('user "%s" from %s is not authorized', info.name, exchange:clientAsString())
+        logger:warn('user "%s" from %s cannot be authenticated', info.name, remoteName)
       end
       HttpExchange.forbidden(exchange)
     else
