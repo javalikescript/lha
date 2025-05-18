@@ -9,7 +9,8 @@
       "apiUrl": {
         "title": "API URL",
         "type": "string",
-        "pattern": "^https?://.+$"
+        "pattern": "^https?://.+$",
+        "default": "https://mafreebox.freebox.fr/"
       },
       "appToken": {
         "title": "Token",
@@ -21,13 +22,8 @@
   },
   "actions": [
     {
-      "name": "Discover Freebox",
-      "description": "Look for the Freebox API on the network",
-      "method": "discoverFreebox",
-      "active": false
-    }, {
       "name": "Generate Token",
-      "description": "Generate an application token",
+      "description": "Generate an application token, need validation on the box",
       "method": "generateToken",
       "active": false
     }

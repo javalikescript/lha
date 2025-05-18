@@ -4,7 +4,7 @@ This extension allows to use the Freebox APIs.
 
 ## Setup
 
-You need to discover the Freebox API URL and get a token.
+You need to generate an application token, start the action in the extension then validate the application on your freebox device.
 
 ## Usage
 

@@ -86,7 +86,7 @@ local function listLanHosts(client, sessionToken)
       return httpRequest(client, 'GET', '/api/v4/lan/browser/'..interface.name..'/', sessionHeaders):next(processResponse)
     end))
   end):next(function(results)
-    logger:finer('freebox interfaces are %t', results)
+    logger:finest('freebox interfaces are %t', results)
     local lanHosts = {}
     for _, lanHost in pairs(results) do
       List.concat(lanHosts, lanHost)
@@ -97,6 +97,10 @@ end
 
 
 local configuration = extension:getConfiguration()
+
+extension:subscribeEvent('startup', function()
+  logger:fine('Using freebox API URL is %s', configuration.apiUrl)
+end)
 
 extension:subscribeEvent('poll', function()
   if not(configuration.apiUrl and configuration.appToken) then
@@ -135,14 +139,6 @@ extension:subscribeEvent('poll', function()
     client:close()
   end)
 end)
-
-function extension:discoverFreebox()
-  return httpRequest('http://mafreebox.freebox.fr/api_version', 'GET'):next(utils.rejectIfNotOk):next(utils.getJson):next(function(api)
-    logger:finer('freebox API is %T', api)
-    configuration.apiUrl = string.format('https://%s:%s%s', api.api_domain, api.https_port, api.api_base_url)
-    return 'OK'
-  end)
-end
 
 function extension:generateToken(exchange)
   if not configuration.apiUrl then
