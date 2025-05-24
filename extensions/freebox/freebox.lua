@@ -97,6 +97,7 @@ end
 
 
 local configuration = extension:getConfiguration()
+local lastTimePoll = nil
 
 extension:subscribeEvent('startup', function()
   logger:fine('Using freebox API URL is %s', configuration.apiUrl)
@@ -106,33 +107,40 @@ extension:subscribeEvent('poll', function()
   if not(configuration.apiUrl and configuration.appToken) then
     return
   end
-  local time = utils.time()
-  local minTimeReachable = time - 600
   local client = HttpClient:new(configuration.apiUrl)
   openSession(client, configuration.appToken):next(function(sessionToken)
     return listLanHosts(client, sessionToken)
   end):next(function(lanHosts)
     logger:fine('Found %l LAN hosts', lanHosts)
+    extension:cleanDiscoveredThings()
+    local things = extension:getThingsByDiscoveryKey()
+    local time = utils.time()
+    local discoveryDelay = (configuration.discoveryDelay or 10080) * 60
     for _, lanHost in pairs(lanHosts) do
       if lanHost.id and lanHost.reachable ~= nil then
-        local reachable = lanHost.reachable or lanHost.last_time_reachable and lanHost.last_time_reachable > minTimeReachable
-        local thing = extension:syncDiscoveredThingByKey(lanHost.id, function()
-          if reachable then
-            return Thing:new(lanHost.primary_name or 'Host', 'Host Reachability', {'BinarySensor'}):addProperty('reachable', {
-              ['@type'] = 'BooleanProperty',
-              title = 'Host Reachability',
-              type = 'boolean',
-              description = 'Test the reachability of a host on the network',
-              readOnly = true
-            }, false)
-          end
-        end)
+        local lastTimeReachable = lanHost.last_time_reachable or 0 -- TODO Does the Freebox time is in sync?
+        local thing = things[lanHost.id]
+        if not thing and discoveryDelay >= 0 and (lanHost.reachable or (time - lastTimeReachable) < discoveryDelay) then
+          thing = Thing:new(lanHost.primary_name or 'Host', 'Host Reachability', {'BinarySensor'}):addProperty('reachable', {
+            ['@type'] = 'BooleanProperty',
+            title = 'Host Reachability',
+            type = 'boolean',
+            description = 'Test the reachability of a host on the network',
+            readOnly = true
+          }, false)
+          extension:discoverThing(lanHost.id, thing)
+        end
         if thing then
+          local reachable = lanHost.reachable == true
+          if not reachable and lastTimePoll and (lastTimeReachable > lastTimePoll) then
+            reachable = true
+          end
           logger:fine('LAN host %s "%s" is %s', lanHost.id, lanHost.primary_name, lanHost.reachable)
           thing:updatePropertyValue('reachable', reachable)
         end
       end
     end
+    lastTimePoll = time
   end):catch(function(reason)
     logger:warn('Failure due to %s', reason)
   end):finally(function()

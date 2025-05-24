@@ -17,6 +17,13 @@
         "type": "string",
         "writeOnly": true,
         "required": true
+      },
+      "discoveryDelay": {
+        "title": "Discovery delay in minutes, negative to disable",
+        "type": "integer",
+        "default": 10080,
+        "minimum": -1,
+        "maximum": 525600
       }
     }
   },
