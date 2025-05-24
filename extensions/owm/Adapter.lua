@@ -112,30 +112,39 @@ local function aggregate(list)
   return a
 end
 
-local DAY_MORNING = 7
-local DAY_EVENING = 19
-
 -- 5 day forecast includes weather forecast data with 3-hour step
 
-return {
-  computeCurrent = function(weather)
+return require('jls.lang.class').create(function(adapter)
+
+  function adapter:initialize(dayMorning, dayEvening, minToday)
+    self.dayMorning = dayMorning or 7
+    self.dayEvening = dayEvening or 19
+    self.minToday = minToday or 12
+  end
+
+  function adapter:computeCurrent(weather)
     return adapt(weather)
-  end,
-  computeNextHours = function(forecast, time)
+  end
+
+  function adapter:computeNextHours(forecast, time)
     local t = time or os.time()
     return aggregate(List.filter(forecast.list, between(t, t + 4 * HOUR_SEC)))
-  end,
-  computeToday = function(forecast, time)
+  end
+
+  function adapter:computeToday(forecast, time)
     local t = time or os.time()
-    if hour(t) <= 12 then
-      return aggregate(List.filter(forecast.list, range(0, DAY_MORNING, DAY_EVENING, t)))
+    if hour(t) <= self.minToday then
+      return aggregate(List.filter(forecast.list, range(0, self.dayMorning, self.dayEvening, t)))
     end
     return aggregate(List.filter(forecast.list, between(t, tomorrow(t))))
-  end,
-  computeTomorrow = function(forecast, time)
-    return aggregate(List.filter(forecast.list, range(1, DAY_MORNING, DAY_EVENING, time)))
-  end,
-  computeNextDays = function(forecast, time)
-    return aggregate(List.filter(forecast.list, ranges(DAY_MORNING, DAY_EVENING, time)))
   end
-}
+
+  function adapter:computeTomorrow(forecast, time)
+    return aggregate(List.filter(forecast.list, range(1, self.dayMorning, self.dayEvening, time)))
+  end
+
+  function adapter:computeNextDays(forecast, time)
+    return aggregate(List.filter(forecast.list, ranges(self.dayMorning, self.dayEvening, time)))
+  end
+
+end)

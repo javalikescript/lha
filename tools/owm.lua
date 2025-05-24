@@ -4,7 +4,9 @@ local File = require('jls.io.File')
 local Map = require('jls.util.Map')
 
 local utils = require('lha.utils')
-local adapter = require('extensions.owm.adapter')
+local Adapter = require('extensions.owm.Adapter')
+
+local adapter = Adapter:new()
 
 local data = json.parse(File:new(arg[1]):readAll())
 local time
@@ -30,9 +32,9 @@ if data.list then
   end
   print()
   print('time',  utils.timeToString(time))
-  printWeather(adapter.computeNextHours(data, time), 'nextHours')
-  printWeather(adapter.computeTomorrow(data, time), 'tomorrow')
-  printWeather(adapter.computeNextDays(data, time), 'nextDays')
+  printWeather(adapter:computeNextHours(data, time), 'nextHours')
+  printWeather(adapter:computeTomorrow(data, time), 'tomorrow')
+  printWeather(adapter:computeNextDays(data, time), 'nextDays')
 else
-  printWeather(adapter.computeCurrent(data), 'current')
+  printWeather(adapter:computeCurrent(data), 'current')
 end

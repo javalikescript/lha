@@ -66,6 +66,27 @@
         "default": 600,
         "minimum": 0,
         "maximum": 86400
+      },
+      "dayMorning": {
+        "title": "the start hour of the day",
+        "type": "integer",
+        "default": 7,
+        "minimum": 0,
+        "maximum": 23
+      },
+      "dayEvening": {
+        "title": "the end hour of the day",
+        "type": "integer",
+        "default": 19,
+        "minimum": 0,
+        "maximum": 23
+      },
+      "minToday": {
+        "title": "the minimum hour of the day",
+        "type": "integer",
+        "default": 12,
+        "minimum": 0,
+        "maximum": 23
       }
     }
   }

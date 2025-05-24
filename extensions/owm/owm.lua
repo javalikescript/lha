@@ -7,7 +7,7 @@ local Url = require('jls.net.Url')
 local Thing = require('lha.Thing')
 local utils = require('lha.utils')
 
-local adapter = extension:require('adapter')
+local Adapter = extension:require('Adapter')
 local webBaseAddons = extension:require('web-base.addons', true)
 
 webBaseAddons.register(extension)
@@ -93,6 +93,11 @@ local THINGS_BY_KEY = {
 }
 local thingByKey = {}
 local configuration = extension:getConfiguration()
+local adapter = Adapter:new()
+
+extension:subscribeEvent('startup', function()
+  adapter = Adapter:new(configuration.dayMorning, configuration.dayEvening, configuration.minToday)
+end)
 
 extension:subscribeEvent('things', function()
   logger:info('looking for OpenWeatherMap things')
@@ -111,10 +116,10 @@ extension:subscribeEvent('things', function()
 end)
 
 local function updateForecastThings(data, time)
-  updateWeatherThing(thingByKey.nextHours, adapter.computeNextHours(data, time))
-  updateWeatherThing(thingByKey.today, adapter.computeToday(data, time))
-  updateWeatherThing(thingByKey.tomorrow, adapter.computeTomorrow(data, time))
-  updateWeatherThing(thingByKey.nextDays, adapter.computeNextDays(data, time))
+  updateWeatherThing(thingByKey.nextHours, adapter:computeNextHours(data, time))
+  updateWeatherThing(thingByKey.today, adapter:computeToday(data, time))
+  updateWeatherThing(thingByKey.tomorrow, adapter:computeTomorrow(data, time))
+  updateWeatherThing(thingByKey.nextDays, adapter:computeNextDays(data, time))
 end
 
 if configuration.demo then
@@ -123,7 +128,7 @@ if configuration.demo then
     local json = require('jls.util.json')
     local File = require('jls.io.File')
     local data = json.parse(File:new('work-misc/weather.json'):readAll())
-    updateWeatherThing(thingByKey.current, adapter.computeCurrent(data))
+    updateWeatherThing(thingByKey.current, adapter:computeCurrent(data))
     data = json.parse(File:new('work-misc/forecast.json'):readAll())
     local time = data.list[1].dt - 3600
     updateForecastThings(data, time)
@@ -143,7 +148,7 @@ else
     })
     local client = HttpClient:new(url)
     return client:fetch(path..'weather'..query):next(utils.rejectIfNotOk):next(utils.getJson):next(function(data)
-      updateWeatherThing(thingByKey.current, adapter.computeCurrent(data))
+      updateWeatherThing(thingByKey.current, adapter:computeCurrent(data))
       return client:fetch(path..'forecast'..query)
     end):next(utils.rejectIfNotOk):next(utils.getJson):next(function(data)
       updateForecastThings(data, os.time())
