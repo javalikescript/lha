@@ -421,6 +421,10 @@ return {
   ['refreshThingsDescription(engine)?method=POST'] = function(_, engine)
     return refreshThingsDescription(engine)
   end,
+  ['cleanupDisabledThings(engine)?method=POST'] = function(_, engine)
+    engine:cleanThings(true)
+    return 'Removed'
+  end,
   ['poll(engine)?method=POST'] = function(_, engine)
     engine:publishEvent('poll')
     return 'Polled'

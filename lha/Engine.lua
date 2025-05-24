@@ -425,8 +425,8 @@ return class.create(function(engine)
           toRemove = true
         else
           for tId, tConf in pairs(things) do
-            if tId ~= thingId and tConf.extensionId == extensionId and tConf.discoveryKey == discoveryKey then
-              toRemove = true
+            if tId ~= thingId and tConf.active and tConf.extensionId == extensionId and tConf.discoveryKey == discoveryKey then
+              toRemove = true -- the inactive thing uses the same discovery key than an active thing
               break
             end
           end

@@ -53,51 +53,25 @@ define(['./web-tools.xml'], function(toolsTemplate) {
           page.refreshInfo();
         });
       },
-      pollThings: function() {
-        fetch('/engine/poll', {method: 'POST'}).then(assertIsOk).then(function() {
-          toaster.toast('Polling triggered');
-        });
-      },
-      refreshThings: function() {
-        confirmation.ask('Disable and refresh all things?').then(function() {
-          fetch('/engine/refreshThingsDescription', {method: 'POST'}).then(assertIsOk).then(function() {
-            toaster.toast('Things refreshed');
-          });
-        });
-      },
-      saveConfig: function() {
-        fetch('/engine/admin/configuration/save', {method: 'POST'}).then(assertIsOk).then(function() {
-          toaster.toast('Configuration saved');
-          app.clearCache();
-        });
-      },
-      saveData: function() {
-        fetch('/engine/admin/data/save', {method: 'POST'}).then(assertIsOk).then(function() {
-          toaster.toast('Data saved');
-          app.clearCache();
-        });
-      },
-      reloadExtensions: function() {
-        fetch('/engine/admin/reloadExtensions/all', {method: 'POST'}).then(assertIsOk).then(function() {
-          toaster.toast('Extensions reloaded');
-          app.clearCache();
-        });
-      },
-      reloadScripts: function() {
-        fetch('/engine/admin/reloadScripts/all', {method: 'POST'}).then(assertIsOk).then(function() {
-          toaster.toast('Scripts reloaded');
-          app.clearCache();
-        });
-      },
-      restartServer: function() {
-        confirmation.ask('Restart the server?').then(function() {
-          fetch('/engine/admin/restart', { method: 'POST'});
-        });
-      },
-      rebootServer: function() {
-        confirmation.ask('Reboot the server?').then(function() {
-          fetch('/engine/admin/reboot', { method: 'POST'});
-        });
+      postAction: function(path, ask, message, clearCache) {
+        var action = function() {
+          var p = fetch('/engine/' + path, {method: 'POST'});
+          if (message || clearCache) {
+            p.then(assertIsOk).then(function() {
+              if (message) {
+                toaster.toast(message);
+              }
+              if (clearCache) {
+                app.clearCache();
+              }
+            });
+          }
+        };
+        if (ask) {
+          confirmation.ask(ask).then(action);
+        } else {
+          action();
+        }
       },
       stopServer: function() {
         confirmation.ask('Stop the server?').then(function() {

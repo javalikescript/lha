@@ -2,8 +2,9 @@
   <page-article>
     <p>Actions</p>
     <button v-on:click="gc()"><i class="fa fa-trash"></i>&nbsp;Collect Garbage</button>
-    <button v-on:click="pollThings()"><i class="far fa-bell"></i>&nbsp;Poll Things</button>
-    <button v-on:click="refreshThings()"><i class="fas fa-recycle"></i>&nbsp;Refresh Things</button>
+    <button v-on:click="postAction('poll', null, 'Polling triggered')"><i class="far fa-bell"></i>&nbsp;Poll Things</button>
+    <button v-on:click="postAction('refreshThingsDescription', 'Disable and refresh all things?', 'Things refreshed')"><i class="fas fa-recycle"></i>&nbsp;Refresh Things</button>
+    <button v-on:click="postAction('cleanupDisabledThings', 'Cleanup disabled things?', 'Disabled things removed')"><i class="fas fa-recycle"></i>&nbsp;Cleanup Things</button>
     <button v-on:click="clearCache()"><i class="fas fa-broom"></i>&nbsp;Clear Cache</button>
     <p>Log Level</p>
     <select v-model="logLevel" v-on:change="applyLogLevel">
@@ -19,13 +20,13 @@
     <button v-on:click="applyLogConfig"><i class="far fa-save"></i>&nbsp;Apply Log</button>
     <p>Engine</p>
     <button v-on:click="stopServer" title="Stop the engine"><i class="fas fa-power-off"></i>&nbsp;Stop the Engine</button>
-    <button v-on:click="restartServer" title="Restart the engine in the same process"><i class="fas fa-redo"></i>&nbsp;Restart the Engine</button>
-    <button v-on:click="rebootServer" title="Stop the process with exit code 11"><i class="fas fa-redo"></i>&nbsp;Reboot the Engine process</button>
+    <button v-on:click="postAction('admin/restart', 'Restart the server?')" title="Restart the engine in the same process"><i class="fas fa-redo"></i>&nbsp;Restart the Engine</button>
+    <button v-on:click="postAction('admin/reboot', 'Reboot the server?')" title="Stop the process with exit code 11"><i class="fas fa-redo"></i>&nbsp;Reboot the Engine process</button>
     <p>Advanced</p>
-    <button v-on:click="reloadExtensions"><i class="fas fa-redo"></i>&nbsp;Reload the Extensions</button>
-    <button v-on:click="reloadScripts"><i class="fas fa-redo"></i>&nbsp;Reload the Scripts</button>
-    <button v-on:click="saveConfig"><i class="far fa-save"></i>&nbsp;Save Configuration</button>
-    <button v-on:click="saveData"><i class="far fa-save"></i>&nbsp;Save Data</button>
+    <button v-on:click="postAction('admin/reloadExtensions/all', null, 'Extensions reloaded', true)"><i class="fas fa-redo"></i>&nbsp;Reload the Extensions</button>
+    <button v-on:click="postAction('admin/reloadScripts/all', null, 'Scripts reloaded', true)"><i class="fas fa-redo"></i>&nbsp;Reload the Scripts</button>
+    <button v-on:click="postAction('admin/configuration/save', null, 'Configuration saved', true)"><i class="far fa-save"></i>&nbsp;Save Configuration</button>
+    <button v-on:click="postAction('admin/data/save', null, 'Data saved', true)"><i class="far fa-save"></i>&nbsp;Save Data</button>
     <p>Lua</p>
     <textarea ref="lua" v-model="lua" v-on:keydown.tab.prevent="insertTab" spellcheck="false" rows="12" wrap="off" style="width: 100%; resize: none;" placeholder="Enter your Lua code here"></textarea>
     <button v-on:click="run"><i class="fas fa-redo"></i>&nbsp;Run</button>
