@@ -227,7 +227,7 @@
       </section>
       <section v-if="actions.length > 0">
         <p>Action</p>
-        <button v-for="(action, index) in actions" v-if="action.active === true && !action.arguments" :title="action.description" v-on:click="triggerAction(index)">{{ action.name }}</button>
+        <button v-for="(action, index) in actions" :title="action.description" v-on:click="triggerAction(index)">{{ action.name }}</button>
       </section>
       <section v-if="schema">
         <json :name="'Configuration'" :obj="config" :schema="schema"></json>

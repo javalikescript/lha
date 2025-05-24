@@ -72,7 +72,11 @@ function onShowExtension(extensionId) {
     this.extensionId = extensionId;
     this.schema = buildExtensionSchema(extension.manifest, enumsById);
     if (extension.manifest && extension.manifest.actions) {
-      this.actions = extension.manifest.actions;
+      this.actions = extension.manifest.actions.filter(function(action) {
+        return action.active === true && !action.arguments;
+      });
+    } else {
+      this.actions = [];
     }
     this.config = extension.config;
     this.info = extension.info;
