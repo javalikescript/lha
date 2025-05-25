@@ -7,6 +7,7 @@ local RestHttpHandler = require('jls.net.http.handler.RestHttpHandler')
 local HttpExchange = require('jls.net.http.HttpExchange')
 local json = require('jls.util.json')
 local Date = require('jls.util.Date')
+local strings = require('jls.util.strings')
 local ZipFile = require('jls.util.zip.ZipFile')
 
 local webBaseAddons = extension:require('web-base.addons', true)
@@ -71,13 +72,51 @@ local REST_SCRIPTS = {
   ['(engine)?method=POST'] = function(exchange, engine)
     return deployScript(exchange, engine, engine:generateId())
   end,
+  ['(engine, from, to)?method=POST&:LHA-RenameProperty+=from&:LHA-To-=to'] = function(exchange, engine, from, to)
+    logger:fine('Renaming from "%s" to "%s"', from, to)
+    local delimitersByName = {
+      ['blocks.xml'] = {'>', '<'},
+      ['script.lua'] = {"'", "'"},
+      ['config.json'] = {'"', '"'},
+    }
+    local count = 0
+    local fileCount = 0
+    local scriptsDirs = engine:getScriptsDirectory():listFiles()
+    if scriptsDirs then
+      for _, scriptsDir in ipairs(scriptsDirs) do
+        local files = scriptsDir:listFiles()
+        if files then
+          local n = 0
+          for _, file in ipairs(files) do
+            local delimiters = delimitersByName[file:getName()]
+            if delimiters then
+              local content = file:readAll()
+              local f = delimiters[1]..from..delimiters[2]
+              if string.find(content, f, 1, true) then
+                n = n + 1
+                logger:fine('Property found in "%s"', file)
+                if to and #to > 0 then
+                  local t = delimiters[1]..to..delimiters[2]
+                  content = string.gsub(content, strings.escape(f), t)
+                  file:write(content)
+                end
+              end
+            end
+          end
+          if n > 0 then
+            fileCount = fileCount + n
+            count = count + 1
+          end
+        end
+      end
+    end
+    return {count = count, fileCount = fileCount}
+  end,
   ['{+}(engine)'] = function(exchange, name, engine)
     local ext = engine:getExtensionById(name)
-    if ext:getType() ~= 'script' then
-      HttpExchange.notFound(exchange)
-      return false
+    if ext and ext:getType() == 'script' then
+      exchange:setAttribute('extension', ext)
     end
-    exchange:setAttribute('extension', ext)
   end,
   ['{extensionId}'] = {
     ['(engine, extension)?method=DELETE'] = function(_, engine, ext)

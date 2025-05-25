@@ -1,0 +1,21 @@
+<app-page id="scripts-rename" title="Rename Script Property">
+  <template slot="bar-right">
+    <button v-on:click="app.back()" title="Close"><i class="fa fa-window-close"></i></button>
+  </template>
+  <article>
+    <section>
+      <p :title="fromPath">From</p>
+      <select v-model="fromPath" v-on:change="preview">
+        <option v-for="p in properties" :value="p.const">{{p.title}}</option>
+      </select>
+      <template v-if="count > 0">
+        <p>{{ count }} script(s) found</p>
+        <p :title="toPath">To</p>
+        <select v-model="toPath">
+          <option v-for="p in properties" :value="p.const">{{p.title}}</option>
+        </select>
+        <button v-on:click="onRename">Rename</button>
+      </template>
+    </section>
+  </article>
+</app-page>
