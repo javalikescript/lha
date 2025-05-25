@@ -1,41 +1,35 @@
 
-function parseJsonItemValue(type, value, optional) {
-  if ((value === null) || (value === undefined)) {
-    return value;
-  }
-  if ((value === '') && optional) {
-    return undefined;
-  }
+function parseJsonItemValue(type, value) {
+  var t = type === 'integer' ? 'number' : type;
   var valueType = typeof value;
-  if ((valueType !== 'string') && (valueType !== 'number') && (valueType !== 'boolean')) {
-    throw new Error('Invalid value type ' + valueType);
-  }
-  switch(type) {
-  case 'string':
-    if (valueType !== 'string') {
+  if (valueType !== t) {
+    if (valueType !== 'string' && valueType !== 'number' && valueType !== 'boolean') {
+      throw new Error('Invalid value type ' + valueType);
+    }
+    switch(t) {
+    case 'string':
       value = '' + value;
-    }
-    break;
-  case 'integer':
-  case 'number':
-    if (valueType === 'string') {
-      value = parseFloat(value);
-      if (isNaN(value)) {
-        value = 0;
+      break;
+    case 'number':
+      if (valueType === 'string') {
+        value = parseFloat(value);
+        if (isNaN(value)) {
+          value = 0;
+        }
+      } else {
+        value = value ? 1 : 0;
       }
-    } else if (valueType === 'boolean') {
-      value = value ? 1 : 0;
+      break;
+    case 'boolean':
+      if (valueType === 'string') {
+        value = value.trim().toLowerCase() === 'true';
+      } else {
+        value = value !== 0;
+      }
+      break;
+    default:
+      throw new Error('Invalid type ' + type);
     }
-    break;
-  case 'boolean':
-    if (valueType === 'string') {
-      value = value.trim().toLowerCase() === 'true';
-    } else if (valueType === 'number') {
-      value = value !== 0;
-    }
-    break;
-  default:
-    throw new Error('Invalid type ' + type);
   }
   return value;
 }
@@ -203,25 +197,39 @@ function populateJson(rootSchema, schema, obj) {
     if (schema.const !== undefined) {
       po = schema.const;
     } else if (typeof schema.type === 'string') {
-      if (!isJsonType(po, schema.type)) {
-        if (isJsonType(schema.default, schema.type)) {
+      var type = schema.type;
+      if (!isJsonType(po, type)) {
+        if (isJsonType(schema.default, type)) {
           po = deepCopy(schema.default);
+        } else if (!schema.required && (type === 'string' || type === 'boolean' || type === 'number' || type === 'integer')) {
+          po = undefined;
         } else {
-          po = newJsonItem(schema.type);
+          po = newJsonItem(type);
         }
       }
-      if ((schema.type === 'object') && isObject(schema.properties)) {
-        for (var k in schema.properties) {
-          po[k] = populateJson(rootSchema, schema.properties[k], po[k]);
-        }
-        // keep additional properties (schema.additionalProperties !== false)
-      } else if ((schema.type === 'array') && isObject(schema.items)) {
-        var l = po.length;
-        if ((typeof schema.minItems === 'number') && (schema.minItems > l)) {
-          l = schema.minItems;
-        }
-        for (var i = 0; i < l; i++) {
-          po[i] = populateJson(rootSchema, schema.items, po[i]);
+      if (po !== undefined) {
+        if ((type === 'object') && isObject(schema.properties)) {
+          for (var k in schema.properties) {
+            var v = populateJson(rootSchema, schema.properties[k], po[k]);
+            if (v === undefined) {
+              delete po[k];
+            } else {
+              po[k] = v;
+            }
+          }
+          // keep additional properties (schema.additionalProperties !== false)
+        } else if ((type === 'array') && isObject(schema.items)) {
+          var l = po.length;
+          if ((typeof schema.minItems === 'number') && (schema.minItems > l)) {
+            l = schema.minItems;
+          }
+          for (var i = 0; i < l; i++) {
+            var v = populateJson(rootSchema, schema.items, po[i]);
+            if (v === undefined) {
+              v = newJsonItem(schema.items.type);
+            }
+            po[i] = v;
+          }
         }
       }
     } else {
@@ -370,9 +378,25 @@ Vue.component('json-item', {
         return this.obj;
       },
       set: function(val) {
-        var v = parseJsonItemValue(this.schema.type, val, true);
-        if ((v !== null) && (v !== undefined)) {
-          this.pobj[this.$vnode.key] = v;
+        var v;
+        if (val === '' && !this.schema.required) {
+          v = undefined;
+        } else {
+          if (val === undefined || val === null) {
+            if (this.schema.required) {
+              v = newJsonItem(this.schema.type);
+            } else {
+              v = undefined;
+            }
+          } else {
+            v = parseJsonItemValue(this.schema.type, val);
+          }
+        }
+        var k = this.$vnode.key;
+        if (v === undefined) {
+          delete this.pobj[k];
+        } else {
+          this.pobj[k] = v;
         }
       }
     },
