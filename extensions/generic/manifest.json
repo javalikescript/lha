@@ -73,22 +73,17 @@
                 "oneOf": [{
                   "title": "Boolean",
                   "type": "object",
+                  "additionalProperties": false,
                   "properties": {
                     "name": {
                       "title": "Property Name",
                       "type": "string",
                       "pattern": "^[a-z][a-zA-Z0-9]+$",
-                      "default": "value",
                       "required": true
                     },
                     "title": {
                       "title": "Property Title",
                       "type": "string"
-                    },
-                    "readOnly": {
-                      "title": "Non Writable Property",
-                      "type": "boolean",
-                      "default": false
                     },
                     "type": {
                       "type": "string",
@@ -99,22 +94,38 @@
                 }, {
                   "title": "Integer",
                   "type": "object",
+                  "additionalProperties": false,
                   "properties": {
                     "name": {
                       "title": "Property Name",
                       "type": "string",
                       "pattern": "^[a-z][a-zA-Z0-9]+$",
-                      "default": "value",
                       "required": true
                     },
                     "title": {
                       "title": "Property Title",
                       "type": "string"
                     },
-                    "readOnly": {
-                      "title": "Non Writable Property",
-                      "type": "boolean",
-                      "default": false
+                    "type": {
+                      "type": "string",
+                      "const": "integer",
+                      "format": "hidden"
+                    }
+                  }
+                }, {
+                  "title": "Bounded Integer",
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "name": {
+                      "title": "Property Name",
+                      "type": "string",
+                      "pattern": "^[a-z][a-zA-Z0-9]+$",
+                      "required": true
+                    },
+                    "title": {
+                      "title": "Property Title",
+                      "type": "string"
                     },
                     "type": {
                       "type": "string",
@@ -124,33 +135,30 @@
                     "minimum": {
                       "title": "Minimum value",
                       "type": "integer",
-                      "default": 1
+                      "default": 1,
+                      "required": true
                     },
                     "maximum": {
                       "title": "Maximum value",
                       "type": "integer",
-                      "default": 100
+                      "default": 100,
+                      "required": true
                     }
                   }
                 }, {
-                  "title": "String",
+                  "title": "Enumerated String",
                   "type": "object",
+                  "additionalProperties": false,
                   "properties": {
                     "name": {
                       "title": "Property Name",
                       "type": "string",
                       "pattern": "^[a-z][a-zA-Z0-9]+$",
-                      "default": "value",
                       "required": true
                     },
                     "title": {
                       "title": "Property Title",
                       "type": "string"
-                    },
-                    "readOnly": {
-                      "title": "Non Writable Property",
-                      "type": "boolean",
-                      "default": false
                     },
                     "type": {
                       "type": "string",
@@ -160,10 +168,12 @@
                     "enum": {
                       "title": "Values",
                       "type": "array",
+                      "minItems": 1,
                       "items": {
                         "title": "Value",
                         "type": "string"
-                      }
+                      },
+                      "required": true
                     }
                   }
                 }, {
@@ -175,16 +185,15 @@
                       "const": "custom",
                       "format": "hidden"
                     },
-                    "title": {
-                      "title": "Property Title",
-                      "type": "string"
-                    },
                     "name": {
                       "title": "Property Name",
                       "type": "string",
-                      "default": "value",
                       "pattern": "^[a-z][a-zA-Z0-9]+$",
                       "required": true
+                    },
+                    "title": {
+                      "title": "Property Title",
+                      "type": "string"
                     },
                     "type": {
                       "title": "Property Primitive Type",
