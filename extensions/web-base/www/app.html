@@ -450,7 +450,7 @@
       <div>
         <slot name="bar-right"></slot>
         <template v-if="app.getPage('user')">
-          <button v-on:click="app.toPage('user', true)" v-if="app.user && app.user.logged" :title="app.user.name"><i class="fa fa-user"></i></button>
+          <button v-on:click="app.toPage('user')" v-if="app.user && app.user.logged" :title="app.user.name"><i class="fa fa-user"></i></button>
           <button v-on:click="app.toPage('user')" v-else title="Not logged"><i class="fa fa-user-alt-slash"></i></button>
         </template>
       </div>

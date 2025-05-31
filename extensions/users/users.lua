@@ -1,7 +1,9 @@
 local extension = ...
 
 local class = require('jls.lang.class')
+local serialization = require('jls.lang.serialization')
 local logger = extension:getLogger()
+local File = require('jls.io.File')
 local HttpExchange = require('jls.net.http.HttpExchange')
 local HttpFilter = require('jls.net.http.HttpFilter')
 local Url = require('jls.net.Url')
@@ -64,6 +66,10 @@ local function refreshUsers(users)
   end
 end
 
+local function getSessionsFile()
+  return File:new(extension:getEngine():getWorkDirectory(), 'sessions.dat')
+end
+
 local sessionFilter
 
 extension:subscribeEvent('startup', function()
@@ -73,10 +79,24 @@ extension:subscribeEvent('startup', function()
     sessionFilter:close()
   end
   sessionFilter = HttpFilter.session(configuration.maxAge, configuration.idleTimeout)
+  if configuration.keepSessions then
+    local sessionsFile = getSessionsFile()
+    if sessionsFile:isFile() then
+      local status, sessions = pcall(serialization.deserialize, sessionsFile:readAll(), '{jls.net.http.HttpSession}')
+      if status then
+        logger:info('restoring %l session(s)', sessions)
+        sessionFilter:addSessions(sessions)
+        sessionFilter:cleanup()
+        sessionsFile:delete()
+      else
+        logger:warn('unable to read sessions due to %s', sessions)
+      end
+    end
+  end
   cleanup()
   refreshUsers(configuration.users)
   function sessionFilter:onCreated(session)
-    session.attributes.user = nil
+    session.attributes.userName = nil
     session.attributes.permission = configuration.defaultPermission or ''
   end
   extension:addContext('/logout', function(exchange)
@@ -95,7 +115,7 @@ extension:subscribeEvent('startup', function()
       local user = userMap[info.name]
       if user and user:checkPassword(encrypt(info.password)) then
         local session = exchange:getSession()
-        session.attributes.user = user
+        session.attributes.userName = info.name
         if user.permission then
           session.attributes.permission = user.permission
         end
@@ -155,5 +175,13 @@ extension:subscribeEvent('refresh', function()
 end)
 
 extension:subscribeEvent('shutdown', function()
+  if extension:getConfiguration().keepSessions then
+    sessionFilter:cleanup()
+    local sessions = sessionFilter:getSessions()
+    if #sessions > 0 then
+      local s = serialization.serialize(sessions)
+      getSessionsFile():write(s)
+    end
+  end
   cleanup()
 end)

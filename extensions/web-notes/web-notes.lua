@@ -29,8 +29,8 @@ extension:subscribeEvent('startup', function()
   function handler:findFile(exchange, path)
     local session = exchange:getSession()
     local userDir = sharedNotesDir
-    if session and session.attributes.user then
-      local userName = session.attributes.user.name
+    local userName = session and session.attributes.userName
+    if userName then
       local dirName = Url.encodePercent(userName)
       userDir = File:new(self.rootFile, dirName)
       if userName ~= lastUserName then

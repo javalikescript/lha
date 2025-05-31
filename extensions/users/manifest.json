@@ -67,6 +67,11 @@
         "title": "Restrict the access to logged users",
         "type": "boolean",
         "default": true
+      },
+      "keepSessions": {
+        "title": "Keep the sessions on restart",
+        "type": "boolean",
+        "default": true
       }
     }
   }

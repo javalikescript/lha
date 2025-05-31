@@ -457,10 +457,10 @@ return {
   user = function(exchange)
     local session = exchange:getSession()
     if session then
-      local user = session.attributes.user
+      local userName = session.attributes.userName
       return {
-        name = user and user.name,
-        logged = user ~= nil,
+        name = userName,
+        logged = userName ~= nil,
         permission = session.attributes.permission
       }
     end

@@ -5,7 +5,7 @@ local location = '/login.html'
 
 return HttpFilter.byPath(HttpFilter:new(function(_, exchange)
   local session = exchange:getSession()
-  if session and not session.attributes.user then
+  if session and not session.attributes.userName then
     HttpExchange.redirect(exchange, location)
     return false
   end
