@@ -28,12 +28,28 @@
   -->
   <app-dialog id="confirmation" title="Confirm">
     <template slot="bar-right">
-      <button v-on:click="onCancel()"><i class="fa fa-window-close"></i></button>
+      <button v-on:click="app.closeDialog()"><i class="fa fa-window-close"></i></button>
     </template>
     <page-article>
       <p>{{ message }}</p>
       <button v-on:click="onConfirm()"><i class="fas fa-check"></i>&nbsp;Confirm</button>
-      <button v-on:click="onCancel()"><i class="fas fa-times"></i>&nbsp;Cancel</button>
+      <button v-on:click="app.closeDialog()"><i class="fas fa-times"></i>&nbsp;Cancel</button>
+    </page-article>
+  </app-dialog>
+  <!--
+    prompt dialog
+  -->
+  <app-dialog id="prompt" title="Prompt">
+    <template slot="bar-right">
+      <button v-on:click="app.closeDialog()"><i class="fa fa-window-close"></i></button>
+    </template>
+    <page-article>
+      <p>{{ message }}</p>
+      <template v-if="schema">
+        <json name="Input" :obj="value" :schema="schema"></json>
+        <button v-on:click="onConfirm()"><i class="fas fa-check"></i>&nbsp;Confirm</button>
+        <button v-on:click="app.closeDialog()"><i class="fas fa-times"></i>&nbsp;Cancel</button>
+      </template>
     </page-article>
   </app-dialog>
   <!--
@@ -230,7 +246,7 @@
         <button v-for="(action, index) in actions" :title="action.description" v-on:click="triggerAction(index)">{{ action.name }}</button>
       </section>
       <section v-if="schema">
-        <json :name="'Configuration'" :obj="config" :schema="schema"></json>
+        <json name="Configuration" :obj="config" :schema="schema"></json>
         <button v-on:click="onSave()"><i class="far fa-save"></i>&nbsp;Save</button>
       </section>
     </article>
@@ -279,7 +295,7 @@
       <section>
         <p>{{ info.name }}</p>
         <p>{{ info.description }}</p>
-        <json v-if="schema" :name="'Configuration'" :obj="config" :schema="schema"></json>
+        <json v-if="schema" name="Configuration" :obj="config" :schema="schema"></json>
       </section>
       <section>
         <button v-on:click="onAdd().then(function(){ app.back(); })"><i class="fa fa-plus"></i>&nbsp;Add Extension</button>
@@ -323,7 +339,7 @@
         <button v-on:click="stopServer()" :disabled="working"><i class="fas fa-power-off"></i>&nbsp;Stop the Server</button>
       </section>
       <section>
-        <json :name="'Configuration'" :obj="config" :schema="schema"></json>
+        <json name="Configuration" :obj="config" :schema="schema"></json>
         <button v-on:click="onSave()"><i class="far fa-save"></i>&nbsp;Save</button>
       </section>
     </article>
@@ -397,11 +413,12 @@
       <!-- TODO hasAdditionalProperties -->
     </ul>
     <ul v-else-if="isList" class="json-items" v-show="open">
-      <li v-if="hasList" is="json-item" v-for="(so, i) in obj" :key="i" :name="String(i + 1)" :pobj="obj" :obj="so" :schema="unrefSchema(rootSchema, schema.items)" :rootSchema="rootSchema"></li>
-      <li>
+      <li v-if="hasList" is="json-item" v-for="(so, i) in obj" :key="i" :name="String(i + 1)" :pobj="obj" :obj="so" :schema="unrefSchema(rootSchema, getArraySchema(schema, i))" :rootSchema="rootSchema"></li>
+      <li v-if="canAddItem">
         <button v-on:click="addItem" title="Add Item"><i class="fa fa-plus"></i>&nbsp;Add {{ label }} Item</button>
       </li>
     </ul>
+    <span v-else>unsupported schema</span>
   </li>
 </script>
 <script type="text/x-template" id="json-template">

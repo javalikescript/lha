@@ -38,11 +38,22 @@ function populateJsonSchema(rootSchema, enumsById) {
   function browseJsonSchema(schema, fn) {
     if (isObject(schema)) {
       fn(schema);
-      if ((schema.type === 'array') && isObject(schema.items)) {
-        browseJsonSchema(schema.items, fn);
-      } else if ((schema.type === 'object') && isObject(schema.properties)) {
-        for (var name in schema.properties) {
-          browseJsonSchema(schema.properties[name], fn);
+      if (schema.type === 'array') {
+        if (isObject(schema.items)) {
+          browseJsonSchema(schema.items, fn);
+        }
+        var prefixItems = schema.prefixItems;
+        if (Array.isArray(prefixItems)) {
+          for (var i = 0; i < prefixItems.length; i++) {
+            browseJsonSchema(prefixItems[i], fn);
+          }
+        }
+      } else if (schema.type === 'object') {
+        var properties = schema.properties;
+        if (isObject(properties)) {
+          for (var name in properties) {
+            browseJsonSchema(properties[name], fn);
+          }
         }
       }
       if (Array.isArray(schema.anyOf)) {
@@ -67,7 +78,7 @@ function populateJsonSchema(rootSchema, enumsById) {
     browseJsonSchema(schema, fn);
   }
   var ps = false;
-  if (isObject(rootSchema) && isObject(rootSchema.properties) && (Object.keys(rootSchema.properties).length > 0)) {
+  if (isObject(rootSchema)) {
     ps = deepCopy(rootSchema);
     browseJsonRootSchema(ps, function(schema) {
       if ('enumVar' in schema) {
@@ -100,6 +111,14 @@ function unrefSchema(rootSchema, schema) {
   }
   //console.info('unrefSchema(' + (typeof rootSchema) + ', ' + (typeof schema) + ') => ' + (typeof us));
   return us;
+}
+
+function getArraySchema(schema, index) {
+  var prefixItems = schema.prefixItems;
+  if (prefixItems && (index < prefixItems.length)) {
+    return prefixItems[index];
+  }
+  return schema.items;
 }
 
 (function() {
@@ -208,25 +227,40 @@ function populateJson(rootSchema, schema, obj) {
         }
       }
       if (po !== undefined) {
-        if ((type === 'object') && isObject(schema.properties)) {
-          for (var k in schema.properties) {
-            var v = populateJson(rootSchema, schema.properties[k], po[k]);
-            if (v === undefined) {
-              delete po[k];
-            } else {
-              po[k] = v;
+        if (type === 'object') {
+          if (isObject(schema.properties)) {
+            for (var k in schema.properties) {
+              var v = populateJson(rootSchema, schema.properties[k], po[k]);
+              if (v === undefined) {
+                delete po[k];
+              } else {
+                po[k] = v;
+              }
             }
           }
           // keep additional properties (schema.additionalProperties !== false)
-        } else if ((type === 'array') && isObject(schema.items)) {
+        } else if (type === 'array') {
           var l = po.length;
           if ((typeof schema.minItems === 'number') && (schema.minItems > l)) {
             l = schema.minItems;
           }
+          if ((typeof schema.maxItems === 'number') && (l > schema.maxItems)) {
+            l = schema.maxItems;
+          }
+          if (Array.isArray(schema.prefixItems) && !isObject(schema.items) && (l > schema.prefixItems.length)) {
+            l = schema.prefixItems.length;
+          }
+          if (po.length > l) {
+            po.splice(l);
+          }
           for (var i = 0; i < l; i++) {
-            var v = populateJson(rootSchema, schema.items, po[i]);
+            var s = getArraySchema(schema, i);
+            if (!isObject(s)) {
+              break;
+            }
+            var v = populateJson(rootSchema, s, po[i]);
             if (v === undefined) {
-              v = newJsonItem(schema.items.type);
+              v = newJsonItem(s.type);
             }
             po[i] = v;
           }
@@ -452,25 +486,46 @@ Vue.component('json-item', {
       return this.$parent && this.$parent.hasOfSchema;
     },
     hasEnumValues: function() {
-      var schema = this.schema;
-      return (Array.isArray(schema.enum) || Array.isArray(schema.enumValues)) &&
-        ((schema.type === 'string') || (schema.type === 'number') || (schema.type === 'integer'));
+      var s = this.schema;
+      return (Array.isArray(s.enum) || Array.isArray(s.enumValues)) && ((s.type === 'string') || (s.type === 'number') || (s.type === 'integer'));
     },
     isProperties: function() {
-      var schema = this.schema;
-      return (schema.type === 'object') && (isObject(schema.properties) || (schema.additionalProperties !== false));
+      var s = this.schema;
+      return (s.type === 'object') && (isObject(s.properties) || (s.additionalProperties !== false));
     },
     hasAdditionalProperties: function() {
-      return (this.schema.type === 'object') && (this.schema.additionalProperties !== false);
+      var s = this.schema;
+      return (s.type === 'object') && (s.additionalProperties !== false);
     },
     hasList: function() {
-      return (this.schema.type === 'array') && isObject(this.schema.items) && Array.isArray(this.obj);
+      return Array.isArray(this.obj);
     },
     isList: function() {
-      return (this.schema.type === 'array') && isObject(this.schema.items);
+      var s = this.schema;
+      return (s.type === 'array') && (isObject(s.items) || Array.isArray(s.prefixItems));
     },
     isListItem: function() {
-      return Array.isArray(this.pobj);
+      if (Array.isArray(this.pobj)) {
+        var parent = this.getParent();
+        if (parent && index !== -1) {
+          var s = parent.schema;
+          var index = this.getItemIndex();
+          if (Array.isArray(s.prefixItems) && (index < s.prefixItems.length)) {
+            return false;
+          }
+          return isObject(s.items);
+        }
+      }
+    },
+    canAddItem: function() {
+      var s = this.schema;
+      var maxItems = s.maxItems;
+      if ((typeof maxItems === 'number') && (this.obj.length >= maxItems)) {
+        return false;
+      } else if (!isObject(s.items) && Array.isArray(s.prefixItems) && (this.obj.length >= s.prefixItems.length)) {
+        return false;
+      }
+      return true;
     },
     hasContent: function() {
       var type = guessSchemaType(this.rootSchema, this.schema);
@@ -478,16 +533,35 @@ Vue.component('json-item', {
     }
   },
   methods: {
-    updateParent: function() {
-      var parent = this;
-      while ((parent.pobj === this.pobj) && parent.$parent) {
-        parent = parent.$parent;
+    getParent: function() {
+      if (typeof this.pobj === 'object') {
+        var parent = this;
+        var i = 0;
+        while (i < 9 && parent.$parent && isObject(parent.schema)) {
+          if (parent.obj === this.pobj) {
+            return parent;
+          }
+          parent = parent.$parent;
+          i++;
+        }
       }
-      parent.$forceUpdate();
+      return null;
+    },
+    updateParent: function() {
+      var parent = this.getParent();
+      if (parent) {
+        parent.$forceUpdate();
+      }
     },
     addItem: function() {
-      if ((this.schema.type === 'array') && isObject(this.schema.items) && Array.isArray(this.obj)) {
-        var item = populateJson(this.rootSchema, this.schema.items);
+      var item = undefined;
+      if ((this.schema.type === 'array') && Array.isArray(this.obj)) {
+        var s = getArraySchema(this.schema, this.obj.length);
+        if (isObject(s)) {
+          item = populateJson(this.rootSchema, s);
+        }
+      }
+      if (item !== undefined) {
         this.obj.push(item);
         this.$forceUpdate();
       } else {
@@ -564,7 +638,7 @@ Vue.component('json', {
   methods: {
     refresh: function() {
       //console.log('refresh(), schema:', JSON.stringify(this.schema, undefined, 2), 'obj:', JSON.stringify(this.obj, undefined, 2));
-      if (isObject(this.schema) && isObject(this.obj)) {
+      if (isObject(this.schema) && (isObject(this.obj) || Array.isArray(this.obj))) {
         // The root object shall be available and of type object
         populateJson(this.schema, this.schema, this.obj);
         //console.info('refresh(), schema:', deepCopy(this.schema), 'obj:', deepCopy(this.obj));

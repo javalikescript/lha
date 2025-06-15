@@ -52,6 +52,10 @@ function isObject(obj) {
   return (obj !== null) && (typeof obj === 'object');
 }
 
+function isObjectWithKeys(obj) {
+  return isObject(obj) && (Object.keys(obj).length > 0);
+}
+
 function swapMap(m) {
   var r = {};
   for (var k in m) {

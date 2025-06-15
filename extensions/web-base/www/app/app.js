@@ -100,6 +100,7 @@ var app = new Vue({
     menu: '',
     hideMenu: window.innerWidth < 360,
     dialog: '',
+    dialogs: {},
     watchers: [],
     page: '',
     pages: {},
@@ -117,44 +118,52 @@ var app = new Vue({
     getTheme: function() {
       return this.theme;
     },
-    navigate: function(mode, id, path, force) {
-      var previousId = this.page !== id ? this.page : '';
-      if (previousId && !force) {
-        var page = this.pages[previousId];
-        if (page) {
-          var p = callVueFromPage(page, 'onBeforeHide');
-          if (p === false) {
-            return;
-          } else if (p instanceof Promise) {
-            p.then(function() {
-              this.navigate(mode, id, path, true);
-            }.bind(this));
-            return;
-          }
-        }
-      }
-      if (mode === 'back') {
-        window.history.back();
-      } else if (mode === 'assign') {
-        window.location.assign('#' + formatNavigationPath(id, path));
-      } else if (mode === 'replace') {
-        window.location.replace('#' + formatNavigationPath(id, path));
-      }
-    },
     toPage: function(id, path) {
-      this.navigate('assign', id, path);
+      window.location.assign('#' + formatNavigationPath(id, path));
     },
     replacePage: function(id, path) {
-      this.navigate('replace', id, path);
+      window.location.replace('#' + formatNavigationPath(id, path));
     },
     back: function() {
-      this.navigate('back');
+      window.history.back();
+    },
+    openDialog: function(id) {
+      this.toPage('dialog', id);
+    },
+    closeDialog: function() {
+      this.back();
     },
     onHashchange: function(path) {
+      if (this.dialog) {
+        var dialog = this.dialogs[this.dialog];
+        if (dialog) {
+          callVueFromPage(dialog, 'onBeforeHide');
+        }
+        this.dialog = '';
+      }
       var matches = parseNavigationPath(path);
       if (matches) {
         var id = matches[1];
         var pagePath = matches[2];
+        if (id === 'dialog') {
+          this.dialog = pagePath;
+          return;
+        }
+        var previousId = this.page !== id ? this.page : '';
+        if (previousId) {
+          var page = this.pages[previousId];
+          if (page) {
+            var p = callVueFromPage(page, 'onBeforeHide');
+            if (p === false) {
+              return;
+            } else if (p instanceof Promise) {
+              p.then(function() {
+                this.onHashchange(path, true);
+              }.bind(this));
+              return;
+            }
+          }
+        }
         if (id in this.pages) {
           var previousId = this.page !== id ? this.page : '';
           this.menu = '';
@@ -439,7 +448,10 @@ Vue.component('app-dialog', {
   data: function() {
       return {app: app};
   },
-  props: ['id', 'title']
+  props: ['id', 'title'],
+  created: function() {
+    this.app.dialogs[this.id] = this;
+  }
 });
 
 Vue.component('app-page', {
@@ -508,26 +520,75 @@ var confirmation = new Vue({
   },
   methods: {
     ask: function(message) {
-      //console.log('confirmation.ask("' + message + '")');
       this.message = message || 'Are you sure?';
-      app.dialog = 'confirmation';
-      var self = this;
+      app.openDialog('confirmation');
       return new Promise(function(resolve, reject) {
-        self._close = function(confirm) {
+        this.apply = function(confirm) {
           if (confirm) {
             resolve();
           } else {
-            reject('user did not confirm');
+            reject('canceled');
           }
-          app.dialog = '';
+        };
+      }.bind(this));
+    },
+    onBeforeHide: function() {
+      this.message = 'Nothing here';
+      this.apply(false);
+    },
+    apply: function() {},
+    onConfirm: function() {
+      this.apply(true);
+      app.closeDialog();
+    }
+  }
+});
+
+/************************************************************
+ * Prompt dialog
+ ************************************************************/
+var promptDialog = new Vue({
+  el: '#prompt',
+  data: {
+    message: 'Nothing here',
+    schema: false,
+    value: null
+  },
+  methods: {
+    ask: function(schema, message) {
+      if (!isObject(schema)) {
+        return Promise.reject('invalid schema');
+      }
+      this.schema = schema;
+      if (schema.type === 'object') {
+        this.value = {};
+      } else if (schema.type === 'array') {
+        this.value = [];
+      } else {
+        this.value = '';
+      }
+      this.message = message || 'Value?';
+      app.openDialog('prompt');
+      var self = this;
+      return new Promise(function(resolve, reject) {
+        self.apply = function(confirm) {
+          if (confirm) {
+            resolve(self.value);
+          } else {
+            reject('canceled');
+          }
         };
       });
     },
-    onConfirm: function() {
-      this._close(true);
+    onBeforeHide: function() {
+      this.message = 'Nothing here';
+      this.schema = false;
+      this.apply(false);
     },
-    onCancel: function() {
-      this._close(false);
+    apply: function() {},
+    onConfirm: function() {
+      this.apply(true);
+      app.closeDialog();
     }
   }
 });
