@@ -36,6 +36,67 @@ local function deployScript(exchange, engine, extId)
   return extId
 end
 
+local function replaceProperties(scriptsDir, changes, dryRun)
+  logger:fine('replaceProperties(%s, %T)', scriptsDir, changes)
+  local delimitersByName = {
+    ['blocks.xml'] = {'>', '<'},
+    ['script.lua'] = {"'", "'"},
+    ['config.json'] = {'"', '"'},
+  }
+  local replace = not dryRun
+  local count = 0
+  local fileCount = 0
+  local propertyCount = 0
+  local names = {}
+  local scriptDirs = scriptsDir:listFiles()
+  if scriptDirs and type(changes) == 'table' then
+    for _, scriptDir in ipairs(scriptDirs) do
+      local files = scriptDir:listFiles()
+      if files then
+        local n = 0 -- modified files
+        for _, file in ipairs(files) do
+          local pc = 0 -- modified properties
+          local delimiters = delimitersByName[file:getName()]
+          if delimiters then
+            local content = file:readAll()
+            local changed = false
+            for _, change in ipairs(changes) do
+              local from = change.from
+              if from then
+                local f = delimiters[1]..from..delimiters[2]
+                if string.find(content, f, 1, true) then
+                  changed = true
+                  logger:finer('Property "%s" found in "%s"', from, file)
+                  if replace then
+                    local t = delimiters[1]..change.to..delimiters[2]
+                    local c
+                    content, c = string.gsub(content, strings.escape(f), t)
+                    pc = pc + c
+                  end
+                end
+              end
+            end
+            if changed then
+              n = n + 1
+              if pc > 0 then
+                propertyCount = propertyCount + pc
+                file:write(content)
+              end
+            end
+          end
+        end
+        if n > 0 then
+          fileCount = fileCount + n
+          count = count + 1
+          table.insert(names, scriptDir:getName())
+        end
+      end
+    end
+  end
+  return {count = count, fileCount = fileCount, propertyCount = propertyCount, names = names}
+end
+
+
 local REST_SCRIPTS = {
   ['(engine)?method=GET'] = function(_, engine)
     local list = {}
@@ -72,45 +133,11 @@ local REST_SCRIPTS = {
   ['(engine)?method=POST'] = function(exchange, engine)
     return deployScript(exchange, engine, engine:generateId())
   end,
-  ['(engine, from, to)?method=POST&:LHA-RenameProperty+=from&:LHA-To-=to'] = function(exchange, engine, from, to)
-    logger:fine('Renaming from "%s" to "%s"', from, to)
-    local delimitersByName = {
-      ['blocks.xml'] = {'>', '<'},
-      ['script.lua'] = {"'", "'"},
-      ['config.json'] = {'"', '"'},
-    }
-    local count = 0
-    local fileCount = 0
-    local scriptsDirs = engine:getScriptsDirectory():listFiles()
-    if scriptsDirs then
-      for _, scriptsDir in ipairs(scriptsDirs) do
-        local files = scriptsDir:listFiles()
-        if files then
-          local n = 0
-          for _, file in ipairs(files) do
-            local delimiters = delimitersByName[file:getName()]
-            if delimiters then
-              local content = file:readAll()
-              local f = delimiters[1]..from..delimiters[2]
-              if string.find(content, f, 1, true) then
-                n = n + 1
-                logger:fine('Property found in "%s"', file)
-                if to and #to > 0 then
-                  local t = delimiters[1]..to..delimiters[2]
-                  content = string.gsub(content, strings.escape(f), t)
-                  file:write(content)
-                end
-              end
-            end
-          end
-          if n > 0 then
-            fileCount = fileCount + n
-            count = count + 1
-          end
-        end
-      end
-    end
-    return {count = count, fileCount = fileCount}
+  ['(engine, from, to)?method=POST&:LHA-RenameProperty+=from&:LHA-To-=to'] = function(_, engine, from, to)
+    return replaceProperties(engine:getScriptsDirectory(), {from = from, to = to}, not to)
+  end,
+  ['(engine, requestJson, mode)?method=POST&:Content-Type^=application/json&:LHA-Properties+=mode'] = function(_, engine, changes, mode)
+    return replaceProperties(engine:getScriptsDirectory(), changes, mode ~= 'replace')
   end,
   ['{+}(engine)'] = function(exchange, name, engine)
     local ext = engine:getExtensionById(name)
@@ -151,8 +178,24 @@ local REST_SCRIPTS = {
   },
 }
 
+function extension:replaceProperties(exchange, changes, dryRun)
+  logger:fine('replaceProperties(%T, %s)', changes, dryRun)
+  local engine = extension:getEngine()
+  local result = replaceProperties(engine:getScriptsDirectory(), changes, dryRun)
+  if dryRun then
+    logger:info('replaceProperties() -> %T', result)
+  else
+    logger:fine('replaceProperties() -> %T', result)
+    --engine:reloadScripts(false) -- TODO reload only modified scripts
+  end
+  return string.format('%s scripts modified, %s properties in %s files', result.count, result.propertyCount, result.fileCount)
+end
+
 extension:subscribeEvent('startup', function()
   local engine = extension:getEngine()
   extension:addContext('/engine/scripts/(.*)', RestHttpHandler:new(REST_SCRIPTS, {engine = engine}))
   extension:addContext('/engine/scriptFiles/(.*)', FileHttpHandler:new(engine:getScriptsDirectory(), 'rw'))
 end)
+
+-- TODO use event to replace properties in all extensions
+--extension:subscribeEvent('replaceProperties', function(changes, dryRun) end)

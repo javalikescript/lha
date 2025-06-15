@@ -3,5 +3,37 @@
   "description": "Expose web scripts add-on",
   "dependencies": ["web-base"],
   "version": "1.0",
-  "script": "web-scripts.lua"
+  "script": "web-scripts.lua",
+  "actions": [{
+    "name": "Replace Properties",
+    "description": "Replace properties used in the scripts",
+    "method": "replaceProperties",
+    "active": true,
+    "arguments": [{
+      "title": "Properties",
+      "type": "array",
+      "items": {
+        "title": "Replace Property",
+        "type": "object",
+        "properties": {
+          "from": {
+            "title": "From Property",
+            "type": "string",
+            "enumVar": "propertyPaths",
+            "required": true
+          },
+          "to": {
+            "title": "To Property",
+            "type": "string",
+            "enumVar": "propertyPaths",
+            "required": true
+          }
+        }
+      }
+    }, {
+      "title": "Count only",
+      "type": "boolean",
+      "default": true
+    }]
+  }]
 }

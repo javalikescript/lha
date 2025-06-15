@@ -121,8 +121,9 @@ define(['./scripts.xml', './scripts-add.xml', './scripts-rename.xml',
     lhaEventNames: [
       { const: "-disabled-", title: "never" },
       { const: "startup", title: "startup" },
-      { const: "poll", title: "polling" },
       { const: "shutdown", title: "shutdown" },
+      { const: "poll", title: "polling" },
+      { const: "data", title: "data" },
       { const: "heartbeat", title: "heartbeat" },
       { const: "test", title: "testing" }
     ].map(enumToOptions),
