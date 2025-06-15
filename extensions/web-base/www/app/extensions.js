@@ -41,13 +41,6 @@ registerPageVue(new Vue({
   }
 }), 'plus-circle', true, true);
 
-function buildExtensionSchema(manifest, enumsById) {
-  if (manifest && manifest.schema) {
-    return populateJsonSchema(manifest.schema, enumsById);
-  }
-  return false;
-}
-
 var EXTENSION_DATA = {
   extensionId: '',
   config: {},
@@ -70,11 +63,24 @@ function onShowExtension(extensionId) {
     app.getEnumsById()
   ]).then(apply(this, function(extension, enumsById) {
     this.extensionId = extensionId;
-    this.schema = buildExtensionSchema(extension.manifest, enumsById);
-    if (extension.manifest && extension.manifest.actions) {
-      this.actions = extension.manifest.actions.filter(function(action) {
-        return action.active === true && !action.arguments;
-      });
+    var schema = extension.manifest && extension.manifest.schema;
+    this.schema = schema ? populateJsonSchema(schema, enumsById) : false;
+    var actions = extension.manifest && extension.manifest.actions;
+    if (actions) {
+      if (typeof this.active === 'boolean') {
+        actions = actions.filter(function(action) {
+          return this.active === undefined || action.active === this.active;
+        });
+      }
+      for (var i = 0; i < actions.length; i++) {
+        var action = actions[i];
+        if (action.arguments) {
+          action.arguments = action.arguments.map(function(s) {
+            return populateJsonSchema(s, enumsById);
+          });
+        }
+      }
+      this.actions = actions;
     } else {
       this.actions = [];
     }
@@ -90,16 +96,28 @@ function refreshConfig() {
 }
 
 function triggerAction(index) {
-  console.info('triggerAction(' + index + ')');
+  //console.info('triggerAction(' + index + ')');
   var action = this.actions[index];
   if (!action) {
     return Promise.reject('No action #' + index);
   }
-  return fetch('/engine/extensions/' + this.extensionId + '/action/' + (index + 1), {
-    method: 'POST',
-    headers: { "Content-Type": 'application/json' },
-    body: '[]' // TODO ask arguments
-  }).then(assertIsOk).then(getJson).then(function(response) {
+  Promise.resolve().then(function() {
+    if (Array.isArray(action.arguments)) {
+      var schema = {
+        type: 'array',
+        prefixItems: action.arguments,
+        minItems: action.arguments.length
+      };
+      return promptDialog.ask(schema, action.description || action.name);
+    }
+    return [];
+  }).then(function(parameters) {
+    return fetch('/engine/extensions/' + this.extensionId + '/action/' + (index + 1), {
+      method: 'POST',
+      headers: { "Content-Type": 'application/json' },
+      body: JSON.stringify(parameters)
+    });
+  }.bind(this)).then(assertIsOk).then(getJson).then(function(response) {
     if (response.success) {
       toaster.toast('Action triggered, ' + response.message);
       if (action.active === false) {
@@ -108,12 +126,16 @@ function triggerAction(index) {
     } else {
       toaster.toast('Action failed, ' + response.message);
     }
-  }.bind(this));
+  }.bind(this)).catch(function(reason) {
+    toaster.toast('Action failed, ' + reason);
+  });
 }
 
 new Vue({
   el: '#extension',
-  data: Object.assign({}, EXTENSION_DATA),
+  data: Object.assign({
+    active: true
+  }, EXTENSION_DATA),
   methods: {
     onDisable: function() {
       var extensionId = this.extensionId;
@@ -197,7 +219,9 @@ new Vue({
 
 new Vue({
   el: '#addExtension',
-  data: Object.assign({}, EXTENSION_DATA),
+  data: Object.assign({
+    active: false
+  }, EXTENSION_DATA),
   methods: {
     onAdd: function() {
       console.log('onAdd()', this);

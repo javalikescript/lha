@@ -509,6 +509,9 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
       local manifest = json.decode(manifestFile:readAll())
       local m, err = tables.getSchemaValue(schema, manifest, true)
       if m then
+        if not manifest.schema then
+          m.schema = nil
+        end
         return m
       end
       self.logger:warn('Invalid extension manifest, %s', err)
