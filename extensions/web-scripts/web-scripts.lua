@@ -133,12 +133,6 @@ local REST_SCRIPTS = {
   ['(engine)?method=POST'] = function(exchange, engine)
     return deployScript(exchange, engine, engine:generateId())
   end,
-  ['(engine, from, to)?method=POST&:LHA-RenameProperty+=from&:LHA-To-=to'] = function(_, engine, from, to)
-    return replaceProperties(engine:getScriptsDirectory(), {from = from, to = to}, not to)
-  end,
-  ['(engine, requestJson, mode)?method=POST&:Content-Type^=application/json&:LHA-Properties+=mode'] = function(_, engine, changes, mode)
-    return replaceProperties(engine:getScriptsDirectory(), changes, mode ~= 'replace')
-  end,
   ['{+}(engine)'] = function(exchange, name, engine)
     local ext = engine:getExtensionById(name)
     if ext and ext:getType() == 'script' then

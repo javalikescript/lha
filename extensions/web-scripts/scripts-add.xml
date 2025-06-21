@@ -4,7 +4,7 @@
   </template>
   <article>
     <section>
-      <button v-on:click="newBlocks"><i class="fa fa-shapes"></i>&nbsp;Add Blocks</button>
+      <button v-on:click="newBlocks"><i class="fa fa-puzzle-piece"></i>&nbsp;Add Blocks</button>
       <button v-on:click="newView"><i class="fa fa-code"></i>&nbsp;Add View</button>
       <button v-on:click="newScript"><i class="fa fa-moon"></i>&nbsp;Add Lua</button>
     </section>

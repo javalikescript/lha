@@ -1,13 +1,12 @@
 <app-page id="scripts" title="Scripts">
   <template slot="bar-right">
-    <button v-on:click="app.toPage('scripts-rename')" title="Rename"><i class="fa fa-edit"></i></button>
     <button v-on:click="onNew" title="Add"><i class="fa fa-plus"></i></button>
   </template>
   <article class="cards">
     <div class="card" v-for="script in scripts">
       <div class="bar">
-        <p>
-          <i :class="['fas', script.hasBlocks ? 'fa-shapes' : (script.hasView ? 'fa-code' : 'fa-moon')]"></i>
+        <p><!-- fa-shapes -->
+          <i :class="['fas', script.hasBlocks ? 'fa-puzzle-piece' : (script.hasView ? 'fa-code' : 'fa-moon')]"></i>
           {{ script.name }}
         </p>
         <div>

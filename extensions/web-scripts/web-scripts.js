@@ -1,8 +1,8 @@
-define(['./scripts.xml', './scripts-add.xml', './scripts-rename.xml',
+define(['./scripts.xml', './scripts-add.xml',
   './script-blockly.xml', './toolbox.xml', './blocks.json', './blocks-lua',
   './script-view.xml', './script-view-config.xml', './view-schema.json',
   './script-editor.xml', './dependencies.js'],
-  function(scriptsTemplate, scriptsAddTemplate, scriptsRenameTemplate,
+  function(scriptsTemplate, scriptsAddTemplate,
     scriptBlocklyTemplate, toolboxXml, blocks, blocksLua,
     scriptViewTemplate, scriptViewConfigTemplate, scriptsViewConfigSchema,
     scriptEditorTemplate)
@@ -472,41 +472,6 @@ define(['./scripts.xml', './scripts-add.xml', './scripts-rename.xml',
     }
   });
 
-  var scriptsRenameVue = new Vue({
-    template: scriptsRenameTemplate,
-    data: {
-      properties: [],
-      count: 0,
-      fromPath: '',
-      toPath: ''
-    },
-    methods: {
-      onShow: function () {
-        app.getEnumsById().then(function(enumsById) {
-          this.properties = enumsById.allPropertyPaths;
-        }.bind(this));
-      },
-      rename: function (from, to) {
-        var headers = {'LHA-RenameProperty': from};
-        if (to) {
-          headers['LHA-To'] = to;
-        }
-        return fetch(scriptPath, {method: 'POST', headers: headers}).then(assertIsOk).then(getJson);
-      },
-      preview: function () {
-        this.count = 0;
-        return this.rename(this.fromPath).then(function(r) {
-          this.count = r.count;
-        }.bind(this));
-      },
-      onRename: function () {
-        return this.rename(this.fromPath, this.toPath).then(function(r) {
-          toaster.toast(r.fileCount + ' file(s) in ' + r.count + ' script(s)');
-        });
-      }
-    }
-  });
-
   var scriptsVue = new Vue({
     template: scriptsTemplate,
     data: {
@@ -553,7 +518,6 @@ define(['./scripts.xml', './scripts-add.xml', './scripts-rename.xml',
   });
 
   addPageComponent(scriptsAddVue);
-  addPageComponent(scriptsRenameVue);
   addPageComponent(scriptsBlocklyVue);
   addPageComponent(scriptsViewVue);
   addPageComponent(scriptsViewConfigVue);

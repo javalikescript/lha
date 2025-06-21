@@ -31,9 +31,10 @@
         }
       }
     }, {
-      "title": "Count only",
+      "title": "Dry run",
+      "description": "Show the result without modifying the scripts",
       "type": "boolean",
-      "default": true
+      "default": false
     }]
   }]
 }
