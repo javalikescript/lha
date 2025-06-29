@@ -426,11 +426,15 @@ Vue.component('json-item', {
             v = parseJsonItemValue(this.schema.type, val);
           }
         }
-        var k = this.$vnode.key;
-        if (v === undefined) {
-          delete this.pobj[k];
-        } else {
-          this.pobj[k] = v;
+        if (this.pobj && isObject(this.pobj)) {
+          var k = this.$vnode.key;
+          if (v === undefined) {
+            delete this.pobj[k];
+          } else {
+            this.pobj[k] = v;
+          }
+        } else if (v !== undefined) {
+          this.obj = v;
         }
       }
     },

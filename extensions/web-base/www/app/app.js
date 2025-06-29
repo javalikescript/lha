@@ -552,20 +552,35 @@ var promptDialog = new Vue({
   data: {
     message: 'Nothing here',
     schema: false,
-    value: null
+    value: ''
   },
   methods: {
     ask: function(schema, message) {
-      if (!isObject(schema)) {
-        return Promise.reject('invalid schema');
+      if (typeof schema === 'string') {
+        message = schema;
+        schema = undefined;
       }
-      this.schema = schema;
+      if (!isObject(schema)) {
+        schema = {
+          title: 'Value',
+          type: 'string'
+        };
+      }
+      var wrapped = false;
       if (schema.type === 'object') {
+        this.schema = schema;
         this.value = {};
       } else if (schema.type === 'array') {
+        this.schema = schema;
         this.value = [];
       } else {
-        this.value = '';
+        this.schema = {
+          type: 'array',
+          prefixItems: [schema],
+          minItems: 1
+        }
+        this.value = [];
+        wrapped = true;
       }
       this.message = message || 'Value?';
       app.openDialog('prompt');
@@ -573,7 +588,7 @@ var promptDialog = new Vue({
       return new Promise(function(resolve, reject) {
         self.apply = function(confirm) {
           if (confirm) {
-            resolve(self.value);
+            resolve(wrapped ? self.value[0] : self.value);
           } else {
             reject('canceled');
           }
