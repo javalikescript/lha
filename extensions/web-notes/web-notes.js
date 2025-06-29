@@ -26,8 +26,6 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
         }).then(rejectIfNotOk).then(getResponseJson).then(function(response) {
           if (isArrayWithItems(response)) {
             var notes = response.filter(function(note) {
-              return !note.isDir;
-            }).map(function(note) {
               if (note.isDir) {
                 note.type = 'dir';
               } else if (endsWith(note.name, '.txt')) {
@@ -41,6 +39,23 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
             });
             self.notes = self.notes.concat(notes);
           }
+        });
+      },
+      createFolder: function() {
+        promptDialog.ask({
+          title: 'Folder Name',
+          type: 'string'
+        }, 'New folder').then(function(name) {
+          return fetch(NOTES_PATH + this.path + name + '/', {method: 'PUT'});
+        }.bind(this)).then(assertIsOk).then(function() {
+          toaster.toast('Folder created');
+        });
+      },
+      onDelete: function() {
+        return confirmation.ask('Delete the folder?').then(function() {
+          return fetch(NOTES_PATH + this.path, {method: 'DELETE'});
+        }.bind(this)).then(assertIsOk).then(function() {
+          toaster.toast('Folder deleted');
         });
       },
       openNote: function(note) {
