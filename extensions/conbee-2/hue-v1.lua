@@ -21,7 +21,7 @@ local function setThingPropertyValue(thing, name, value)
     local id = utils.findKey(thingsMap, thing)
     if id then
       local resource = lastResourceMap[id]
-      if resource.primaryid then
+      if resource and resource.primaryid then
         -- setting value is restricted to sub primary resources!
         resource = lastResourceMap[resource.primaryid]
       end

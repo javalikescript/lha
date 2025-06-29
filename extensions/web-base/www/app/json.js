@@ -83,7 +83,7 @@ function populateJsonSchema(rootSchema, enumsById) {
     browseJsonRootSchema(ps, function(schema) {
       if ('enumVar' in schema) {
         var enumValues = enumsById[schema.enumVar];
-        if (enumValues) {
+        if (isArray(enumValues)) {
           schema.enumValues = enumValues;
         }
         delete schema.enumVar;

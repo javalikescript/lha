@@ -17,9 +17,12 @@ section.page {
   height: 100%;
   width: 100%;
   transition: all 0.25s ease;
-  background-color: #fff;
 }
-.theme_black section.page {
+body, section.page {
+  background-color: white;
+  color: black;
+}
+body.theme_black, .theme_black section.page {
   background-color: #1E1E1E;
   color: white;
 }

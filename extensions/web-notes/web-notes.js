@@ -65,7 +65,8 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
     path: '',
     name: '',
     extension: '',
-    newName: false
+    newName: false,
+    saved: true
   };
 
   function onShow(path) {
@@ -87,6 +88,7 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
     fetch(NOTES_PATH + this.path, {
       method: 'DELETE' 
     }).then(function() {
+      this.saved = false;
       this.name = this.newName;
       if (this.extension) {
         this.name += '.' + this.extension;
@@ -112,8 +114,7 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
   var noteVue = new Vue({
     template: noteTemplate,
     data: Object.assign({
-      text: '',
-      saved: true
+      text: ''
     }, SHARED_DATA),
     methods: {
       onShow: function(path) {
