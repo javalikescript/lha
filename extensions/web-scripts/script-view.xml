@@ -2,7 +2,7 @@
   <template slot="bar-middle">
     <h1 v-if="newName === false" v-on:click="newName = name">{{ name }}</h1>
     <div v-else>
-      <input v-model="newName" type="text" placeholder="Script name">
+      <input v-model="newName" v-on:keyup.enter="onRename()" v-on:keydown.esc.prevent="newName = false" type="text" placeholder="Script name">
       <button v-on:click="onRename()" title="Apply"><i class="fas fa-check"></i></button>
       <button v-on:click="newName = false" title="Cancel"><i class="fa fa-window-close"></i></button>
     </div>
