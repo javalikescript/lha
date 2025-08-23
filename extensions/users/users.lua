@@ -6,6 +6,7 @@ local logger = extension:getLogger()
 local File = require('jls.io.File')
 local HttpExchange = require('jls.net.http.HttpExchange')
 local HttpFilter = require('jls.net.http.HttpFilter')
+local AuthGuard = require('jls.net.AuthGuard')
 local Url = require('jls.net.Url')
 local MessageDigest = require('jls.util.MessageDigest')
 local Codec = require('jls.util.Codec')
@@ -35,13 +36,24 @@ local User = class.create(function(user)
   end
 end)
 
-local filter, base64, md, userMap
+local function getHttpsServer()
+  local httpsExt = extension:getEngine():getExtensionById('https')
+  return httpsExt and httpsExt:getHTTPServer()
+end
+
+local filter, base64, md, userMap, authGuard
 
 local function cleanup()
+  local engine = extension:getEngine()
+  local server = engine:getHTTPServer()
   if filter then
-    local server = extension:getEngine():getHTTPServer()
     server:removeFilter(filter)
     filter = nil
+  end
+  if authGuard then
+    authGuard:release(server)
+    authGuard:release(getHttpsServer())
+    authGuard = nil
   end
   userMap = {}
   base64 = Codec.getInstance('base64')
@@ -76,9 +88,16 @@ end
 
 local sessionFilter
 
+extension:subscribeEvent('https:startup', function()
+  if authGuard then
+    authGuard:guard(getHttpsServer())
+  end
+end)
+
 extension:subscribeEvent('startup', function()
   local configuration = extension:getConfiguration()
-  local server = extension:getEngine():getHTTPServer()
+  local engine = extension:getEngine()
+  local server = engine:getHTTPServer()
   if sessionFilter then
     sessionFilter:close()
   end
@@ -120,18 +139,21 @@ extension:subscribeEvent('startup', function()
       local remoteName = getRemoteName(exchange)
       local user = userMap[info.name]
       if user and user:checkPassword(encrypt(info.password)) then
-        local session = exchange:getSession()
-        session.attributes.userName = info.name
-        session.attributes.secret = hash('K\7'..info.password)
-        if user.permission then
-          session.attributes.permission = user.permission
+        if authGuard:grantUser(info.name, exchange) then
+          local session = exchange:getSession()
+          session.attributes.userName = info.name
+          session.attributes.secret = hash('K\7'..info.password)
+          if user.permission then
+            session.attributes.permission = user.permission
+          end
+          sessionFilter:changeSessionId(session, exchange)
+          HttpExchange.redirect(exchange, '/')
+          logger:fine('user "%s" from %s is authenticated', info.name, remoteName)
+          return
         end
-        sessionFilter:changeSessionId(session, exchange)
-        HttpExchange.redirect(exchange, '/')
-        logger:info('user "%s" from %s is authenticated', info.name, remoteName)
-        -- TODO keep a list of authenticated clients
-        return
+        HttpExchange.forbidden(exchange)
       else
+        authGuard:denyUser(info.name)
         logger:warn('user "%s" from %s cannot be authenticated', info.name, remoteName)
       end
       HttpExchange.forbidden(exchange)
@@ -169,6 +191,16 @@ extension:subscribeEvent('startup', function()
   end
   filter = HttpFilter.byPath(filters):exclude('^/static')
   server:addFilter(filter)
+
+  authGuard = AuthGuard:new()
+  function authGuard:onIpGranted(user, ip)
+    logger:info('user "%s" from %s is authenticated', user, ip)
+  end
+  function authGuard:onUserBlocked(user)
+    logger:info('user "%s" is blocked', user)
+  end
+  authGuard:guard(server)
+  authGuard:guard(getHttpsServer())
 end)
 
 extension:subscribeEvent('poll', function()

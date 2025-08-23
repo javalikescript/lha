@@ -78,6 +78,8 @@ local function startSecureServer(certFile, pkeyFile)
   end
   -- share contexts
   httpSecureServer:setParentContextHolder(extension:getEngine():getHTTPServer())
+
+  extension:getEngine():publishEvent('https:startup', extension)
 end
 
 local function getCertificateAndPrivateKey()
