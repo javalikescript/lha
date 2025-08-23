@@ -3,5 +3,15 @@
   "description": "Expose web notes add-on",
   "dependencies": ["web-base"],
   "version": "1.1",
-  "script": "web-notes.lua"
+  "script": "web-notes.lua",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "cipher": {
+        "title": "Cipher user notes",
+        "type": "boolean",
+        "default": false
+      }
+    }
+  }
 }

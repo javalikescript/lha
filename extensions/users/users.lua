@@ -48,13 +48,17 @@ local function cleanup()
   md = MessageDigest.getInstance('SHA-1')
 end
 
+local function hash(value)
+  md:reset()
+  md:update(value)
+  return base64:encode(md:digest())
+end
+
 local function encrypt(value)
   if string.byte(value, 1, 1) == 9 then
     return value
   end
-  md:reset()
-  md:update(value)
-  return '\t'..base64:encode(md:digest())
+  return '\t'..hash(value)
 end
 
 local function refreshUsers(users)
@@ -101,7 +105,9 @@ extension:subscribeEvent('startup', function()
   end
   extension:addContext('/logout', function(exchange)
     if HttpExchange.methodAllowed(exchange, 'POST') then
-      sessionFilter:onCreated(exchange:getSession())
+      local session = exchange:getSession()
+      sessionFilter:onCreated(session)
+      sessionFilter:changeSessionId(session, exchange)
       HttpExchange.redirect(exchange, '/')
     end
   end)
@@ -116,9 +122,11 @@ extension:subscribeEvent('startup', function()
       if user and user:checkPassword(encrypt(info.password)) then
         local session = exchange:getSession()
         session.attributes.userName = info.name
+        session.attributes.secret = hash('K\7'..info.password)
         if user.permission then
           session.attributes.permission = user.permission
         end
+        sessionFilter:changeSessionId(session, exchange)
         HttpExchange.redirect(exchange, '/')
         logger:info('user "%s" from %s is authenticated', info.name, remoteName)
         -- TODO keep a list of authenticated clients
