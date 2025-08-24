@@ -1,16 +1,8 @@
 <app-page id="share" title="Share">
   <template slot="bar-right">
-    <button v-on:click="app.toPage('extension', 'share')" title="Configuration"><i class="fas fa-cog"></i></button>
+    <button v-on:click="app.toPage('shares')" title="Close"><i class="fa fa-window-close"></i></button>
   </template>
-  <article>
-    <div class="tile-container">
-      <template v-for="share in shares">
-        <div class="tile">
-          <div class="bar">
-            <a :href="share.name + '/'">{{ share.name }}</span>
-          </div>
-        </div>
-      </template>
-    </div>
+  <article class="content">
+    <iframe name="share" :src="src" class="full"/>
   </article>
 </app-page>

@@ -24,7 +24,7 @@ extension:subscribeEvent('startup', function()
   local configuration = extension:getConfiguration()
   if configuration.shares then
     for _, share in ipairs(configuration.shares) do
-      local dir = utils.getAbsoluteFile(share.dir or 'share', extension:getDir())
+      local dir = utils.getAbsoluteFile(share.dir or 'share', extension:getEngine():getWorkDirectory())
       if not dir:exists() then
         logger:warn('Share directory "%s" not found', dir)
       elseif not dir:isDirectory() then

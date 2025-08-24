@@ -20,6 +20,7 @@
             },
             "dir": {
               "title": "The directory to share",
+              "description": "Relative path from the work directory",
               "type": "string"
             },
             "permissions": {
@@ -36,12 +37,6 @@
                 {"const": "WebDAV", "title": "WebDAV"}
               ],
               "default": "HTML"
-            },
-            "useWebDAV": {
-              "title": "Use WebDAV",
-              "type": "boolean",
-              "default": false,
-              "deprecated": true
             }
           }
         }
