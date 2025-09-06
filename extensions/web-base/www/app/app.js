@@ -103,6 +103,7 @@ var app = new Vue({
     dialogs: {},
     watchers: [],
     page: '',
+    path: '',
     pages: {},
     cache: {},
     user: {}
@@ -133,7 +134,15 @@ var app = new Vue({
     closeDialog: function() {
       this.back();
     },
-    onHashchange: function(path) {
+    revertPath: function() {
+      if (this.path) {
+        window.location.assign('#' + this.path);
+      }
+    },
+    onHashchange: function(path, force) {
+      if (this.path && path === this.path) {
+        return;
+      }
       if (this.dialog) {
         var dialog = this.dialogs[this.dialog];
         if (dialog) {
@@ -147,27 +156,31 @@ var app = new Vue({
         var pagePath = matches[2];
         if (id === 'dialog') {
           this.dialog = pagePath;
+          this.path = path;
           return;
         }
         var previousId = this.page !== id ? this.page : '';
         if (previousId) {
           var page = this.pages[previousId];
-          if (page) {
+          if (page && !force) {
             var p = callVueFromPage(page, 'onBeforeHide');
             if (p === false) {
+              this.revertPath();
               return;
             } else if (p instanceof Promise) {
               p.then(function() {
                 this.onHashchange(path, true);
+              }.bind(this), function() {
+                this.revertPath();
               }.bind(this));
               return;
             }
           }
         }
         if (id in this.pages) {
-          var previousId = this.page !== id ? this.page : '';
           this.menu = '';
           this.page = id;
+          this.path = path;
           this.$emit('page-selected', id, pagePath, previousId);
           return;
         }
