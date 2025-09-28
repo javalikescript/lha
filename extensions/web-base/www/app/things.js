@@ -135,7 +135,10 @@ new Vue({
       var modifiedProps = {};
       for (var key in this.thing.properties) {
         var tp = this.thing.properties[key];
-        var value = parseJsonItemValue(tp.type, this.editProps[key]);
+        var value = this.editProps[key];
+        if (value !== undefined) {
+          value = parseJsonItemValue(tp.type, value);
+        }
         //console.info(key, tp.type, value, this.editProps[key]);
         if (value !== this.properties[key]) {
           modifiedProps[key] = value;
