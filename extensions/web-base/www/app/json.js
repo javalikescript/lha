@@ -562,7 +562,7 @@ Vue.component('json-item', {
       if ((this.schema.type === 'array') && Array.isArray(this.obj)) {
         var s = getArraySchema(this.schema, this.obj.length);
         if (isObject(s)) {
-          item = populateJson(this.rootSchema, s);
+          item = populateJson(this.rootSchema, s, newJsonItem(s.type));
         }
       }
       if (item !== undefined) {
@@ -591,10 +591,14 @@ Vue.component('json-item', {
     insertItem: function() {
       var index = this.getItemIndex();
       if (index !== -1) {
-        var item = populateJson(this.rootSchema, this.schema);
-        this.pobj.splice(index, 0, item);
-        this.updateParent();
-        // TODO shift open values
+        var item = populateJson(this.rootSchema, this.schema, newJsonItem(this.schema.type));
+        if (item !== undefined) {
+          this.pobj.splice(index, 0, item);
+          this.updateParent();
+          // TODO shift open values
+        } else {
+          console.error('Cannot insert item', this.obj, this.schema);
+        }
       }
     },
     canMove: function(delta) {
