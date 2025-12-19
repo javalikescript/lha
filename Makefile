@@ -48,6 +48,7 @@ dist-bin: dist-bin-$(PLAT)
 	cp -u $(LUACLIBS)/serial.$(SO) $(LHA_DIST)/bin/
 	cp -u $(LUACLIBS)/zlib.$(SO) $(LHA_DIST)/bin/
 	-cp -u $(LUACLIBS)/lpeg.$(SO) $(LHA_DIST)/bin/
+	-cp -u $(LUACLIBS)/certs.pem $(LHA_DIST)/bin/
 
 dist-any:
 	cp -ru $(LUAJLS)/jls/ $(LHA_DIST)/lua/

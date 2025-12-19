@@ -93,12 +93,22 @@ local function processResponseV1(response)
   end)
 end
 
-local function createHttpClient(url)
+local function createHttpClient(url, cafile, bridgeId)
   return HttpClient:new({
     url = url,
     secureContext = {
-      alpnProtos = {'h2'}
+      certificates = cafile,
+      alpnProtocols = {'h2'}
     },
+    checkHost = function(_, _, peerCert)
+      if bridgeId then
+        if peerCert and peerCert:check_host(string.upper(bridgeId)) then
+          return true
+        end
+        return false, 'wrong bridge id'
+      end
+      return true
+    end
   })
 end
 
@@ -113,7 +123,7 @@ end
 
 return require('jls.lang.class').create(function(hueBridge)
 
-  function hueBridge:initialize(url, key, mapping)
+  function hueBridge:initialize(url, key, mapping, cafile)
     self.url = Url:new(url)
     self.key = key or ''
     local path = self.url:getPath()
@@ -141,6 +151,7 @@ return require('jls.lang.class').create(function(hueBridge)
       },
       BUTTON_NAME = {'On', 'DimUp', 'DimDown', 'Off'},
     })
+    self.cafile = cafile
   end
 
   function hueBridge:close()
@@ -157,7 +168,7 @@ return require('jls.lang.class').create(function(hueBridge)
 
   function hueBridge:getHttpClient()
     if not self.client then
-      self.client = createHttpClient(self.url)
+      self.client = createHttpClient(self.url, self.cafile)
     end
     return self.client
   end

@@ -143,10 +143,10 @@ extension:subscribeEvent('startup', function()
   if hueBridge then
     hueBridge:close()
   end
-  local mappingFile = File:new(extension.dir, 'mapping-v2.json')
+  local mappingFile = File:new(extension:getDir(), 'mapping-v2.json')
   local mapping = json.decode(mappingFile:readAll())
-  hueBridge = HueBridgeV2:new(configuration.url, configuration.user, mapping)
-
+  local hueBridgePem = File:new(extension:getDir(), 'hue-bridge.pem'):getPath()
+  hueBridge = HueBridgeV2:new(configuration.url, configuration.user, mapping, hueBridgePem)
   if configuration.streamEnabled then
     logger:info('start event stream')
     hueBridge:startEventStream(processEvents)
@@ -257,7 +257,8 @@ function extension:generateKey()
   if not configuration.url then
     return Promise.reject('Bridge URL not available')
   end
-  local client = HueBridgeV2.createHttpClient(configuration.url)
+  local hueBridgePem = File:new(extension:getDir(), 'hue-bridge.pem'):getPath()
+  local client = HueBridgeV2.createHttpClient(configuration.url, hueBridgePem)
   return client:fetch('/api', {
     method = 'POST',
     headers = {

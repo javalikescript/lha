@@ -3,6 +3,7 @@ local extension = ...
 local logger = extension:getLogger()
 local event = require('jls.lang.event')
 local Promise = require('jls.lang.Promise')
+local File = require('jls.io.File')
 local HttpClient = require('jls.net.http.HttpClient')
 local Url = require('jls.net.Url')
 local List = require('jls.util.List')
@@ -44,13 +45,6 @@ local function processResponse(response)
 end
 
 local function httpRequest(client, method, path, headers, body)
-  if client == nil or type(client) == 'string' then
-    local url = Url:new(client or path)
-    local c = HttpClient:new(client)
-    return httpRequest(c, method, client and path or url:getPath(), headers, body):finally(function()
-      c:close()
-    end)
-  end
   logger:finer('httpRequest(%s, %s, %T, %T)', method, path, headers, body)
   if type(body) == 'table' then
     headers = headers or {}
@@ -97,7 +91,17 @@ end
 
 
 local configuration = extension:getConfiguration()
+local freeboxPem = File:new(extension:getDir(), 'freebox.pem'):getPath()
 local lastTimePoll = nil
+
+local function newHttpClient()
+  return HttpClient:new({
+    url = configuration.apiUrl,
+    secureContext = {
+      certificates = freeboxPem
+    }
+  })
+end
 
 extension:subscribeEvent('startup', function()
   logger:fine('Using freebox API URL is %s', configuration.apiUrl)
@@ -107,7 +111,7 @@ extension:subscribeEvent('poll', function()
   if not(configuration.apiUrl and configuration.appToken) then
     return
   end
-  local client = HttpClient:new(configuration.apiUrl)
+  local client = newHttpClient()
   openSession(client, configuration.appToken):next(function(sessionToken)
     return listLanHosts(client, sessionToken)
   end):next(function(lanHosts)
@@ -154,7 +158,7 @@ function extension:generateToken(exchange)
   end
   local session = exchange:getSession()
   local sessionId = session and session:getId()
-  local client = HttpClient:new(configuration.apiUrl)
+  local client = newHttpClient()
   return httpRequest(client, 'POST', '/api/v4/login/authorize/', nil, {
     app_id = 'lha.'..extension:getId(),
     app_name = extension:name(),
