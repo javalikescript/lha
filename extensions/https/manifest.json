@@ -23,6 +23,10 @@
         "type": "string",
         "default": "localhost"
       },
+      "extensions": {
+        "title": "The certificate extensions",
+        "type": "object"
+      },
       "certificate": {
         "title": "The certificate file",
         "type": "string",

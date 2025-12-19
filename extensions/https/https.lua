@@ -13,13 +13,14 @@ local utils = require('lha.utils')
 
 -- TODO Use a passhprase to protect private keys
 
-local function writeCertificateAndPrivateKey(certFile, pkeyFile, commonName)
+local function writeCertificateAndPrivateKey(certFile, pkeyFile, commonName, extensions)
   local cacert, pkey
   if pkeyFile:exists() then
     pkey = secure.readPrivateKey(pkeyFile:readAll(), 'pem')
   end
   cacert, pkey = secure.createCertificate({
     commonName = commonName,
+    extensions = extensions,
     privateKey = pkey
   })
   local cacertPem = cacert:export('pem')
@@ -140,7 +141,7 @@ local function createCertificate(certFile, pkeyFile)
       logger:warn('ACME not available as HTTP redirect is disabled')
     end
   end
-  writeCertificateAndPrivateKey(certFile, pkeyFile, configuration.commonName)
+  writeCertificateAndPrivateKey(certFile, pkeyFile, configuration.commonName, configuration.extensions)
   logger:info('Generated self-signed certificate %s and associated private key %s', certFile, pkeyFile)
   return Promise.resolve()
 end
