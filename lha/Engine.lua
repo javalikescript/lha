@@ -303,7 +303,7 @@ return class.create(function(engine)
   end
 
   function engine:loadOtherExtensions()
-    if self.lhaExtensionsDir:isDirectory() then
+    if self.lhaExtensionsDir and self.lhaExtensionsDir:isDirectory() then
       self:loadExtensionsFromDirectory(self.lhaExtensionsDir, 'core')
     end
     if self.extensionsDir:isDirectory() then

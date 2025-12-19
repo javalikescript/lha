@@ -182,7 +182,7 @@ return require('jls.lang.class').create(require('jls.util.EventPublisher'), func
   function extension:require(name, isCore)
     local dir = self.dir
     if isCore then
-      dir = self.engine.lhaExtensionsDir
+      dir = self.engine.lhaExtensionsDir or self.extensionsDir
     end
     return loader.load(name, dir:getPath())
   end
