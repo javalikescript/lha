@@ -107,6 +107,13 @@
     "type": "string",
     "unit": "date time"
   },
+  "leak": {
+    "@type": "LeakProperty",
+    "description": "Whether a water or gas leak is detected",
+    "readOnly": true,
+    "title": "Leak",
+    "type": "boolean"
+  },
   "motion": {
     "@type": "MotionProperty",
     "description": "Whether a presence is detected",

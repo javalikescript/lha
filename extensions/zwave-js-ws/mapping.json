@@ -5,6 +5,7 @@
     {
       "manufacturerId": "$ref:/manufacturer/FIBARO",
       "productId": 4099,
+      "productType": 3074,
       "capabilities": ["SmokeSensor", "TemperatureSensor"],
       "properties": [
         "$ref:/property/battery",
@@ -14,6 +15,23 @@
           "property": "Smoke Alarm",
           "propertyKey": "Sensor status",
           "name": "smoke",
+          "adapter": "$lua:return value ~= 0"
+        }
+      ]
+    },
+    {
+      "manufacturerId": "$ref:/manufacturer/FIBARO",
+      "productId": 4099,
+      "productType": 2817,
+      "capabilities": ["LeakSensor", "TemperatureSensor"],
+      "properties": [
+        "$ref:/property/battery",
+        "$ref:/property/air-temperature",
+        {
+          "commandClass": "$ref:/commandClass/alarm",
+          "property": "Water Alarm",
+          "propertyKey": "Sensor status",
+          "name": "leak",
           "adapter": "$lua:return value ~= 0"
         }
       ]

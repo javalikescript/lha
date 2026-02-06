@@ -20,6 +20,7 @@ return require('jls.lang.class').create(function(zWaveJs)
       utils = utils,
       math = math,
     })
+    -- TODO log duplicate devices mapping
   end
 
   function zWaveJs:updateConnectedState(value)
@@ -173,7 +174,7 @@ return require('jls.lang.class').create(function(zWaveJs)
 
   function zWaveJs:findDeviceFromNode(node)
     for _, device in ipairs(self.mapping.devices) do
-      if node.manufacturerId == device.manufacturerId and node.productId == device.productId then
+      if node.manufacturerId == device.manufacturerId and node.productId == device.productId and (node.productType == device.productType or not device.productType) then
         return device
       end
     end
