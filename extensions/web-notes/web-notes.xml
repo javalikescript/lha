@@ -1,4 +1,8 @@
 <app-page id="notes" title="Notes">
+  <template slot="bar-left">
+    <button v-on:click="app.toPage(homePage)" v-if="homePage && (app.page !== homePage)"><i class="fas fa-home"></i></button>
+    <button v-on:click="app.toPage('notes', dirname())" v-if="path" title="Up"><i class="fas fa-chevron-up"></i></button>
+  </template>
   <template slot="bar-right">
     <button v-if="path !== ''" v-on:click="onDelete().then(function(){ app.back(); })" title="Delete"><i class="fa fa-trash"></i></button>
     <button v-on:click="createFolder()" title="Create new folder"><i class="fa fa-folder"></i></button>

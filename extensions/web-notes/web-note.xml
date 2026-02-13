@@ -1,4 +1,8 @@
 <app-page id="note" title="Note">
+  <template slot="bar-left">
+    <button v-on:click="app.toPage(homePage)" v-if="homePage && (app.page !== homePage)"><i class="fas fa-home"></i></button>
+    <button v-on:click="app.toPage('notes', dirname())" title="Up"><i class="fas fa-chevron-up"></i></button>
+  </template>
   <template slot="bar-middle">
     <h1 v-if="newName === false" v-on:click="newName = extname(name, true)">{{ name }}</h1>
     <div v-else>

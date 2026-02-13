@@ -72,6 +72,10 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
             open(content, '_blank');
           });
         }
+      },
+      dirname: function() {
+        var path = basename(this.path.substring(0, this.path.length - 2), true);
+        return path ? path + '/' : '';
       }
     }
   });
@@ -84,6 +88,11 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
     saved: true
   };
 
+  function dirname() {
+    var path = basename(this.path, true);
+    return path ? path + '/' : '';
+  }
+
   function onShow(path) {
     this.path = path;
     this.name = basename(path);
@@ -92,9 +101,9 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
   }
 
   function onDelete() {
-    return fetch(NOTES_PATH + this.path, {
-      method: 'DELETE' 
-    }).then(assertIsOk).then(function() {
+    return confirmation.ask('Delete the note?').then(function() {
+      return fetch(NOTES_PATH + this.path, {method: 'DELETE'});
+    }.bind(this)).then(assertIsOk).then(function() {
       toaster.toast('Note deleted');
     });
   }
@@ -164,7 +173,8 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
             this.saved = true;
           }.bind(this));
         }
-      }
+      },
+      dirname: dirname
     }
   });
 
