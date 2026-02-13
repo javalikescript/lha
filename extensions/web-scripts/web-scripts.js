@@ -1,12 +1,14 @@
 define(['./scripts.xml', './scripts-add.xml',
   './script-blockly.xml', './toolbox.xml', './blocks.json', './blocks-lua',
   './script-view.xml', './script-view-config.xml', './view-schema.json',
-  './script-editor.xml', './dependencies.js'],
+  './script-editor.xml'],
   function(scriptsTemplate, scriptsAddTemplate,
     scriptBlocklyTemplate, toolboxXml, blocks, blocksLua,
     scriptViewTemplate, scriptViewConfigTemplate, scriptsViewConfigSchema,
     scriptEditorTemplate)
 {
+  var SCRIPT_PATH = '/engine/scripts/';
+  var SCRIPT_FILES_PATH = '/engine/scriptFiles/';
 
   function getMatches(s, r) {
     var matches = [];
@@ -75,7 +77,7 @@ define(['./scripts.xml', './scripts-add.xml',
     //window.open(blobUrl);
     //window.URL.revokeObjectURL(blobUrl);
   }
-  function loadBlockly(self) {
+  function loadBlocklyWorkspace(self) {
     //console.log('using toolbox', toolboxXml);
     var workspace = Blockly.inject('scriptsEditorBlocklyDiv', {
       media: '/static/blockly/media/',
@@ -108,10 +110,76 @@ define(['./scripts.xml', './scripts-add.xml',
       self.$refs.uploadInput.click();
     });
     return workspace;
-  };
-
-  var scriptPath = '/engine/scripts/';
-  var scriptFilesPath = '/engine/scriptFiles/';
+  }
+  function customizeBlockly(blockEnv) {
+    for (var name in blocks) {
+      Blockly.Blocks[name] = (function (name, block) {
+        return {
+          init: function() {
+            //console.log('init block ' + name);
+            var b = deepMap(block, function(v) {
+              if ((typeof v === 'string') && (v.charAt(0) === '$')) {
+                var vv = blockEnv[v.substring(1)]
+                if (vv !== undefined) {
+                  return vv;
+                }
+              }
+              return v;
+            });
+            this.jsonInit(b);
+          }
+        };
+      })(name, blocks[name]);
+    }
+    for (var name in blocksLua) {
+      Blockly.Lua[name] = blocksLua[name];
+    }
+  }
+  function onDelete() {
+    var scriptId = this.scriptId;
+    console.log('scriptsEditor.onDelete(), scriptId is "' + scriptId + '"');
+    if (scriptId) {
+      confirmation.ask('Delete the script?').then(function() {
+        fetch(SCRIPT_PATH + scriptId + '/', {
+          method: 'DELETE'
+        }).then(assertIsOk).then(function() {
+          app.replacePage('scripts');
+          toaster.toast('Deleted');
+        });
+      });
+    }
+  }
+  function onRename() {
+    var self = this;
+    return fetch(SCRIPT_PATH + this.scriptId + '/name', {
+      method: 'PUT',
+      body: this.newName
+    }).then(assertIsOk).then(function() {
+      self.name = self.newName;
+      self.newName = false;
+      toaster.toast('Renamed');
+    });
+  }
+  function onApply() {
+    var scriptId = this.scriptId;
+    return this.onSave().then(function() {
+      return fetch(SCRIPT_PATH + scriptId + '/reload', {method: 'POST'});
+    }).then(function() {
+      toaster.toast('Script reloaded');
+    });
+  }
+  function loadBlockly() {
+    if (typeof Blockly === 'undefined') {
+      return loadScripts(
+        'static/blockly/blockly_compressed.js',
+        'static/blockly/msg/js/en.js',
+        'static/blockly/blocks_compressed.js',
+        'static/blockly/javascript_compressed.js',
+        'static/blockly/lua_compressed.js'
+      );
+    }
+    return Promise.resolve();
+  }
 
   var blockEnv = {
     lhaDataColor: 38,
@@ -131,63 +199,6 @@ define(['./scripts.xml', './scripts-add.xml',
     setThingPathOptions: [],
     eventThingPathOptions: []
   };
-  // Register custom blocks
-  for (var name in blocks) {
-    Blockly.Blocks[name] = (function (name, block) {
-      return {
-        init: function() {
-          //console.log('init block ' + name);
-          var b = deepMap(block, function(v) {
-            if ((typeof v === 'string') && (v.charAt(0) === '$')) {
-              var vv = blockEnv[v.substring(1)]
-              if (vv !== undefined) {
-                return vv;
-              }
-            }
-            return v;
-          });
-          this.jsonInit(b);
-        }
-      };
-    })(name, blocks[name]);
-  }
-  for (var name in blocksLua) {
-    Blockly.Lua[name] = blocksLua[name];
-  }
-
-  function onDelete() {
-    var scriptId = this.scriptId;
-    console.log('scriptsEditor.onDelete(), scriptId is "' + scriptId + '"');
-    if (scriptId) {
-      confirmation.ask('Delete the script?').then(function() {
-        fetch(scriptPath + scriptId + '/', {
-          method: 'DELETE'
-        }).then(assertIsOk).then(function() {
-          app.replacePage('scripts');
-          toaster.toast('Deleted');
-        });
-      });
-    }
-  }
-  function onRename() {
-    var self = this;
-    return fetch(scriptPath + this.scriptId + '/name', {
-      method: 'PUT',
-      body: this.newName
-    }).then(assertIsOk).then(function() {
-      self.name = self.newName;
-      self.newName = false;
-      toaster.toast('Renamed');
-    });
-  }
-  function onApply() {
-    var scriptId = this.scriptId;
-    return this.onSave().then(function() {
-      return fetch(scriptPath + scriptId + '/reload', {method: 'POST'});
-    }).then(function() {
-      toaster.toast('Script reloaded');
-    });
-  }
 
   var scriptsBlocklyVue = new Vue({
     template: scriptBlocklyTemplate,
@@ -201,11 +212,14 @@ define(['./scripts.xml', './scripts-add.xml',
     methods: {
       onShow: function(scriptId) {
         console.log('scriptsEditor.onShow()');
-        if (this.workspace === null) {
-          this.workspace = loadBlockly(this);
-        }
         var self = this;
-        app.getEnumsById().then(function(enumsById) {
+        loadBlockly().then(function() {
+          if (self.workspace === null) {
+            self.workspace = loadBlocklyWorkspace(self);
+            customizeBlockly(blockEnv);
+          }
+          return app.getEnumsById();
+        }).then(function(enumsById) {
           // Prepare data fields
           assignMap(blockEnv, {
             getThingPathOptions: buildOptions(enumsById.readablePropertyPaths),
@@ -225,7 +239,7 @@ define(['./scripts.xml', './scripts-add.xml',
           return;
         }
         var self = this;
-        fetch(scriptFilesPath + self.scriptId + '/blocks.xml', {
+        fetch(SCRIPT_FILES_PATH + self.scriptId + '/blocks.xml', {
           method: 'PUT',
           body: input.files[0]
         }).then(assertIsOk).then(function() {
@@ -288,11 +302,11 @@ define(['./scripts.xml', './scripts-add.xml',
         }
         // save
         return Promise.all([
-          fetch(scriptFilesPath + scriptId + '/blocks.xml', {
+          fetch(SCRIPT_FILES_PATH + scriptId + '/blocks.xml', {
             method: 'PUT',
             body: xmlText
           }).then(assertIsOk),
-          fetch(scriptFilesPath + scriptId + '/script.lua', {
+          fetch(SCRIPT_FILES_PATH + scriptId + '/script.lua', {
             method: 'PUT',
             body: code
           }).then(assertIsOk)
@@ -306,8 +320,8 @@ define(['./scripts.xml', './scripts-add.xml',
           return Promise.reject('workspace not initialized');
         }
         return Promise.all([
-          fetch(scriptFilesPath + this.scriptId + '/blocks.xml').then(getResponseText),
-          fetch(scriptFilesPath + this.scriptId + '/manifest.json').then(getResponseJson)
+          fetch(SCRIPT_FILES_PATH + this.scriptId + '/blocks.xml').then(getResponseText),
+          fetch(SCRIPT_FILES_PATH + this.scriptId + '/manifest.json').then(getResponseJson)
         ]).then(apply(this, function(xmlText, manifest) {
           workspace.clear();
           var xml = Blockly.Xml.textToDom(xmlText);
@@ -341,14 +355,14 @@ define(['./scripts.xml', './scripts-add.xml',
         if (!this.scriptId) {
           return;
         }
-        return fetch(scriptFilesPath + this.scriptId + '/view.xml', {method: 'PUT', body: this.text}).then(assertIsOk).then(function() {
+        return fetch(SCRIPT_FILES_PATH + this.scriptId + '/view.xml', {method: 'PUT', body: this.text}).then(assertIsOk).then(function() {
           toaster.toast('Saved');
         });
       },
       refresh: function() {
         return Promise.all([
-          fetch(scriptFilesPath + this.scriptId + '/view.xml').then(assertIsOk).then(getResponseText),
-          fetch(scriptFilesPath + this.scriptId + '/manifest.json').then(assertIsOk).then(getJson)
+          fetch(SCRIPT_FILES_PATH + this.scriptId + '/view.xml').then(assertIsOk).then(getResponseText),
+          fetch(SCRIPT_FILES_PATH + this.scriptId + '/manifest.json').then(assertIsOk).then(getJson)
         ]).then(apply(this, function(text, manifest) {
           this.text = text;
           this.name = manifest.name;
@@ -368,7 +382,7 @@ define(['./scripts.xml', './scripts-add.xml',
       onShow: function(scriptId) {
         this.scriptId = scriptId;
         return Promise.all([
-          fetch(scriptFilesPath + this.scriptId + '/config.json').then(getJson),
+          fetch(SCRIPT_FILES_PATH + this.scriptId + '/config.json').then(getJson),
           app.getEnumsById()
         ]).then(apply(this, function(config, enumsById) {
           //console.info('schema:', populateJsonSchema(scriptsViewConfigSchema, enumsById));
@@ -377,7 +391,7 @@ define(['./scripts.xml', './scripts-add.xml',
         }));
       },
       onSave: function() {
-        return putJson(scriptFilesPath + this.scriptId + '/config.json', this.config).then(assertIsOk).then(function() {
+        return putJson(SCRIPT_FILES_PATH + this.scriptId + '/config.json', this.config).then(assertIsOk).then(function() {
           app.back();
           toaster.toast('Saved');
         });
@@ -409,7 +423,7 @@ define(['./scripts.xml', './scripts-add.xml',
         if (!scriptId) {
           return;
         }
-        return fetch(scriptFilesPath + scriptId + '/script.lua', {
+        return fetch(SCRIPT_FILES_PATH + scriptId + '/script.lua', {
           method: 'PUT',
           body: this.text
         }).then(assertIsOk).then(function() {
@@ -418,8 +432,8 @@ define(['./scripts.xml', './scripts-add.xml',
       },
       refresh: function() {
         return Promise.all([
-          fetch(scriptFilesPath + this.scriptId + '/script.lua').then(assertIsOk).then(getResponseText),
-          fetch(scriptFilesPath + this.scriptId + '/manifest.json').then(assertIsOk).then(getJson)
+          fetch(SCRIPT_FILES_PATH + this.scriptId + '/script.lua').then(assertIsOk).then(getResponseText),
+          fetch(SCRIPT_FILES_PATH + this.scriptId + '/manifest.json').then(assertIsOk).then(getJson)
         ]).then(apply(this, function(luaText, manifest) {
           this.text = luaText;
           this.name = manifest.name;
@@ -432,13 +446,13 @@ define(['./scripts.xml', './scripts-add.xml',
     template: scriptsAddTemplate,
     methods: {
       newScript: function () {
-        fetch(scriptPath, {method: 'PUT'}).then(assertIsOk).then(function() {
+        fetch(SCRIPT_PATH, {method: 'PUT'}).then(assertIsOk).then(function() {
           app.replacePage('scripts');
         });
       },
       newBlocks: function () {
-        fetch(scriptPath, {method: 'PUT', headers: {'LHA-Name': 'New Blocks'}}).then(assertIsOk).then(getResponseText).then(function(scriptId) {
-          return fetch(scriptFilesPath + scriptId + '/blocks.xml', {
+        fetch(SCRIPT_PATH, {method: 'PUT', headers: {'LHA-Name': 'New Blocks'}}).then(assertIsOk).then(getResponseText).then(function(scriptId) {
+          return fetch(SCRIPT_FILES_PATH + scriptId + '/blocks.xml', {
             method: 'PUT',
             body: '<xml xmlns="http://www.w3.org/1999/xhtml"></xml>'
           });
@@ -447,19 +461,19 @@ define(['./scripts.xml', './scripts-add.xml',
         });
       },
       newView: function () {
-        fetch(scriptPath, {method: 'PUT', headers: {
+        fetch(SCRIPT_PATH, {method: 'PUT', headers: {
           'LHA-Name': 'New View',
           'LHA-Script': '//web-scripts/view-addon.lua'
         }}).then(assertIsOk).then(getResponseText).then(function(scriptId) {
           return Promise.all([
-            fetch(scriptFilesPath + scriptId + '/view.xml', {method: 'PUT', body: '<!-- View content -->'}),
-            fetch(scriptFilesPath + scriptId + '/config.json', {method: 'PUT', body: [
+            fetch(SCRIPT_FILES_PATH + scriptId + '/view.xml', {method: 'PUT', body: '<!-- View content -->'}),
+            fetch(SCRIPT_FILES_PATH + scriptId + '/config.json', {method: 'PUT', body: [
               '{',
               '  "id": "view-' + scriptId + '",',
               '  "title": "View ' + scriptId + '"',
               '}'
             ].join('\n')}),
-            fetch(scriptFilesPath + scriptId + '/init.js', {method: 'PUT', body: [
+            fetch(SCRIPT_FILES_PATH + scriptId + '/init.js', {method: 'PUT', body: [
               "define(['addon/web-scripts/view-loader.js', './config.json', './view.xml'], function(viewLoader, config, viewXml) {",
               "  viewLoader.load(config, viewXml);",
               "});"
@@ -481,7 +495,7 @@ define(['./scripts.xml', './scripts-add.xml',
       onShow: function () {
         this.scripts = [];
         var self = this;
-        fetch(scriptPath, {headers: {"Accept": 'application/json'}}).then(getResponseJson).then(function(scripts) {
+        fetch(SCRIPT_PATH, {headers: {"Accept": 'application/json'}}).then(getResponseJson).then(function(scripts) {
           self.scripts = scripts;
         });
       },
@@ -491,7 +505,7 @@ define(['./scripts.xml', './scripts-add.xml',
         });
       },
       reloadScript: function (script) {
-        fetch(scriptPath + script.id + '/reload', {method: 'POST'}).then(function() {
+        fetch(SCRIPT_PATH + script.id + '/reload', {method: 'POST'}).then(function() {
           toaster.toast('Script reloaded');
         });
       },

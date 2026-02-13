@@ -1,20 +1,20 @@
-define(['./web-chart.xml', './dependencies.js'], function(pageXml) {
+define(['./web-chart.xml'], function(pageXml) {
 
   function isInteger(value) {
     return (typeof value === 'number') && isFinite(value) && (Math.floor(value) === value);
-  };
+  }
 
   function isFloat(value) {
     return (typeof value === 'number') && isFinite(value) && (Math.floor(value) !== value);
-  };
+  }
 
   function countDigits(value) {
     var s = String(value);
     var i = s.indexOf('.');
     return i > 0 ? s.length - i - 1 : 0;
-  };
+  }
 
-  var createNumberChartDataSets = function(dataPointSet, datasets, prefix) {
+  function createNumberChartDataSets(dataPointSet, datasets, prefix) {
     datasets = datasets || [];
     prefix = prefix || '';
     var avgSerie = [];
@@ -62,8 +62,8 @@ define(['./web-chart.xml', './dependencies.js'], function(pageXml) {
       data: minSerie
     });
     return datasets;
-  };
-  var createMappedChartDataSets = function(dataPointSet, datasets, prefix, map) {
+  }
+  function createMappedChartDataSets(dataPointSet, datasets, prefix, map) {
     datasets = datasets || [];
     prefix = prefix || '';
     var chgSerie = [];
@@ -99,8 +99,8 @@ define(['./web-chart.xml', './dependencies.js'], function(pageXml) {
       data: chgSerie
     });
     return datasets;
-  };
-  var createChangesChartDataSets = function(dataPointSet, datasets, prefix) {
+  }
+  function createChangesChartDataSets(dataPointSet, datasets, prefix) {
     datasets = datasets || [];
     prefix = prefix || '';
     var chgSerie = [];
@@ -117,8 +117,8 @@ define(['./web-chart.xml', './dependencies.js'], function(pageXml) {
       data: chgSerie
     });
     return datasets;
-  };
-  var listDates = function(dataPointSet) {
+  }
+  function listDates(dataPointSet) {
     var dates = [];
     var labels = [];
     dataPointSet.forEach(function(item) {
@@ -127,8 +127,8 @@ define(['./web-chart.xml', './dependencies.js'], function(pageXml) {
       labels.push(date.toISOString().substring(11, 16));
     });
     return dates;
-  };
-  var createChartDataSets = function(dataPointSet, datasets, prefix) {
+  }
+  function createChartDataSets(dataPointSet, datasets, prefix) {
     //console.log('createChartDataSets()', dataPointSet, datasets, prefix);
     if (dataPointSet.length === 0) {
       return [];
@@ -149,7 +149,13 @@ define(['./web-chart.xml', './dependencies.js'], function(pageXml) {
       return createChangesChartDataSets(dataPointSet, datasets, prefix);
     }
     return [];
-  };
+  }
+  function loadChart() {
+    if (typeof Chart === 'undefined') {
+      return loadScripts('static/moment.js', 'static/chart/Chart.min.js');
+    }
+    return Promise.resolve();
+  }
   
   /************************************************************
    * Chart
@@ -214,9 +220,11 @@ define(['./web-chart.xml', './dependencies.js'], function(pageXml) {
       loadHistoricalData: function(path) {
         this.path = path;
         var self = this;
-        fetch('/engine/historicalData/' + path, {
-          method: 'GET',
-          headers: this.getHistoricalDataHeaders()
+        loadChart().then(function() {
+          return fetch('/engine/historicalData/' + path, {
+            method: 'GET',
+            headers: self.getHistoricalDataHeaders()
+          });
         }).then(getResponseJson).then(function(dataPointSet) {
           //console.log('fetch()', response);
           self.createChart(listDates(dataPointSet), createChartDataSets(dataPointSet));
