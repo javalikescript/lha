@@ -236,6 +236,7 @@ local REST_ADMIN = {
   ['reboot(engine)?method=POST'] = function(_, engine)
     event:setTimeout(function()
       engine:stop()
+      engine:release()
       --local installName = 'lha_reboot_install.zip'
       --local installFile = File:new(engine.rootDir, installName)
       --if installFile:isFile() then
@@ -258,7 +259,8 @@ local REST_ADMIN = {
   ['stop(engine)?method=POST'] = function(_, engine)
     event:setTimeout(function()
       engine:stop()
-      event:stop()
+      engine:release()
+      --event:stop()
     end, 100)
     return 'In progress'
   end,
@@ -345,12 +347,14 @@ local REST_ADMIN = {
     return Logger.levelToString(rootLogger:getLevel())
   end,
   ['setLogLevel?method=POST'] = function(exchange)
-    local request = exchange:getRequest()
-    rootLogger:setLevel(request:getBody())
+    local value = exchange:getRequest():getBody()
+    logger:warn('Set log level to "%s"', value)
+    rootLogger:setLevel(value)
   end,
   ['setLogConfig?method=POST'] = function(exchange)
-    local request = exchange:getRequest()
-    rootLogger:setConfig(request:getBody())
+    local value = exchange:getRequest():getBody()
+    logger:warn('Set log config to "%s"', value)
+    rootLogger:setConfig(value)
   end
 }
 

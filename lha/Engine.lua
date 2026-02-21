@@ -2,6 +2,7 @@ local logger = require('jls.lang.logger'):get(...)
 local class = require('jls.lang.class')
 local system = require('jls.lang.system')
 local event = require('jls.lang.event')
+local Promise = require('jls.lang.Promise')
 local File = require('jls.io.File')
 local HttpServer = require('jls.net.http.HttpServer')
 local FileHttpHandler = require('jls.net.http.handler.FileHttpHandler')
@@ -586,6 +587,20 @@ return class.create(function(engine)
     end
     self.extensions = {}
     self.things = {}
+  end
+
+  function engine:release()
+    if self.releaseCallback then
+      self.releaseCallback()
+      self.releasePromise, self.releaseCallback = nil, nil
+    end
+  end
+
+  function engine:released()
+    if not self.releasePromise then
+      self.releasePromise, self.releaseCallback = Promise.withCallback()
+    end
+    return self.releasePromise
   end
 
 end, function(Engine)
