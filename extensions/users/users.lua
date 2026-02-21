@@ -36,10 +36,19 @@ local User = class.create(function(user)
   end
 end)
 
-local function getHttpsServer()
+local function getSecureServer()
   local httpsExt = extension:getEngine():getExtensionById('https')
   return httpsExt and httpsExt:getHTTPServer()
 end
+
+local redirectLocation = '/login.html'
+local redirectFilter = HttpFilter.byPath(HttpFilter:new(function(_, exchange)
+  local session = exchange:getSession()
+  if session and not session.attributes.userName then
+    HttpExchange.redirect(exchange, redirectLocation)
+    return false
+  end
+end)):excludePath(redirectLocation, '/login'):exclude('^/static')
 
 local filter, base64, md, userMap, authGuard
 
@@ -50,9 +59,15 @@ local function cleanup()
     server:removeFilter(filter)
     filter = nil
   end
+  local secureServer = getSecureServer()
+  if secureServer then
+    secureServer:removeFilter(redirectFilter)
+    if authGuard then
+      authGuard:release(secureServer)
+    end
+  end
   if authGuard then
     authGuard:release(server)
-    authGuard:release(getHttpsServer())
     authGuard = nil
   end
   userMap = {}
@@ -86,13 +101,23 @@ local function getSessionsFile()
   return File:new(extension:getEngine():getWorkDirectory(), 'sessions.dat')
 end
 
-local sessionFilter
+local function checkLogin(login, value)
+  return login == true or type(login) == 'string' and string.find(login, value, 1, true)
+end
 
-extension:subscribeEvent('https:startup', function()
-  if authGuard then
-    authGuard:guard(getHttpsServer())
+local function guardSecureServer()
+  local secureServer = getSecureServer()
+  if secureServer and checkLogin(extension:getConfiguration().login, 's') then
+    if not checkLogin(extension:getConfiguration().login, 'h') then
+      secureServer:addFilter(redirectFilter)
+    end
+    if authGuard then
+      authGuard:guard(secureServer)
+    end
   end
-end)
+end
+
+local sessionFilter
 
 extension:subscribeEvent('startup', function()
   local configuration = extension:getConfiguration()
@@ -184,13 +209,6 @@ extension:subscribeEvent('startup', function()
     HttpExchange.forbidden(exchange)
     return false
   end)
-  local filters = HttpFilter.multiple(sessionFilter, userFilter)
-  if configuration.login then
-    local redirect = extension:require('users.login-redirect', true)
-    filters:addFilter(redirect)
-  end
-  filter = HttpFilter.byPath(filters):exclude('^/static')
-  server:addFilter(filter)
 
   authGuard = AuthGuard:new()
   function authGuard:onIpGranted(user, ip)
@@ -199,9 +217,17 @@ extension:subscribeEvent('startup', function()
   function authGuard:onUserBlocked(user)
     logger:info('user "%s" is blocked', user)
   end
-  authGuard:guard(server)
-  authGuard:guard(getHttpsServer())
+
+  filter = HttpFilter.multiple(sessionFilter, userFilter)
+  if checkLogin(configuration.login, 'h') then
+    filter:addFilter(redirectFilter)
+    authGuard:guard(server)
+  end
+  server:addFilter(filter)
+  guardSecureServer()
 end)
+
+extension:subscribeEvent('https:startup', guardSecureServer)
 
 extension:subscribeEvent('poll', function()
   if sessionFilter then

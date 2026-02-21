@@ -65,8 +65,14 @@
       },
       "login": {
         "title": "Restrict the access to logged users",
-        "type": "boolean",
-        "default": true
+        "type": "string",
+        "enumValues": [
+          {"const": "s,h", "title": "On both HTTP and HTTPS"},
+          {"const": "s", "title": "On HTTPS only"},
+          {"const": "h", "title": "On HTTP only"},
+          {"const": "-", "title": "No"}
+        ],
+        "default": "s,h"
       },
       "keepSessions": {
         "title": "Keep the sessions on restart",

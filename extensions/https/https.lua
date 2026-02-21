@@ -73,12 +73,8 @@ local function startSecureServer(certFile, pkeyFile)
   end, function(err) -- could fail if address is in use or hostname cannot be resolved
     logger:warn('Cannot bind HTTP secure server to "%s" on port %s due to %s', configuration.address, configuration.port, err)
   end)
-  if configuration.login then
-    local redirect = extension:require('users.login-redirect', true)
-    httpSecureServer:addFilter(redirect)
-  end
-  -- share contexts
-  httpSecureServer:setParentContextHolder(extension:getEngine():getHTTPServer())
+  -- inherit contexts and filters from engine
+  httpSecureServer:setParent(extension:getEngine():getHTTPServer())
 
   extension:getEngine():publishEvent('https:startup', extension)
 end

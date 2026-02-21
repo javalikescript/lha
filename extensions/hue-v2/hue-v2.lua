@@ -323,3 +323,7 @@ end
 function extension:searchNewSensors(exchange)
   return self:searchNewDevices(exchange, '/sensors')
 end
+
+function extension:getHueBridge()
+  return hueBridge
+end
