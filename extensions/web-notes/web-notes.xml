@@ -5,11 +5,8 @@
   </template>
   <template slot="bar-right">
     <button v-if="path !== ''" v-on:click="onDelete().then(function(){ app.back(); })" title="Delete"><i class="fa fa-trash"></i></button>
-    <button v-on:click="createFolder()" title="Create new folder"><i class="fa fa-folder"></i></button>
-    <button v-on:click="app.toPage('note', path + 'New link.lnk')" title="Create new link"><i class="fa fa-link"></i></button>
-    <button v-on:click="app.toPage('draw', path + 'New drawing.png')" title="Create new drawing"><i class="fas fa-paint-brush"></i></button>
-    <button v-on:click="app.toPage('note', path + 'New note.txt')" title="Create new note"><i class="fa fa-plus"></i></button>
-    <button v-on:click="onShow()" title="Refresh"><i class="fas fa-sync"></i></button>
+    <button v-on:click="createNote()" title="Create new note"><i class="fa fa-plus"></i></button>
+    <button v-on:click="onRefresh()" title="Refresh"><i class="fas fa-sync"></i></button>
   </template>
   <article class="tiles">
     <div class="tile" v-on:click="openNote(note)" v-for="note in notes">

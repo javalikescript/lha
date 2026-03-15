@@ -2,6 +2,41 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
 
   var NOTES_PATH = '/user-notes/';
 
+  function getNoteExtension(type) {
+    switch (type) {
+      case 'note':
+        return '.txt';
+      case 'draw':
+        return '.png';
+      case 'link':
+        return '.lnk';
+      case 'dir':
+        return '/';
+    }
+    return '';
+  }
+
+  function getNoteType(name) {
+    if (endsWith(name, '.txt')) {
+      return 'note';
+    } else if (endsWith(name, '.png')) {
+      return 'draw';
+    } else if (endsWith(name, '.lnk')) {
+      return 'link';
+    } else if (endsWith(name, '/')) {
+      return 'dir';
+    }
+    return '';
+  }
+
+  function checkPath(path) {
+    return fetch(NOTES_PATH + path, {method: 'HEAD'}).then(function(response) {
+      if (response.status !== 404) {
+        return Promise.reject('Already exists');
+      }
+    });
+  }
+
   var notesVue = new Vue({
     template: notesTemplate,
     data: {
@@ -18,37 +53,70 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
         if (path === '' && app.user && app.user.logged) {
           this.notes.push({name: 'me', type: 'dir'});
         }
-        var self = this;
         return fetch(NOTES_PATH + path, {
           headers: {
             "Accept": 'application/json'
           }
         }).then(rejectIfNotOk).then(getResponseJson).then(function(response) {
           if (isArrayWithItems(response)) {
-            var notes = response.filter(function(note) {
+            var notes = response.map(function(note) {
               if (note.isDir) {
                 note.type = 'dir';
-              } else if (endsWith(note.name, '.txt')) {
-                note.type = 'text';
-              } else if (endsWith(note.name, '.png')) {
-                note.type = 'draw';
-              } else if (endsWith(note.name, '.lnk')) {
-                note.type = 'link';
+              } else {
+                note.type = getNoteType(note.name);
               }
               return note;
             });
-            self.notes = self.notes.concat(notes);
+            this.notes = this.notes.concat(notes);
           }
-        });
+        }.bind(this));
       },
-      createFolder: function() {
+      onRefresh: function() {
+        return this.onShow(this.path);
+      },
+      createNote: function() {
         promptDialog.ask({
-          title: 'Folder Name',
-          type: 'string'
-        }, 'New folder').then(function(name) {
-          return fetch(NOTES_PATH + this.path + name + '/', {method: 'PUT'});
-        }.bind(this)).then(assertIsOk).then(function() {
-          toaster.toast('Folder created');
+          type: 'array',
+          minItems: 2,
+          prefixItems: [
+            {
+              title: 'Name',
+              type: 'string',
+              pattern: '[^/\\]+'
+            },
+            {
+              title: 'Type',
+              type: 'string',
+              default: 'note',
+              enumValues: [
+                {const: 'note', title: 'Note'},
+                {const: 'dir', title: 'Folder'},
+                {const: 'draw', title: 'Drawing'},
+                {const: 'link', title: 'Link'}
+              ]
+            }
+          ]
+        }, 'New note').then(function(args) {
+          var name = args[0];
+          var type = args[1];
+          if (!name || name.indexOf('/') !== -1 || name.indexOf('\\') !== -1 || name.indexOf('..') !== -1) {
+            return Promise.reject('Invalid name');
+          }
+          if (type === 'dir') {
+            var path = this.path + name + '/';
+            return checkPath(path).then(function() {
+              return fetch(NOTES_PATH + path, {method: 'PUT'})
+            }).then(assertIsOk).then(function() {
+              toaster.toast('Folder created');
+              this.onRefresh();
+            }.bind(this));
+          }
+          var path = this.path + name + getNoteExtension(type);
+          return checkPath(path).then(function() {
+            app.toPage(type, path);
+          });
+        }.bind(this)).catch(function(reason) {
+          toaster.toast('Fail to create note, ' + reason);
         });
       },
       onDelete: function() {
@@ -60,17 +128,19 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
       },
       openNote: function(note) {
         var path = this.path + note.name;
-        console.info('openning note "' + path + '"');
-        if (note.type === 'dir') {
-          app.toPage('notes', path + '/');
-        } else if (note.type === 'text') {
-          app.toPage('note', path);
-        } else if (note.type === 'draw') {
-          app.toPage('draw', path);
-        } else if (note.type === 'link') {
-          fetch(NOTES_PATH + path).then(getResponseText).then(function(content) {
-            open(content, '_blank');
-          });
+        switch (note.type) {
+          case 'note':
+          case 'draw':
+            app.toPage(note.type, path);
+            break;
+          case 'link':
+            fetch(NOTES_PATH + path).then(getResponseText).then(function(content) {
+              open(content, '_blank');
+            });
+            break;
+          case 'dir':
+            app.toPage('notes', path + '/');
+            break;
         }
       },
       dirname: function() {
@@ -109,21 +179,74 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
   }
 
   function onRename() {
-    fetch(NOTES_PATH + this.path, {
-      method: 'DELETE' 
-    }).then(function() {
-      this.saved = false;
-      this.name = this.newName;
-      if (this.extension) {
-        this.name += '.' + this.extension;
+    var newName = this.newName + (this.extension ? '.' + this.extension : '');
+    var dir = basename(this.path, true);
+    var path = dir ? dir + '/' + newName : newName;
+    return fetch(NOTES_PATH + this.path, {
+      method: 'MOVE',
+      headers: {
+        destination: NOTES_PATH + path
       }
-      var dir = basename(this.path, true);
-      this.path = dir ? dir + '/' + this.name : this.name;
-      return this.onSave();
-    }.bind(this)).then(function() {
+    }).then(function(response) {
+      if (response.ok || response.status === 404) {
+        return response;
+      }
+      return Promise.reject(response.statusText);
+    }).then((function() {
+      this.name = newName;
       this.newName = false;
+      this.path = path;
       app.replacePage(app.page, this.path);
-    }.bind(this));
+    }).bind(this));
+  }
+
+  function onMove() {
+    var newPath;
+    var path = this.dirname();
+    return fetch(NOTES_PATH + path, {
+      headers: {
+        "Accept": 'application/json'
+      }
+    }).then(rejectIfNotOk).then(getResponseJson).then(function(response) {
+      if (isArrayWithItems(response)) {
+        return response.filter(function(note) {
+          return note.isDir;
+        }).map(function(note) {
+          return note.name;
+        });
+      }
+      return Promise.reject();
+    }).then(function(dirs) {
+      if (path) {
+        dirs.splice(0, 0, '..');
+      }
+      return promptDialog.ask({
+        title: 'Folder Name',
+        type: 'string',
+        enumValues: dirs.map(function(name) {
+          return {const: name, title: name};
+        })
+      }, 'Destination');
+    }).then(function(dir) {
+      if (dir === '..') {
+        newPath = basename(basename(this.path, true), true);
+      } else {
+        newPath = path + dir;
+      }
+      if (newPath) {
+        newPath += '/';
+      }
+      newPath += this.name;
+      return fetch(NOTES_PATH + this.path, {
+        method: 'MOVE',
+        headers: {
+          destination: NOTES_PATH + newPath
+        }
+      });
+    }.bind(this)).then(rejectIfNotOk).then((function() {
+      this.path = newPath;
+      app.replacePage(app.page, this.path);
+    }).bind(this));
   }
 
   function onSave(content) {
@@ -159,6 +282,7 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
       onChange: function() {
         this.saved = false;
       },
+      onMove: onMove,
       onRename: onRename,
       onDelete: function () {
         return onDelete.call(this).then(function() {
