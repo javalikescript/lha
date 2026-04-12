@@ -119,6 +119,10 @@ end
 
 local sessionFilter
 
+function extension:getAuthGuard()
+  return authGuard
+end
+
 extension:subscribeEvent('startup', function()
   local configuration = extension:getConfiguration()
   local engine = extension:getEngine()
