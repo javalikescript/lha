@@ -218,6 +218,11 @@ extension:subscribeEvent('startup', function()
     function authGuard:onUserBlocked(user)
       logger:info('user "%s" is blocked', user)
     end
+    if configuration.keepSessions then
+      for _, session in ipairs(sessionFilter:getSessions()) do
+        sessionFilter:onChanged(session)
+      end
+    end
   end
 
   filter = HttpFilter.multiple(sessionFilter, userFilter)
