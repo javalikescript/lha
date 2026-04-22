@@ -14,17 +14,6 @@ local webBaseAddons = extension:require('web-base.addons', true)
 
 webBaseAddons.register(extension)
 
-local function getRemoteName(exchange)
-  local client = exchange:getClient()
-  if client then
-    local ip, port = client:getRemoteName()
-    if ip then
-      return ip, port
-    end
-  end
-  return 'n/a'
-end
-
 local User = class.create(function(user)
   function user:initialize(configuration)
     self.name = configuration.name
@@ -147,14 +136,20 @@ extension:subscribeEvent('startup', function()
   end
   cleanup()
   refreshUsers(configuration.users)
-  function sessionFilter:onCreated(session)
+  function sessionFilter:onCreated(session, exchange)
     session.attributes.userName = nil
     session.attributes.permission = configuration.defaultPermission or ''
+  end
+  function sessionFilter:onChanged(session)
+    local userName = session.attributes.userName
+    if authGuard and userName then
+      authGuard:grantUserIp(userName, session:getLastIpAddress())
+    end
   end
   extension:addContext('/logout', function(exchange)
     if HttpExchange.methodAllowed(exchange, 'POST') then
       local session = exchange:getSession()
-      sessionFilter:onCreated(session)
+      sessionFilter:onCreated(session, exchange)
       sessionFilter:changeSessionId(session, exchange)
       HttpExchange.redirect(exchange, '/')
     end
@@ -165,11 +160,11 @@ extension:subscribeEvent('startup', function()
     end
     local info = Url.queryToMap(exchange:getRequest():getBody())
     if info and info.name and info.password then
-      local remoteName = getRemoteName(exchange)
+      local session = exchange:getSession()
+      local ip = session:getLastIpAddress()
       local user = userMap[info.name]
       if user and user:checkPassword(encrypt(info.password)) then
-        if authGuard:grantUser(info.name, exchange) then
-          local session = exchange:getSession()
+        if not authGuard or authGuard:grantUserIp(info.name, ip) then
           session.attributes.userName = info.name
           session.attributes.secret = hash('K\7'..info.password)
           if user.permission then
@@ -177,13 +172,14 @@ extension:subscribeEvent('startup', function()
           end
           sessionFilter:changeSessionId(session, exchange)
           HttpExchange.redirect(exchange, '/')
-          logger:fine('user "%s" from %s is authenticated', info.name, remoteName)
+          logger:fine('user "%s" from %s is authenticated', info.name, ip)
           return
         end
-        HttpExchange.forbidden(exchange)
       else
-        authGuard:denyUser(info.name)
-        logger:warn('user "%s" from %s cannot be authenticated', info.name, remoteName)
+        if authGuard then
+          authGuard:denyUser(info.name)
+        end
+        logger:warn('user "%s" from %s cannot be authenticated', info.name, ip)
       end
       HttpExchange.forbidden(exchange)
     else
@@ -214,18 +210,22 @@ extension:subscribeEvent('startup', function()
     return false
   end)
 
-  authGuard = AuthGuard:new()
-  function authGuard:onIpGranted(user, ip)
-    logger:info('user "%s" from %s is authenticated', user, ip)
-  end
-  function authGuard:onUserBlocked(user)
-    logger:info('user "%s" is blocked', user)
+  if configuration.useAuthGuard then
+    authGuard = AuthGuard:new()
+    function authGuard:onIpGranted(user, ip)
+      logger:info('user "%s" from %s is authenticated', user, ip)
+    end
+    function authGuard:onUserBlocked(user)
+      logger:info('user "%s" is blocked', user)
+    end
   end
 
   filter = HttpFilter.multiple(sessionFilter, userFilter)
   if checkLogin(configuration.login, 'h') then
     filter:addFilter(redirectFilter)
-    authGuard:guard(server)
+    if authGuard then
+      authGuard:guard(server)
+    end
   end
   server:addFilter(filter)
   guardSecureServer()

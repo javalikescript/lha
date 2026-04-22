@@ -78,6 +78,11 @@
         "title": "Keep the sessions on restart",
         "type": "boolean",
         "default": true
+      },
+      "useAuthGuard": {
+        "title": "Use authentication guard",
+        "type": "boolean",
+        "default": true
       }
     }
   }
