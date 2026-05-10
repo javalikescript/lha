@@ -3,5 +3,19 @@
   "description": "Chat interface for llama.cpp API integration",
   "dependencies": ["web-base"],
   "version": "1.0",
-  "script": "../web-base/addon.lua"
+  "script": "../web-base/addon.lua",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "href": {
+        "title": "The LLM API path",
+        "type": "string",
+        "default": "/llm"
+      },
+      "key": {
+        "title": "The LLM API key",
+        "type": "string"
+      }
+    }
+  }
 }

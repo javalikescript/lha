@@ -1,8 +1,10 @@
-define(['./web-chat.xml', './web-chat.css'], function(pageXml, pageCss) {
+define(['./web-chat.xml', './web-chat.css', 'engine/configuration/extensions/web-chat/'], function(pageXml, pageCss, config) {
 
   appendStyle(pageCss, 'web-chat');
 
-  var API_PATH = '/llm';
+  console.log('config', config);
+  var API_PATH = config.value.href || '/llm';
+  var API_KEY = config.value.key ? 'Bearer ' + config.value.key : undefined;
 
   var vue = new Vue({
     template: pageXml,
@@ -20,7 +22,10 @@ define(['./web-chat.xml', './web-chat.css'], function(pageXml, pageCss) {
     methods: {
       onShow: function() {
         return fetch(API_PATH + '/models', {
-          headers: {"Accept": 'application/json'}
+          headers: {
+            "Accept": "application/json",
+            "Authorization": API_KEY,
+          }
         }).then(rejectIfNotOk).then(getResponseJson).then(function(response) {
           if (response.data.length > 0) {
             this.model = response.data[0].id;
@@ -63,7 +68,9 @@ define(['./web-chat.xml', './web-chat.css'], function(pageXml, pageCss) {
         return fetch(API_PATH + '/chat/completions', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            "Accept": "application/json",
+            "Authorization": API_KEY,
+            "Content-Type": "application/json"
           },
           body: JSON.stringify(payload)
         }).then(rejectIfNotOk).then(getResponseJson).then(function(data) {
