@@ -23,6 +23,12 @@
   flex-direction: column;
 }
 
+.message-system {
+  background-color: #f9fde3;
+  align-self: flex-end;
+  max-width: 80%;
+}
+
 .message-user {
   background-color: #e3f2fd;
   align-self: flex-end;

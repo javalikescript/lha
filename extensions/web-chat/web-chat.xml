@@ -5,8 +5,8 @@
   <article class="content">
     <div class="chat-container">
       <div class="chat-messages" ref="messagesContainer">
-        <div v-for="(msg, index) in messages" :key="index" :class="['message', 'message-' + msg.role]">
-          <div class="message-role">{{ msg.role === 'user' ? 'You' : 'Assistant' }}</div>
+        <div v-for="(msg, index) in messages" :key="index" :class="['message', 'message-' + msg.role]" v-if="msg.role !== 'tool' &amp;&amp; msg.content">
+          <div class="message-role">{{ msg.role === 'user' || msg.role === 'system' ? 'You' : 'Assistant' }}</div>
           <div class="message-content">{{ msg.content }}</div>
         </div>
       </div>

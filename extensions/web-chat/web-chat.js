@@ -6,6 +6,30 @@ define(['./web-chat.xml', './web-chat.css', 'engine/configuration/extensions/web
   var API_PATH = config.value.href || '/llm';
   var API_KEY = config.value.key ? 'Bearer ' + config.value.key : undefined;
 
+  var TOOLS = [{
+    type: "function",
+    function: {
+      name: "get_things_descriptions",
+      description: "List all the things their IDs and descriptions"
+    }
+  }, {
+    type: "function",
+    function: {
+      name: "get_thing_properties",
+      description: "Retrieve properties of a specific thing",
+      parameters: {
+        type: "object",
+        properties: {
+          thing_id: {
+            type: "string",
+            description: "The ID of the thing to get properties for"
+          }
+        },
+        required: ["thing_id"]
+      }
+    }
+  }]
+
   var vue = new Vue({
     template: pageXml,
     data: {
@@ -31,6 +55,10 @@ define(['./web-chat.xml', './web-chat.css', 'engine/configuration/extensions/web
             this.model = response.data[0].id;
           }
           this.models = response.data;
+          this.messages.push({
+            role: 'system',
+            content: 'Your are an helpful assistant for home automation. Use tools to list and interact with the things.'
+          });
         }.bind(this), function(error) {
           console.error('Error:', error);
           toaster.toast('Cannot fetch models');
@@ -55,6 +83,9 @@ define(['./web-chat.xml', './web-chat.css', 'engine/configuration/extensions/web
           self.loading = false;
           return;
         }
+        this.sendMessages();
+      },
+      sendMessages: function() {
         var payload = {
           messages: this.messages,
           model: this.model,
@@ -62,7 +93,9 @@ define(['./web-chat.xml', './web-chat.css', 'engine/configuration/extensions/web
           top_p: this.top_p,
           top_k: this.top_k,
           max_tokens: this.max_tokens,
-          stream: false
+          stream: false,
+          tools: TOOLS,
+          tool_choice: "auto"
         };
         var self = this;
         return fetch(API_PATH + '/chat/completions', {
@@ -75,11 +108,43 @@ define(['./web-chat.xml', './web-chat.css', 'engine/configuration/extensions/web
           body: JSON.stringify(payload)
         }).then(rejectIfNotOk).then(getResponseJson).then(function(data) {
           if (data.choices && data.choices.length > 0) {
-            var assistantMessage = data.choices[0].message.content;
-            self.messages.push({
-              role: 'assistant',
-              content: assistantMessage
-            });
+            var message = data.choices[0].message;
+            self.messages.push(message);
+            if (message.tool_calls) {
+              var promises = [];
+              message.tool_calls.forEach(function(toolCall) {
+                var args = toolCall.function.arguments && JSON.parse(toolCall.function.arguments);
+                if (toolCall.function.name === 'get_things_descriptions') {
+                  promises.push(app.getThings().then(function(things) {
+                    return {
+                      tool_call_id: toolCall.id,
+                      role: 'tool',
+                      content: JSON.stringify(things)
+                    };
+                  }));
+                } else if (toolCall.function.name === 'get_thing_properties') {
+                  promises.push(fetch('/engine/properties/' + args.thing_id).then(rejectIfNotOk).then(getResponseJson).then(function(properties) {
+                    return {
+                      tool_call_id: toolCall.id,
+                      role: 'tool',
+                      content: JSON.stringify(properties)
+                    };
+                  }).catch(function(error) {
+                    return {
+                      tool_call_id: toolCall.id,
+                      role: 'tool',
+                      content: 'Error fetching properties: ' + error.message
+                    };
+                  }));
+                }
+              });
+              if (promises.length > 0) {
+                Promise.all(promises).then(function(results) {
+                  self.messages.push(...results);
+                  self.sendMessages();
+                });
+              }
+            }
           } else {
             console.error('No choices in response:', data);
             toaster.toast('No response');
