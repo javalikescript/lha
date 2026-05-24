@@ -261,7 +261,8 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
   var noteVue = new Vue({
     template: noteTemplate,
     data: Object.assign({
-      text: ''
+      text: '',
+      wrap: false
     }, SHARED_DATA),
     methods: {
       onShow: function(path) {

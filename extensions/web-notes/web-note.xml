@@ -12,6 +12,7 @@
     </div>
   </template>
   <template slot="bar-right">
+    <button v-on:click="wrap = !wrap" title="Toggle wrap"><i class="fas fa-paragraph"></i></button>
     <button v-on:click="onDelete().then(function(){ app.back(); })" title="Delete"><i class="fa fa-trash"></i></button>
     <button v-on:click="onMove()" title="Move"><i class="fa fa-folder"></i></button>
     <button v-on:click="onSave()" title="Save"><i class="far fa-save"></i></button>
@@ -20,6 +21,6 @@
   <article class="content">
     <textarea v-model="text" v-on:keydown.ctrl.s.exact.prevent.stop="onSave()" v-on:keydown.tab.prevent="insertTab"
       v-on:input="onChange" v-on:keydown.esc.prevent="app.back()"
-      spellcheck="false" wrap="off" class="full" style="font-size: 2rem" placeholder="Enter your note here"></textarea>
+      spellcheck="false" :wrap="wrap ? 'soft' : 'off'" class="full" style="font-size: 2rem" placeholder="Enter your note here"></textarea>
   </article>
 </app-page>
