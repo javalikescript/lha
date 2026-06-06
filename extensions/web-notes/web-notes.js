@@ -37,6 +37,13 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
     });
   }
 
+  function compareNotes(a, b) {
+    if (a.type == b.type) {
+      return strcasecmp(a.name, b.name);
+    }
+    return a.type == 'dir' ? -1 : 1;
+  }
+
   var notesVue = new Vue({
     template: notesTemplate,
     data: {
@@ -48,18 +55,15 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
         if (!path) {
           path = '';
         }
-        this.notes = [];
         this.path = path;
-        if (path === '' && app.user && app.user.logged) {
-          this.notes.push({name: 'me', type: 'dir'});
-        }
         return fetch(NOTES_PATH + path, {
           headers: {
             "Accept": 'application/json'
           }
         }).then(rejectIfNotOk).then(getResponseJson).then(function(response) {
+          var notes = [];
           if (isArrayWithItems(response)) {
-            var notes = response.map(function(note) {
+            notes = response.map(function(note) {
               if (note.isDir) {
                 note.type = 'dir';
               } else {
@@ -67,8 +71,14 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
               }
               return note;
             });
-            this.notes = this.notes.concat(notes);
           }
+          if (path === '' && app.user && app.user.logged) {
+            notes.push({name: 'me', type: 'dir'});
+          }
+          notes.sort(compareNotes);
+          this.notes = notes;
+        }.bind(this)).catch(function() {
+          this.notes = [];
         }.bind(this));
       },
       onRefresh: function() {
