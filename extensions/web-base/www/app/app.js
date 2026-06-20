@@ -61,7 +61,7 @@ var toaster = new Vue({
   },
   methods: {
     toast: function(message, duration) {
-      console.log('toast("' + message + '", ' + duration + ')');
+      console.info(message);
       if (this.show) {
         this.message += '\n' + message;
       } else {
@@ -139,14 +139,33 @@ var app = new Vue({
         window.location.assign('#' + this.path);
       }
     },
+    onBeforeHide: function(page, path) {
+      if (page) {
+        var savedPath = this.path;
+        var p = callVueFromPage(page, 'onBeforeHide');
+        if (p === false) {
+          this.revertPath();
+          return true;
+        } else if (p instanceof Promise) {
+          var self = this;
+          p.then(function() {
+            self.onHashchange(path, true);
+          }, function() {
+            self.path = savedPath;
+            self.revertPath();
+          });
+          return true;
+        }
+      }
+    },
     onHashchange: function(path, force) {
       if (this.path && path === this.path) {
         return;
       }
       if (this.dialog) {
         var dialog = this.dialogs[this.dialog];
-        if (dialog) {
-          callVueFromPage(dialog, 'onBeforeHide');
+        if (this.onBeforeHide(dialog, path)) {
+          return;
         }
         this.dialog = '';
       }
@@ -162,19 +181,8 @@ var app = new Vue({
         var previousId = this.page !== id ? this.page : '';
         if (previousId) {
           var page = this.pages[previousId];
-          if (page && !force) {
-            var p = callVueFromPage(page, 'onBeforeHide');
-            if (p === false) {
-              this.revertPath();
-              return;
-            } else if (p instanceof Promise) {
-              p.then(function() {
-                this.onHashchange(path, true);
-              }.bind(this), function() {
-                this.revertPath();
-              }.bind(this));
-              return;
-            }
+          if (!force && this.onBeforeHide(page, path)) {
+            return;
           }
         }
         if (id in this.pages) {
@@ -227,7 +235,6 @@ var app = new Vue({
       }
     },
     onMessage: function(message) {
-      //console.log('onMessage', message);
       if (typeof message !== 'object') {
         return;
       }
@@ -489,7 +496,6 @@ Vue.component('app-page', {
     }
   },
   created: function() {
-    //console.log('created() app-page, this.app', this);
     this.app.pages[this.id] = this;
     var page = this;
     app.$on('page-selected', function(id, path, previousId) {
@@ -615,8 +621,8 @@ var promptDialog = new Vue({
     },
     apply: function() {},
     onConfirm: function() {
-      this.apply(true);
       app.closeDialog();
+      this.apply(true);
     }
   }
 });
@@ -672,7 +678,6 @@ var homePage = new Vue({
     onShow: function() {
       var page = this;
       fetch('/engine/admin/info', fetchInitNoCache).then(assertIsOk).then(getJson).then(function(data) {
-        console.log('fetch(admin/info)', data);
         var clientTime = Math.round(Date.now() / 1000);
         var serverTime = data['Server Time'];
         data['Delta Time'] = clientTime - serverTime;

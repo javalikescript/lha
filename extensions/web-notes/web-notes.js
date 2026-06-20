@@ -276,6 +276,9 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
     }, SHARED_DATA),
     methods: {
       onShow: function(path) {
+        if (path === this.path && !this.saved) {
+          return;
+        }
         onShow.call(this, path);
         this.text = '';
         return fetch(NOTES_PATH + this.path).then(rejectIfNotOk).then(getResponseText).then(function(text) {
@@ -285,10 +288,18 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
         }.bind(this));
       },
       onBeforeHide: function() {
-        if (!this.saved) {
-          toaster.toast('Unsaved modifications');
-          return false;
+        if (this.saved) {
+          return Promise.resolve();
         }
+        return confirmation.ask('Discard unsaved changes?').then(function() {
+          this.saved = true;
+          this.text = '';
+        }.bind(this));
+      },
+      onClose: function() {
+        this.onBeforeHide().then(function() {
+          app.back();
+        });
       },
       onChange: function() {
         this.saved = false;
