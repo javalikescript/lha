@@ -48,7 +48,17 @@ extension:subscribeEvent('startup', function()
       if isValidPath(proxy.name) and proxy.url then
         logger:info('Reverse proxy to "%s" on "%s"', proxy.url, proxy.name)
         local path = '/'..proxy.name..'/(.*)'
-        extension:addContext(path, ProxyHttpHandler:new():configureReverse(proxy.url))
+        local proxyHttpHandler = ProxyHttpHandler:new():configureReverse(proxy.url)
+        if proxy.noReferer then
+          function proxyHttpHandler:prepareRequest(exchange, request, url)
+            request:setHeader('origin')
+            request:setHeader('referer')
+            request:setHeader('sec-fetch-dest')
+            request:setHeader('sec-fetch-mode')
+            request:setHeader('sec-fetch-site')
+          end
+        end
+        extension:addContext(path, proxyHttpHandler)
       end
     end
   end

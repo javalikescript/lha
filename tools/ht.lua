@@ -34,6 +34,7 @@ local options = tables.createArgumentTable(arg, {
     ll = 'log-level',
   },
   helpPath = 'help',
+  logPath = 'log-level',
   schema = {
     title = 'Historical Table Utility',
     type = 'object',
@@ -84,6 +85,11 @@ local options = tables.createArgumentTable(arg, {
         type = 'boolean',
         default = false
       },
+      serial = {
+        title = 'Use serialization',
+        type = 'boolean',
+        default = false
+      },
       path = {
         type = 'object',
         additionalProperties = false,
@@ -123,12 +129,7 @@ local options = tables.createArgumentTable(arg, {
             default = false
           },
         }
-      },
-      ['log-level'] = {
-        title = 'The log level',
-        type = 'string',
-        default = 'warn'
-      },
+      }
     }
   }
 })
@@ -169,7 +170,7 @@ local htSource = HistoricalTable:new(sourceDir, options.name, {fileMin = fileMin
 local htDest
 if destDir then
   if destDir:isDirectory() then
-    htDest = HistoricalTable:new(destDir, options.name, {fileMin = fileMin})
+    htDest = HistoricalTable:new(destDir, options.name, {fileMin = fileMin, serialize = options.serial})
   else
     print('Please specify a valid target directory')
     system.exit(22)

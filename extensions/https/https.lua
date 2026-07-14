@@ -91,6 +91,7 @@ local function isCertificateValid(certFile, pkeyFile)
   if not certFile:exists() or not pkeyFile:exists() then
     return false
   end
+  -- check self-signed
   -- check and log certificate expiration
   local cert = readCertificate(certFile)
   local isValid, notBefore, notAfter = cert:validat()
@@ -111,7 +112,7 @@ local function createCertificate(certFile, pkeyFile)
     if httpRedirectServer then
       local workDir = extension:getEngine():getWorkDirectory()
       local acmeDir = File:new(workDir, 'acme-challenge')
-      local acmePath = '/%.well%-known/acme%-challenge/(.*)'
+      local acmePath = '/%.well%-known/acme%-challenge/(.*)' -- TODO string.escape
       httpRedirectServer:removeContext(acmePath)
       httpRedirectServer:createContext(acmePath, FileHttpHandler:new(acmeDir))
       if not acmeDir:isDirectory() then

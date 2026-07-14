@@ -295,6 +295,15 @@ return class.create(function(historicalTable)
     self:setFileMinutes(options.fileMin)
     self.file = nil
     self.time = nil
+    if options.serialize then
+      local serialization = require('jls.lang.serialization')
+      self.decode = serialization.deserialize
+      self.encode = serialization.serialize
+    else
+      self.decode = json.decode
+      self.encode = json.encode
+    end
+    self.deflate = options.deflate ~= false
   end
 
   function historicalTable:isUtc()
@@ -372,7 +381,7 @@ return class.create(function(historicalTable)
     end
   end
 
-  local function forEachTableInFileDesc(fd, fromTime, toTime, fn)
+  local function forEachTableInFileDesc(fd, fromTime, toTime, fn, decode)
     local offset = 0
     local t, time
     while true do
@@ -404,9 +413,9 @@ return class.create(function(historicalTable)
           data = inflater:inflate(data)
         end
         if isFull then
-          t = json.decode(data)
+          t = decode(data)
         elseif t then
-          local dt = json.decode(data)
+          local dt = decode(data)
           t = tables.patch(t, dt)
         end
       end
@@ -420,7 +429,7 @@ return class.create(function(historicalTable)
     logger:fine('forEachTableInFile(%s, %s, %s)', file, fromTime, toTime)
     -- file format is: kind, time, data size, data content
     local fd = FileDescriptor.openSync(file)
-    local status, err = pcall(forEachTableInFileDesc, fd, fromTime, toTime, fn)
+    local status, err = pcall(forEachTableInFileDesc, fd, fromTime, toTime, fn, self.decode)
     fd:closeSync()
     if not status then
       logger:warn('Error on file "%s" due to %s', file, err)
@@ -590,7 +599,6 @@ return class.create(function(historicalTable)
     local jsonFile = self:getJsonFile()
     -- how to handle invalid JSON table?
     local status, result = pcall(json.stringify, self.liveTable, 2)
-    -- if not status then status, result = pcall(json.encode, self.liveTable) end
     if status then
       jsonFile:write(result)
     else
@@ -622,7 +630,7 @@ return class.create(function(historicalTable)
     local kind, size, data
     if isFull or isNew then
       kind = 1
-      data = json.encode(currentTable)
+      data = self.encode(currentTable)
       size = #data
     else
       kind = 0
@@ -630,14 +638,14 @@ return class.create(function(historicalTable)
       -- compare could lead to sparse array specialy for configuration
       local dt = tables.compare(previousTable, currentTable, true)
       if dt then
-        data = json.encode(dt)
+        data = self.encode(dt)
         size = #data
       elseif isNotEmpty then
         logger:fine('save() nothing to save')
         return
       end
     end
-    if size > 8 then
+    if size > 8 and self.deflate then
       local deflater = Deflater:new()
       data = deflater:deflate(data, 'finish')
       size = #data

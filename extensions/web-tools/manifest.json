@@ -9,6 +9,7 @@
     "properties": {
       "log": {
         "title": "Enables log level filter",
+        "description": "Increase the log level for an HTTP request by using the header jls-logger-level",
         "type": "boolean",
         "default": false
       }

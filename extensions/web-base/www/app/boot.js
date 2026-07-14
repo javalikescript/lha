@@ -106,6 +106,7 @@ Promise.all([
   return theme;
 })).then(function(theme) {
   app.setTheme(theme);
+  // SLA TODO we should not accept dialog hash, maybe dialog should not be hash
   onHashchange();
   setupWebSocket();
 });
