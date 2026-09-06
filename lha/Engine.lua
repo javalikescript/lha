@@ -530,7 +530,7 @@ return class.create(function(engine)
   end
 
   function engine:start(defaultConfig, customConfig)
-    logger:info('Starting engine')
+    logger:warn('Starting engine')
     self.configHistory:loadLatest()
     self.dataHistory:loadLatest()
     self.root = {

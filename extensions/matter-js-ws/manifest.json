@@ -1,0 +1,77 @@
+{
+  "name": "Matter JS WS",
+  "description": "Matter JS WebSocket server integration",
+  "version": "0.1",
+  "script": "matter-js-ws.lua",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "url": {
+        "title": "The WebSocket server URL",
+        "type": "string",
+        "pattern": "^ws://.+:%d+$",
+        "required": true,
+        "default": "ws://localhost:5580/ws"
+      }
+    }
+  },
+  "actions": [
+    {
+      "name": "Set Thread credentials",
+      "description": "Set Thread credentials for commissioning",
+      "method": "setThreadDataset",
+      "active": true,
+      "arguments": [
+        {
+          "title": "dataset",
+          "description": "hex-encoded-operational-dataset",
+          "type": "string",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "Set WiFi credentials",
+      "description": "Set WiFi credentials for commissioning",
+      "method": "setWifiCredentials",
+      "active": true,
+      "arguments": [
+        {
+          "title": "SSID",
+          "type": "string",
+          "required": true
+        },
+        {
+          "title": "Credentials",
+          "type": "string",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "Commission",
+      "description": "Commission a new device using QR code or manual pairing code",
+      "method": "commissionWithCode",
+      "active": true,
+      "arguments": [
+        {
+          "title": "Code",
+          "type": "string",
+          "required": true
+        },
+        {
+          "title": "Network only",
+          "description": "Use a manual pairing code rather than a QR code",
+          "type": "boolean",
+          "default": false
+        }
+      ]
+    },
+    {
+      "name": "Discover",
+      "description": "Discover commissionable devices on the network",
+      "method": "discover",
+      "active": true
+    }
+  ]
+}

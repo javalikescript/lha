@@ -218,7 +218,11 @@ utils.replaceRef = replaceRef
 function utils.replaceRefs(t, env)
   replaceRef(t, function(kind, value, tt, k)
     if kind == 'lua' then
-      return true, load('local value, v2 = ...; '..expand(value, tt), 'mapping', 't', env)
+      local fn, err = load('local value, v2 = ...; '..expand(value, tt), 'mapping', 't', env)
+      if fn then
+        return true, fn
+      end
+      logger:warn('invalid lua, %s (%s)', err, value)
     end
   end)
   replaceRef(t, function(kind, value, tt)

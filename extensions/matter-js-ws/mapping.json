@@ -1,0 +1,26 @@
+{
+  "title": "${attributes['0/40/3']}",
+  "description": "${attributes['0/40/5']} (${attributes['0/40/1']})",
+  "devices": [
+    {
+      "vendorId": "$ref:/manufacturer/Ikea",
+      "productId": 32773,
+      "capabilities": ["HumiditySensor", "TemperatureSensor"],
+      "properties": [
+        {
+          "clusterId": 1026,
+          "value": "$lua:local v = value.attributes['1/1026/0']; return v and v/100",
+          "name": "temperature"
+        },
+        {
+          "clusterId": 1029,
+          "value": "$lua:local v = value.attributes['2/1029/0']; return v and v/100",
+          "name": "humidity"
+        }
+      ]
+    }
+  ],
+  "manufacturer": {
+    "Ikea": 4476
+  }
+}
