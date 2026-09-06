@@ -125,6 +125,7 @@ extension:subscribeEvent('poll', function()
     return Promise.reject(reason)
   end):catch(function(reason)
     logger:warn('Polling error: %s', reason)
+    hueBridge:closeHttpClient()
   end)
 end)
 

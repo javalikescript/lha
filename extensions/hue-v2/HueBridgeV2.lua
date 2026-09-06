@@ -155,11 +155,11 @@ return require('jls.lang.class').create(function(hueBridge)
   end
 
   function hueBridge:close()
+    self:stopEventStream()
     self:closeHttpClient()
   end
 
   function hueBridge:closeHttpClient()
-    self:stopEventStream()
     if self.client then
       self.client:close()
     end
