@@ -7,6 +7,8 @@
   <title>App</title>
   <link rel="stylesheet" href="app.css">
   <link rel="stylesheet" href="static/fa/css/all.min.css">
+  <link rel="icon" type="image/png" sizes="32x32" href="static/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="static/favicon-16x16.png">
   <script src="static/promise.min.js" type="text/javascript" charset="utf-8"></script>
   <script src="static/fetch.umd.js" type="text/javascript" charset="utf-8"></script>
   <script src="static/fetch-compat.js" type="text/javascript" charset="utf-8"></script>
@@ -78,16 +80,16 @@
         <thead>
           <tr>
             <th class="show-xl">Extension</th>
-            <th class="show-l">Thing</th>
-            <th>Property</th>
+            <th>Thing</th>
+            <th class="show-m">Property</th>
             <th>Value</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="property in filteredProperties">
             <td class="show-xl"><span :title="property.extension.description">{{ property.extension.name }}</span></td>
-            <td class="show-l"><span :title="property.thing.description">{{ property.thing.title }}</span></td>
-            <td><span :title="property.description + ' (' + property.name + ')'">{{ property.title }}</span></td>
+            <td><span :title="property.thing.description">{{ property.thing.title }}</span></td>
+            <td class="show-m"><span :title="property.description + ' (' + property.name + ')'">{{ property.title }}</span></td>
             <td><span>{{ property.value }}</span></td>
           </tr>
         </tbody>
