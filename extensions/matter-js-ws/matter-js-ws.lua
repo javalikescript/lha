@@ -53,6 +53,12 @@ local function onNodeEvent(event, data)
   end
 end
 
+extension:subscribeEvent('things', function()
+  logger:info('Looking for things')
+  thingsMap = extension:getThingsByDiscoveryKey()
+  --for _, thing in pairs(thingsMap) do; thing.setPropertyValue = setThingPropertyValue; end
+end)
+
 extension:subscribeEvent('poll', function()
   logger:info('Polling')
 end)
