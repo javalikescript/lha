@@ -22,20 +22,25 @@ local function formatBody(body)
   end
 end
 
-local function processResponse(response)
+local function processJsonResponse(response)
   local status, reason = response:getStatusCode()
   logger:finer('response status %d "%s"', status, reason)
   local contentType = response:getHeader('content-type')
   if not strings.equalsIgnoreCase(contentType, 'application/json') then
     return response:text():next(function(text)
       logger:fine('response body "%s"', text)
-      return Promise.reject('Invalid or missing content type')
+      return Promise.reject('Invalid or missing content type, status is '..tostring(status))
     end)
   end
-  return response:json():next(function(content)
+  return response:json()
+end
+
+local function processResponse(response)
+  local status = response:getStatusCode()
+  return processJsonResponse(response):next(function(content)
     if not (type(content) == 'table' and type(content.data) == 'table' and type(content.errors) == 'table') then
       logger:fine('response content %T', content)
-      return Promise.reject('Invalid or missing content')
+      return Promise.reject('Invalid or missing content, status is '..tostring(status))
     end
     if status == 200 then
       return content.data
@@ -59,21 +64,13 @@ end
 
 local function processResponseV1(response)
   local status, reason = response:getStatusCode()
-  logger:finer('response status %d "%s"', status, reason)
-  local contentType = response:getHeader('content-type')
-  if not strings.equalsIgnoreCase(contentType, 'application/json') then
-    return response:text():next(function(text)
-      logger:fine('response body "%s"', text)
-      return Promise.reject('Invalid or missing content type')
-    end)
-  end
-  return response:json():next(function(content)
+  return processJsonResponse(response):next(function(content)
     logger:finer('response content %T', content)
-    if type(content) ~= 'table' then
-      return Promise.reject('Invalid or missing content')
-    end
     if status ~= 200 then
       return Promise.reject(string.format('Bad status (%d) %s', status, reason))
+    end
+    if type(content) ~= 'table' then
+      return Promise.reject('Invalid or missing content, status is '..tostring(status))
     end
     if #content > 0 and type(content[1]) == 'table' and content[1].success then
       local descriptions = {}
@@ -160,10 +157,12 @@ return require('jls.lang.class').create(function(hueBridge)
   end
 
   function hueBridge:closeHttpClient()
-    if self.client then
-      self.client:close()
+    self:closeEventStream()
+    local client = self.client
+    self.client = nil -- SLA TODO Keep client
+    if client then
+      client:close(false)
     end
-    self.client = nil
   end
 
   function hueBridge:getHttpClient()
@@ -302,16 +301,15 @@ return require('jls.lang.class').create(function(hueBridge)
   function hueBridge:fetchEventStream()
     logger:fine('Hue V2 fetch event stream')
     self:closeEventStream()
-    local client = self:getHttpClient()
-    client:fetch('/eventstream/clip/v2', {
+    self:getHttpClient():fetch('/eventstream/clip/v2', {
       method = 'GET',
       headers = Map.assign({Accept = 'text/event-stream'}, self.headers)
     }):next(function(response)
       if response:getStatusCode() ~= 200 then
         logger:warn('Hue V2 event stream response status: %d', response:getStatusCode())
-        self:closeEventStream()
         return
       end
+      self:closeEventStream()
       self.responseStream = response
       self:updateConnectedState(true)
       local sh = StreamHandler:new(function(err, rawEvent)
@@ -351,15 +349,18 @@ return require('jls.lang.class').create(function(hueBridge)
       return response:consume()
     end):next(function()
       logger:info('event stream ended')
+      self:closeEventStream()
     end, function(reason)
       logger:warn('event stream error: %s', reason)
+      self:closeEventStream()
     end)
   end
 
   function hueBridge:closeEventStream()
-    if self.responseStream then
-      self.responseStream:close()
-      self.responseStream = nil
+    local responseStream = self.responseStream
+    self.responseStream = nil
+    if responseStream then
+      responseStream:close()
       self:updateConnectedState(false)
     end
   end

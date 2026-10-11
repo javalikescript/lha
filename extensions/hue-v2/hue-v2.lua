@@ -121,11 +121,11 @@ extension:subscribeEvent('poll', function()
     updateReachability(true)
     processRessources(resources)
   end, function(reason)
-    updateReachability(false)
-    return Promise.reject(reason)
-  end):catch(function(reason)
-    logger:warn('Polling error: %s', reason)
+    logger:warn('Polling error, closing, %s', reason)
     hueBridge:closeHttpClient()
+    updateReachability(false)
+  end):catch(function(reason)
+    logger:warn('Polling error, %s', reason)
   end)
 end)
 
@@ -157,6 +157,7 @@ end)
 extension:subscribeEvent('shutdown', function()
   if hueBridge then
     hueBridge:close()
+    hueBridge = nil
   end
 end)
 
