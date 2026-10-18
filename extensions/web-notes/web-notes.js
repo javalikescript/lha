@@ -250,7 +250,8 @@ define(['./web-notes.xml', './web-note.xml', './web-draw.xml'], function(notesTe
       return fetch(NOTES_PATH + this.path, {
         method: 'MOVE',
         headers: {
-          destination: NOTES_PATH + newPath
+          "destination": NOTES_PATH + newPath,
+          "If-None-Match": "*"
         }
       });
     }.bind(this)).then(rejectIfNotOk).then((function() {
